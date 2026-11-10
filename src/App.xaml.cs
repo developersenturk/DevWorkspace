@@ -1,11 +1,15 @@
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Threading;
 using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
 public partial class App : Application
 {
+    private const int WindowCloakAttribute = 13;
     private ResourceDictionary? _palette;
 
     static App()
@@ -23,6 +27,85 @@ public partial class App : Application
         if (_palette is null)
             UpdatePalette();
     }
+
+    protected override async void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        if (MainWindow is not null)
+            return;
+
+        var splash = new StartupWindow();
+        bool finished = false;
+        splash.Closed += (_, _) =>
+        {
+            if (!finished)
+                Shutdown();
+        };
+        splash.Show();
+
+        try
+        {
+            // Give the preparation window a frame before constructing the dock and grids.
+            await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+            if (Dispatcher.HasShutdownStarted)
+                return;
+
+            var main = new MainWindow { ShowInTaskbar = false };
+            main.ShowActivated = main.WindowState == WindowState.Maximized;
+            MainWindow = main;
+            var interop = new WindowInteropHelper(main);
+            main.SourceInitialized += (_, _) => SetWindowCloak(interop.Handle, true);
+            main.Show();
+            try
+            {
+                await main.StartupReady;
+            }
+            catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted || !main.IsLoaded)
+            {
+                if (!Dispatcher.HasShutdownStarted)
+                    splash.Close();
+                return;
+            }
+            catch (Exception ex)
+            {
+                main.ShowStartupError(ex.Message);
+            }
+
+            await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+            if (Dispatcher.HasShutdownStarted)
+                return;
+            if (!main.IsLoaded)
+            {
+                splash.Close();
+                return;
+            }
+
+            finished = true;
+            main.ShowInTaskbar = true;
+            SetWindowCloak(interop.Handle, false);
+            if (splash.IsActive)
+                main.Activate();
+            splash.Close();
+        }
+        catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted) { }
+        catch (Exception ex) when (!Dispatcher.HasShutdownStarted)
+        {
+            System.Diagnostics.Trace.TraceError(ex.ToString());
+            finished = true;
+            MessageBox.Show(splash, $"DevWorkspace başlatılamadı.\n\n{ex.Message}", "DevWorkspace",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
+    }
+
+    private static void SetWindowCloak(nint handle, bool cloak)
+    {
+        int value = cloak ? 1 : 0;
+        DwmSetWindowAttribute(handle, WindowCloakAttribute, ref value, sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint window, int attribute, ref int value, int size);
 
     internal static void ApplyTheme(LightweightTheme theme) => ApplicationThemeHelper.ApplicationThemeName = theme.Name;
 

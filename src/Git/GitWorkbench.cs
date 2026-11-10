@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -19,9 +20,18 @@ internal sealed record GitWorkbenchState(GitStatus Status, string IndexSnapshot,
 
 internal sealed record GitRemote(string Name, string? Url);
 
-internal sealed record GitReference(string FullName, bool Current)
+internal sealed record GitRemoteSuggestion(string Address, string Prefix);
+
+internal sealed record GitStash(string CommitId, string Selector, string Date, string Subject)
+{
+    public string Label => $"{Selector} · {Subject}";
+    public string Detail => $"{Label}\n{Date}";
+}
+
+internal sealed record GitReference(string FullName, bool Current, string Upstream = "")
 {
     public bool IsLocalBranch => FullName.StartsWith("refs/heads/", StringComparison.Ordinal);
+    public bool IsRemoteBranch => FullName.StartsWith("refs/remotes/", StringComparison.Ordinal);
     public string Name => FullName[(FullName.IndexOf('/', "refs/".Length) + 1)..];
     public string Label => $"{Name} · {(IsLocalBranch ? Current ? "Etkin dal" : "Yerel dal" :
         FullName.StartsWith("refs/tags/", StringComparison.Ordinal) ? "Etiket" : "Uzak dal")}";
@@ -34,22 +44,42 @@ internal sealed class GitWorkbench(string repository)
     internal async Task<GitReference[]> ReadReferencesAsync(CancellationToken token)
     {
         await VerifyRepositoryAsync(token);
-        string output = await RunAsync(["for-each-ref", "--format=%(refname)%09%(HEAD)%09%(symref)",
+        string output = await RunAsync(["for-each-ref", "--format=%(refname)%09%(HEAD)%09%(symref)%09%(upstream)",
             "refs/heads", "refs/remotes", "refs/tags"], token);
         return output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.Split('\t')).Where(fields => fields.Length == 3 && fields[2].Length == 0)
-            .Select(fields => new GitReference(fields[0], fields[1] == "*")).ToArray();
+            .Select(line => line.Split('\t')).Where(fields => fields.Length == 4 && fields[2].Length == 0)
+            .Select(fields => new GitReference(fields[0], fields[1] == "*", fields[3])).ToArray();
     }
 
     internal async Task SwitchBranchAsync(GitReference branch, CancellationToken token)
     {
-        if (!branch.IsLocalBranch)
-            throw new IOException("Geçmek için yerel bir dal seçin.");
+        if (!branch.IsLocalBranch && !branch.IsRemoteBranch)
+            throw new IOException("Geçmek için yerel veya uzak bir dal seçin.");
         var state = await ReadAsync(token);
         if (state.InProgress is string operation)
             throw new IOException(operation);
         if (state.Status.State != GitState.Clean)
-            throw new IOException("Dal değiştirmeden önce çalışma ağacındaki değişiklikleri kaydedin.");
+            throw new IOException("Dal değiştirmeden önce değişiklikleri commit edin veya geçici kaydedin.");
+
+        if (branch.IsRemoteBranch)
+        {
+            GitReference[] refs = await ReadReferencesAsync(token);
+            if (!refs.Any(item => item.FullName == branch.FullName))
+                throw new IOException("Bu uzak dal artık listede yok. Dalları yenileyip yeniden deneyin.");
+
+            var tracking = refs.Where(item => item.IsLocalBranch && item.Upstream == branch.FullName).ToArray();
+            if (tracking.Any(item => item.Current))
+                return;
+            if (tracking.Length > 1)
+                throw new IOException("Birden fazla yerel dal bu uzak dalı takip ediyor. Yerel dallardan birini seçin.");
+            if (tracking.Length == 0)
+            {
+                await RunAsync(["switch", "--no-recurse-submodules", "--track", "--", branch.FullName], token, 120);
+                return;
+            }
+            branch = tracking[0];
+        }
+
         await RunAsync(["switch", "--no-guess", "--no-recurse-submodules", "--", branch.Name], token, 120);
     }
 
@@ -136,6 +166,49 @@ internal sealed class GitWorkbench(string repository)
         await RunAsync(["--literal-pathspecs", "reset", "--quiet", "--", .. paths], token);
     }
 
+    internal async Task<GitStash[]> ReadStashesAsync(CancellationToken token)
+    {
+        string output = await RunAsync(["stash", "list", "-z", "--encoding=UTF-8", "--format=%H%x00%gd%x00%ci%x00%gs"], token);
+        string[] fields = output.Split('\0');
+        var stashes = new List<GitStash>();
+        for (int i = 0; i + 3 < fields.Length; i += 4)
+            stashes.Add(new(fields[i], fields[i + 1], fields[i + 2], fields[i + 3]));
+        return stashes.ToArray();
+    }
+
+    internal async Task SaveStashAsync(GitStatus expected, CancellationToken token)
+    {
+        await VerifyStashOperationAsync(expected, token);
+        string output = await RunAsync(["stash", "push", "--include-untracked"], token, 120);
+        if (output.Trim().Equals("No local changes to save", StringComparison.Ordinal))
+            throw new IOException("Geçici kaydedilecek değişiklik bulunamadı.");
+    }
+
+    internal async Task ApplyStashAsync(GitStatus expected, GitStash stash, CancellationToken token)
+    {
+        await VerifyStashOperationAsync(expected, token);
+        if (!(await ReadStashesAsync(token)).Any(entry => entry.CommitId == stash.CommitId))
+            throw new IOException("Bu geçici kayıt artık listede yok. Güncel kayıtları kontrol edin.");
+
+        try
+        {
+            await RunAsync(["stash", "apply", "--index", stash.CommitId], token, 120);
+        }
+        catch (IOException ex)
+        {
+            throw new IOException($"Geçici kayıt listede duruyor. Çalışma dosyalarını ve olası çakışmaları kontrol edin. {ex.Message}", ex);
+        }
+    }
+
+    private async Task VerifyStashOperationAsync(GitStatus expected, CancellationToken token)
+    {
+        await VerifyHeadAsync(expected, token);
+        if (expected.CommitId is null)
+            throw new IOException("Geçici kayıtlar için önce ilk commit’i oluşturun.");
+        if (await ReadOperationAsync(token) is string operation)
+            throw new IOException(operation);
+    }
+
     public async Task CommitAsync(GitWorkbenchState expected, string message, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(message) || string.IsNullOrEmpty(expected.IndexSnapshot))
@@ -154,10 +227,86 @@ internal sealed class GitWorkbench(string repository)
     internal async Task VerifyNewPublishAsync(GitStatus expected, CancellationToken token)
     {
         await VerifyHeadAsync(expected, token);
-        if (expected.HeadRef is null || expected.CommitId is null || (await ReadRemoteNamesAsync(token)).Length != 0)
-            throw new IOException("Yayımlamak için commit içeren bir dal ve uzak bağlantısı olmayan bir yerel depo gerekli.");
+        if (expected.HeadRef is null || expected.CommitId is null)
+            throw new IOException("Yayımlamak için commit içeren bir dal gerekli.");
         if (await ReadOperationAsync(token) is string operation)
             throw new IOException(operation);
+    }
+
+    internal static bool IsSupportedRemoteUrl(string url)
+    {
+        if (url.Any(character => char.IsWhiteSpace(character) || char.IsControl(character)))
+            return false;
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" or "ssh")
+            return uri.Host.Length > 0 && !uri.Host.StartsWith('-') && uri.AbsolutePath.Length > 1 &&
+                uri.Query.Length == 0 && uri.Fragment.Length == 0 &&
+                (uri.Scheme == "ssh" ? !Uri.UnescapeDataString(uri.UserInfo).Contains(':') : uri.UserInfo.Length == 0);
+
+        return !url.Contains("://", StringComparison.Ordinal) && !Path.IsPathFullyQualified(url) &&
+            Regex.IsMatch(url, @"\A(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9][A-Za-z0-9.-]*:[^:\s]\S*\z");
+    }
+
+    internal static bool IsSupportedRemoteName(string name) => Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z");
+
+    internal static async Task<GitRemoteSuggestion[]> DiscoverRemotesAsync(string[] repositories, CancellationToken token)
+    {
+        var suggestions = new ConcurrentBag<GitRemoteSuggestion>();
+        await Parallel.ForEachAsync(repositories, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = token },
+            async (repository, ct) =>
+            {
+                try
+                {
+                    var git = new GitWorkbench(repository);
+                    foreach (string remote in await git.ReadRemoteNamesAsync(ct))
+                    {
+                        if ((await git.ReadRemoteAsync(remote, ct)).Url is { } url && IsSupportedRemoteUrl(url))
+                            suggestions.Add(RemoteServer(url));
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception) { }
+            });
+        return suggestions.OrderBy(item => item.Address, StringComparer.OrdinalIgnoreCase)
+            .ThenByDescending(item => item.Prefix.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(item => item.Prefix, StringComparer.Ordinal)
+            .DistinctBy(item => item.Address, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    private static GitRemoteSuggestion RemoteServer(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" or "ssh")
+        {
+            string host = uri.Host.TrimEnd('.').ToLowerInvariant();
+            string address = uri.IsDefaultPort || uri.Scheme == "ssh" && uri.Port == 22 ? host : $"{host}:{uri.Port}";
+            return new(address, uri.GetLeftPart(UriPartial.Authority) + "/");
+        }
+
+        int separator = url.IndexOf(':');
+        string prefix = url[..separator];
+        return new(prefix[(prefix.IndexOf('@') + 1)..].TrimEnd('.').ToLowerInvariant(), prefix + ":");
+    }
+
+    internal async Task AddRemoteAsync(string name, string url, CancellationToken token)
+    {
+        if (!IsSupportedRemoteName(name) || !IsSupportedRemoteUrl(url))
+            throw new IOException("Geçerli bir uzak depo adı ve SSH veya HTTP(S) adresi girin.");
+
+        await VerifyRepositoryAsync(token);
+        await RunAsync(["remote", "add", "--", name, url], token);
+    }
+
+    internal async Task AddGitHubRemoteAsync(string name, GitHubRepository repository, CancellationToken token)
+    {
+        string url = repository.HttpsCloneUrl;
+        string helper = GitHubCli.CredentialHelper();
+        await AddRemoteAsync(name, url, token);
+        await ConfigureGitHubCredentialAsync(url, helper, token);
+    }
+
+    private async Task ConfigureGitHubCredentialAsync(string url, string helper, CancellationToken token)
+    {
+        string key = $"credential.{url}.helper";
+        await RunAsync(["config", "--local", "--replace-all", key, ""], token);
+        await RunAsync(["config", "--local", "--add", key, helper], token);
     }
 
     internal async Task PublishToGitHubAsync(GitStatus expected, Uri repositoryUrl, CancellationToken token)
@@ -165,29 +314,54 @@ internal sealed class GitWorkbench(string repository)
         await VerifyHeadAsync(expected, token);
         string url = repositoryUrl.AbsoluteUri + ".git";
         string[] remotes = await ReadRemoteNamesAsync(token);
-        if (remotes.Length > 0 && (remotes.Length != 1 || remotes[0] != "origin"))
-            throw new IOException("Uzak depo değişti. Git panelindeki hedefi kontrol edin.");
-
-        if (remotes.Length == 0)
-            await RunAsync(["remote", "add", "--", "origin", url], token);
-        string pushUrl = (await RunAsync(["remote", "get-url", "--push", "--all", "origin"], token)).Trim();
+        var urls = await Task.WhenAll(remotes.Select(async remote => (Name: remote,
+            Url: (await RunAsync(["remote", "get-url", "--push", "--all", "--", remote], token)).Trim())));
+        string? name = urls.FirstOrDefault(remote => string.Equals(remote.Url, url, StringComparison.OrdinalIgnoreCase)).Name;
+        if (name is null)
+        {
+            name = remotes.Length == 0 ? "origin" : "github";
+            for (int suffix = 2; remotes.Contains(name, StringComparer.OrdinalIgnoreCase); suffix++)
+                name = $"github-{suffix}";
+            await AddRemoteAsync(name, url, token);
+        }
+        string pushUrl = (await RunAsync(["remote", "get-url", "--push", "--all", "--", name], token)).Trim();
         if (!string.Equals(pushUrl, url, StringComparison.OrdinalIgnoreCase))
             throw new IOException("Uzak depo adresi değişti. Git panelindeki hedefi kontrol edin.");
 
-        string helper = GitHubCli.CredentialHelper();
-        string key = $"credential.{url}.helper";
-        await RunAsync(["config", "--local", "--replace-all", key, ""], token);
-        await RunAsync(["config", "--local", "--add", key, helper], token);
+        await ConfigureGitHubCredentialAsync(url, GitHubCli.CredentialHelper(), token);
 
         GitWorkbenchState current = await ReadAsync(token);
-        var target = new GitDestination("origin", expected.HeadRef!, true);
-        if (current.Upstream is { } upstream)
-        {
-            if (upstream.Remote != target.Remote || upstream.Ref != target.Ref)
-                throw new IOException("Takip edilen uzak dal değişti.");
-            target = upstream;
-        }
+        var target = current.Upstream is { } upstream && upstream.Remote == name && upstream.Ref == expected.HeadRef
+            ? upstream : new GitDestination(name, expected.HeadRef!, current.Upstream is null);
         await PushAsync(current with { Status = expected }, target, token);
+    }
+
+    internal async Task CreateRemoteBranchAsync(GitStatus expected, string remote, string branch, CancellationToken token)
+    {
+        await VerifyHeadAsync(expected, token);
+        if (expected.CommitId is not string commit)
+            throw new IOException("Uzak dal oluşturmak için önce bir commit oluşturun.");
+        if (await ReadOperationAsync(token) is string operation)
+            throw new IOException(operation);
+        if (branch.Length == 0 || branch.StartsWith('-') || branch == "HEAD")
+            throw new IOException("Geçerli bir dal adı girin.");
+        if (!(await ReadRemoteNamesAsync(token)).Contains(remote, StringComparer.Ordinal))
+            throw new IOException("Seçilen uzak depo artık yapılandırılmamış.");
+
+        string reference = $"refs/heads/{branch}";
+        await RunAsync(["check-ref-format", reference], token);
+        string urls = await RunAsync(["remote", "get-url", "--push", "--all", "--", remote], token);
+        if (urls.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Length != 1)
+            throw new IOException("Uzak dal oluşturmak için tek push adresi olan bir uzak depo seçin.");
+
+        var (code, output, error) = await GitProjectOperations.RunAsync(repository,
+            ["-c", $"remote.{remote}.mirror=false", "push", "--porcelain", "--no-follow-tags",
+                "--recurse-submodules=no", $"--force-with-lease={reference}:", "--", remote, $"{commit}:{reference}"], token, 120);
+        if (output.Split('\n').Any(line => line.StartsWith("=\t", StringComparison.Ordinal)) ||
+            output.Contains("(stale info)", StringComparison.Ordinal))
+            throw new IOException($"{remote}/{branch} dalı zaten var.");
+        if (code != 0)
+            throw new IOException(ErrorText(string.IsNullOrWhiteSpace(error) ? output : error));
     }
 
     public async Task PushAsync(GitWorkbenchState expected, GitDestination destination, CancellationToken token)
@@ -203,7 +377,7 @@ internal sealed class GitWorkbench(string repository)
                 !expected.Remotes.Contains(destination.Remote, StringComparer.Ordinal))
                 throw new IOException("İlk push için geçerli bir uzak depo seçin.");
         }
-        else if (destination != expected.Upstream)
+        else if (destination != expected.Upstream && destination.Ref != head)
             throw new IOException("Takip edilen uzak dal seçili değil.");
 
         string[] remotes = (await RunAsync(["remote"], token)).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);

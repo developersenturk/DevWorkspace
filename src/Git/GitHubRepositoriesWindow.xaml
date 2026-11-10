@@ -1,0 +1,135 @@
+<dx:ThemedWindow x:Class="DevWorkspace.GitHubRepositoriesWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+                 Title="GitHub depoları" Width="1230" Height="690" MinWidth="880" MinHeight="460"
+                 ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Loaded="WindowLoaded" Closing="WindowClosing"
+                 KeyDown="WindowKeyDown">
+    <Grid Margin="16">
+      <Grid x:Name="RepositoryBrowser">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,12">
+            <TextBlock Text="GitHub depoları" FontSize="21" FontWeight="SemiBold"/>
+            <TextBlock x:Name="Account" Text="GitHub hesabı" Margin="0,3,0,0"/>
+        </StackPanel>
+        <DockPanel Grid.Row="1" Margin="0,0,0,8">
+            <Button x:Name="RefreshButton" DockPanel.Dock="Right" Content="Yenile" Click="RefreshClick" Margin="8,0,0,0"/>
+            <CheckBox x:Name="WritableOnly" DockPanel.Dock="Right" Content="Yazabildiklerim" Margin="12,0,0,0"
+                      VerticalAlignment="Center" Checked="SearchChanged" Unchecked="SearchChanged"/>
+            <Label Content="Depo ara" Target="{Binding ElementName=Search}" VerticalAlignment="Center" Padding="0,0,8,0"/>
+            <TextBox x:Name="Search" TextChanged="SearchChanged" AutomationProperties.Name="GitHub depolarında ara"
+                     ToolTip="Depo adı, sahip, açıklama, dil veya konu etiketiyle ara"/>
+        </DockPanel>
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="205"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="270"/>
+            </Grid.ColumnDefinitions>
+            <DockPanel Margin="0,0,12,0">
+                <TextBlock DockPanel.Dock="Top" Text="Sahipler ve organizasyonlar" FontWeight="SemiBold" Margin="0,0,0,7"/>
+                <ListBox x:Name="Owners" SelectionChanged="SearchChanged" AutomationProperties.Name="Depo sahipleri"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <DockPanel Margin="3,4">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding Count}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Label}"/>
+                                    <TextBlock Text="{Binding Kind}" FontSize="11"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <DockPanel Grid.Column="1">
+                <TextBlock x:Name="ListHeading" DockPanel.Dock="Top" Text="Tüm depolar" FontWeight="SemiBold" Margin="0,0,0,7"/>
+                <Grid>
+                    <dxg:GridControl x:Name="Repositories" AutoGenerateColumns="None" CurrentItemChanged="RepositoryChanged"
+                                     AutomationProperties.Name="GitHub depo listesi">
+                        <dxg:GridControl.Columns>
+                            <dxg:GridColumn Header="Depo" FieldName="Name" Width="1.15*" MinWidth="100"/>
+                            <dxg:GridColumn x:Name="OwnerColumn" Header="Sahip" FieldName="Owner" Width="*" MinWidth="80"/>
+                            <dxg:GridColumn Header="Açıklama" FieldName="DescriptionLabel" Width="1.75*" MinWidth="100"/>
+                            <dxg:GridColumn Header="Erişim" FieldName="AccessLabel" Width="98" MinWidth="90"/>
+                        </dxg:GridControl.Columns>
+                        <dxg:GridControl.View>
+                            <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
+                                           ShowIndicator="False" AllowColumnFiltering="False" RowMinHeight="31"/>
+                        </dxg:GridControl.View>
+                    </dxg:GridControl>
+                    <TextBlock x:Name="EmptyResults" Text="Bu filtrelerle eşleşen depo yok." Visibility="Collapsed"
+                               IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </DockPanel>
+            <DockPanel Grid.Column="2" Margin="16,0,0,0">
+                <TextBlock DockPanel.Dock="Top" Text="Depo ayrıntıları" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <Grid>
+                    <TextBlock x:Name="DetailEmpty" Text="Açıklamasını görmek için bir depo seçin." TextWrapping="Wrap"/>
+                    <ScrollViewer x:Name="RepositoryDetails" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,8,0">
+                            <TextBlock x:Name="DetailName" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="DetailOwner" TextWrapping="Wrap" Margin="0,3,0,0"/>
+                            <TextBlock x:Name="DetailDescription" TextWrapping="Wrap" Margin="0,12,0,10"/>
+                            <TextBlock x:Name="DetailAccess" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="DetailTechnology" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="DetailActivity" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                            <TextBlock x:Name="DetailTopics" TextWrapping="Wrap"/>
+                            <WrapPanel Margin="0,9,0,0">
+                                <Button x:Name="ReadmeButton" Content="README’yi oku" Click="ReadmeClick" Margin="0,0,6,5" Padding="6,3"/>
+                                <Button x:Name="OpenRepositoryButton" Content="GitHub’da aç" Click="OpenRepositoryClick" Margin="0,0,0,5" Padding="6,3"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Grid>
+        <StackPanel Grid.Row="3" Margin="0,9,0,0">
+            <TextBlock x:Name="Status" TextWrapping="Wrap"/>
+            <StackPanel x:Name="DevicePanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,6,0,0">
+                <TextBox x:Name="DeviceCode" IsReadOnly="True" Width="125" AutomationProperties.Name="GitHub giriş kodu"/>
+                <Button Content="Giriş sayfasını aç" Click="OpenDevicePageClick" Margin="6,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
+        <WrapPanel Grid.Row="4" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="InstallButton" Content="GitHub CLI’ı kur" Click="InstallClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="LoginButton" Content="GitHub’a giriş yap" Click="LoginClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="CloneButton" Content="İndir ve çalışma alanına ekle…" Click="CloneClick" IsEnabled="False" Margin="6,4,0,0"/>
+            <Button x:Name="CloseButton" Content="Kapat" Click="CloseClick" MinWidth="70" Margin="6,4,0,0"/>
+        </WrapPanel>
+      </Grid>
+      <DockPanel x:Name="ReadmeView" Visibility="Collapsed">
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                  <Button Content="Metinde bul" Command="ApplicationCommands.Find"
+                          CommandTarget="{Binding ElementName=ReadmeReader}" ToolTip="Ctrl+F" Padding="9,5" Margin="0,0,8,0"/>
+                  <Button Content="GitHub’da aç" Click="OpenRepositoryClick" Padding="9,5"/>
+              </StackPanel>
+              <Button x:Name="ReadmeBackButton" DockPanel.Dock="Left" Content="‹ Depolara dön" Click="ReadmeBackClick"
+                      ToolTip="Esc" VerticalAlignment="Center" Padding="9,5" Margin="0,0,14,0"/>
+              <StackPanel>
+                  <TextBlock Text="README" FontSize="20" FontWeight="SemiBold"/>
+                  <TextBlock x:Name="ReadmeRepository" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/>
+              </StackPanel>
+          </DockPanel>
+          <Grid>
+              <FlowDocumentScrollViewer x:Name="ReadmeReader" Visibility="Collapsed" MaxWidth="1020"
+                                        Background="{DynamicResource Canvas}" IsToolBarVisible="True" IsSelectionEnabled="True"
+                                        Zoom="110" MinZoom="80" MaxZoom="180" ZoomIncrement="10"
+                                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                        AutomationProperties.Name="README belgesi"/>
+              <TextBlock x:Name="ReadmeStatus" MaxWidth="480" TextAlignment="Center" TextWrapping="Wrap" IsHitTestVisible="False"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" Margin="16"/>
+          </Grid>
+      </DockPanel>
+    </Grid>
+</dx:ThemedWindow>

@@ -78,7 +78,9 @@ internal static class WorkspaceScanner
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (Path.GetFileName(current.Path).StartsWith(GitRecovery.StagingPrefix, StringComparison.OrdinalIgnoreCase))
+                string folderName = Path.GetFileName(current.Path);
+                if (folderName.StartsWith(GitRecovery.StagingPrefix, StringComparison.OrdinalIgnoreCase) ||
+                    folderName.StartsWith(GitHubCli.CloneStagingPrefix, StringComparison.OrdinalIgnoreCase))
                     continue;
                 FileSystemInfo[] entries;
                 try
@@ -100,7 +102,6 @@ internal static class WorkspaceScanner
                 bool isRepoRoot = entries.Any(entry => entry.Name.Equals(".git", StringComparison.OrdinalIgnoreCase));
                 string? repo = isRepoRoot ? current.Path : current.Repository;
                 bool inProject = !isRepoRoot && current.InProject;
-                string folderName = Path.GetFileName(current.Path);
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     .ToArray();

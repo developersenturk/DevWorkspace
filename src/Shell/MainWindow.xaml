@@ -169,6 +169,7 @@
                     </MenuItem>
                     <MenuItem x:Name="BatchFetchMenu" Icon="{local:MenuGlyph &#xE896;}" Header="Seçili depoları getir (Fetch)…" Click="BatchFetchClick"
                               ToolTip="Proje listesinde Ctrl veya Shift ile birden fazla proje seçin." IsEnabled="False"/>
+                    <MenuItem x:Name="GitHubRepositoriesMenu" Icon="{local:MenuGlyph &#xE753;}" Header="GitHub depoları…" Click="GitHubRepositoriesClick"/>
                     <Separator/>
                     <MenuItem Icon="{local:MenuGlyph &#xE890;}" x:Name="GitNavigationMenu" Header="Git görünümleri" IsEnabled="False">
                         <MenuItem Icon="{local:MenuGlyph &#xE8F1;}" Header="Git depoları" Tag="repositories" Click="NavigateFromMenu"/>
@@ -535,14 +536,14 @@
                                 <TextBlock x:Name="GitDiffSubtitle" Foreground="{DynamicResource Muted}" Margin="0,2,0,0"/>
                             </StackPanel>
                         </DockPanel>
-                        <local:GitDiffView x:Name="GitDiff"/>
+                        <ContentControl x:Name="GitDiffHost" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
                     </DockPanel>
                 </Border>
             </Grid>
                     </dxdo:LayoutPanel>
                 </dxdo:LayoutGroup>
                 <dxdo:TabbedGroup x:Name="RightTools" ItemWidth="345" DestroyOnClosingChildren="False">
-                    <dxdo:LayoutPanel x:Name="ProjectPane" Caption="Proje bilgileri" MinWidth="295">
+                    <dxdo:LayoutPanel x:Name="ProjectPane" Caption="Proje bilgileri" MinWidth="295" Closed="True">
                         <Border x:Name="ProjectDrawer" Background="{DynamicResource PanelSoft}" AutomationProperties.Name="Proje bilgileri">
                             <Border.Resources>
                                 <Style x:Key="DrawerCard" TargetType="Border">
@@ -680,7 +681,7 @@
                             </ScrollViewer>
                         </Border>
                     </dxdo:LayoutPanel>
-                    <dxdo:LayoutPanel x:Name="GitPane" Caption="Git işlemleri" MinWidth="295"/>
+                    <dxdo:LayoutPanel x:Name="GitPane" Caption="Git işlemleri" MinWidth="295" Closed="True"/>
                 </dxdo:TabbedGroup>
             </dxdo:LayoutGroup>
         </dxdo:DockLayoutManager>

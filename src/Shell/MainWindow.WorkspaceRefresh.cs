@@ -210,17 +210,17 @@ public partial class MainWindow
             await AttachProjectsAsync([picker.FolderName]);
     }
 
-    private async Task AttachProjectsAsync(IEnumerable<string> dropped)
+    private async Task<ProjectEntry?> AttachProjectsAsync(IEnumerable<string> dropped, string? clonedRepository = null)
     {
         if (_workspace is not Workspace workspace || _busy)
-            return;
+            return null;
 
         try
         {
             string[] paths = dropped.Select(Workspace.NormalizeLink)
                 .Where(path => !path.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (paths.Length == 0)
-                return;
+                return null;
 
             string[] newLinks = paths.Where(path => !_projects.Any(project => project.LinkPath is null &&
                 (path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) || path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase))))
@@ -231,16 +231,19 @@ public partial class MainWindow
             await RefreshAsync();
             var linked = _projects.FirstOrDefault(project => paths.Any(path => path.Equals(project.LinkPath, StringComparison.OrdinalIgnoreCase)));
             var existing = linked ?? _projects.FirstOrDefault(project => paths.Any(path =>
-                path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) || path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase)));
+                path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) || path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase))) ??
+                _projects.FirstOrDefault(project => clonedRepository?.Equals(project.Repository, StringComparison.OrdinalIgnoreCase) == true);
             SearchBox.Text = "";
             BuildNavigation(linked is not null ? "linked" : "all");
-            if (existing is not null && _visibleProjects.Contains(existing))
-                ProjectGrid.SelectedItem = existing;
+            if (existing is not null)
+                FocusProject(existing);
             StatusText.Text = linked is not null ? "Proje kendi konumunda çalışma alanına bağlandı." : "Proje çalışma alanında görünüyor.";
+            return existing;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)
         {
             StatusText.Text = ex.Message;
+            return null;
         }
     }
 

@@ -54,6 +54,29 @@ public partial class MainWindow
             ? new TextBlock { Text = $"Seçili depo · {project.Name}" } : "Seçili depo";
         SelectedRepositoryMenu.IsEnabled = !_busy && _gitView?.IsBusy != true && project?.Repository is not null;
         BatchFetchMenu.IsEnabled = !_busy && _gitView?.IsBusy != true && SelectedProjects().Any(item => item.Repository is not null);
+        GitHubRepositoriesMenu.IsEnabled = !_busy && _gitView?.IsBusy != true;
+    }
+
+    private async void GitHubRepositoriesClick(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _gitView?.IsBusy == true)
+            return;
+
+        var window = new GitHubRepositoriesWindow(_workspace?.Root) { Owner = this };
+        if (window.ShowDialog() != true || window.ClonedFolder is not string folder)
+            return;
+
+        var project = await AttachProjectsAsync([folder], clonedRepository: folder);
+        if (project?.Repository is not null)
+        {
+            CloseGitDiff();
+            WorkbenchDock.Activate(ProjectsPane);
+            await OpenGitWorkbenchAsync(project);
+        }
+        else
+        {
+            StatusText.Text = $"Depo {folder} konumuna indirildi. Çalışma alanına eklemek için Dosya menüsünden klasörü bağlayın.";
+        }
     }
 
     private async void RepositoryCommandClick(object sender, RoutedEventArgs e)
@@ -154,7 +177,8 @@ public partial class MainWindow
         if (closePanel && !GitPane.IsClosed)
             WorkbenchDock.DockController.Close(GitPane);
         CloseGitDiff();
-        GitDiff.ShowPreview(new([], ""));
+        if (GitDiffHost.Content is GitDiffView diff)
+            diff.ShowPreview(new([], ""));
     }
 
     private void WorkbenchPaneClosed(object sender, RoutedEventArgs e)
@@ -172,6 +196,9 @@ public partial class MainWindow
     }
 
     internal void GitRepositoryChanged() => ScheduleWorkspaceRefresh();
+
+    internal string[] KnownGitRepositories() => _projects.Select(project => project.Repository).OfType<string>()
+        .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
     internal void ShowGitDiff()
     {
@@ -194,10 +221,12 @@ public partial class MainWindow
     {
         GitDiffTitle.Text = title;
         GitDiffSubtitle.Text = subtitle;
-        GitDiff.SetHeaders(before, after);
+        GetGitDiff().SetHeaders(before, after);
     }
 
-    internal void SetGitDiffPreview(GitDiffPreview preview) => GitDiff.ShowPreview(preview);
+    internal void SetGitDiffPreview(GitDiffPreview preview) => GetGitDiff().ShowPreview(preview);
+
+    private GitDiffView GetGitDiff() => (GitDiffView)(GitDiffHost.Content ??= new GitDiffView());
 
     private void CaptureWorkspaceView()
     {

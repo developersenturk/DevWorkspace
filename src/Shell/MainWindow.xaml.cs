@@ -15,11 +15,15 @@ namespace DevWorkspace;
 public partial class MainWindow : Window
 {
     private readonly CancellationTokenSource _closing = new();
+    private readonly TaskCompletionSource _startupReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Workspace? _workspace;
     private IReadOnlyList<ProjectEntry> _projects = [];
     private IReadOnlyList<WorkspaceFolder> _folders = [];
     private bool _buildingNavigation;
     private bool _busy;
+    private bool _startupLayoutRestored;
+
+    internal Task StartupReady => _startupReady.Task;
 
     public MainWindow()
     {
@@ -33,20 +37,34 @@ public partial class MainWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        WorkbenchDock.DockController.Close(ProjectPane);
-        WorkbenchDock.DockController.Close(GitPane);
-        _defaultDockLayout = CaptureDockLayout();
-        RestoreDockLayout();
-        string[] args = Environment.GetCommandLineArgs();
-        string? root = args.Length == 2 ? args[1] : _session.LastWorkspace;
-        if (root is not null && (args.Length == 2 || File.Exists(Path.Combine(root, Workspace.ConfigFileName))))
-            await OpenWorkspaceAsync(root);
+        Loaded -= OnLoaded;
+        try
+        {
+            await Dispatcher.Yield(DispatcherPriority.Background);
+            if (_closing.IsCancellationRequested)
+                return;
+
+            _defaultDockLayout = CaptureDockLayout();
+            RestoreDockLayout();
+            _startupLayoutRestored = true;
+            string[] args = Environment.GetCommandLineArgs();
+            string? root = args.Length == 2 ? args[1] : _session.LastWorkspace;
+            if (root is not null && (args.Length == 2 || File.Exists(Path.Combine(root, Workspace.ConfigFileName))))
+                await OpenWorkspaceAsync(root);
+            _startupReady.TrySetResult();
+        }
+        catch (Exception ex)
+        {
+            _startupReady.TrySetException(ex);
+        }
     }
+
+    internal void ShowStartupError(string message) => StatusText.Text = $"Çalışma alanı hazırlanamadı. {message}";
 
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         e.Cancel = _gitView?.IsBusy == true || _savingExplorerFolder;
-        if (!e.Cancel)
+        if (!e.Cancel && _startupLayoutRestored && _startupReady.Task.IsCompleted)
         {
             CaptureLayout();
             CaptureWorkspaceView();
@@ -56,6 +74,7 @@ public partial class MainWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        _startupReady.TrySetCanceled();
         StopWatchingProjectColumnWidths();
         if (Application.Current is { } app)
             app.Activated -= WorkspaceActivated;
