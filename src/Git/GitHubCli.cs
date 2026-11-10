@@ -52,27 +52,8 @@ internal static class GitHubCli
     private static readonly Regex DeviceCode = new(@"\bone-time code(?:[: ]+|\s*\()(?<code>[A-Z0-9]{4}-[A-Z0-9]{4})\b",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-    public static async Task InstallAsync(CancellationToken token)
-    {
-        if (FindGitHubCli() is not null)
-            return;
-
-        string? winget = FindOnPath("winget.exe") ??
-            ExistingFile(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"Microsoft\WindowsApps\winget.exe");
-        if (winget is null)
-            throw new IOException("Windows Paket Yöneticisi (WinGet) bulunamadı. GitHub CLI’ı kurulum kılavuzundan yükleyebilirsiniz.");
-
-        var info = ProjectTools.CreateCaptureInfo(winget, Environment.SystemDirectory,
-            ["install", "--exact", "--id", "GitHub.cli", "--source", "winget", "--disable-interactivity"]);
-        var (code, output, error) = await ProjectTools.CaptureAsync(info, "GitHub CLI kurulumu", 600, token);
-        // WinGet can report that the package was already present.
-        if (FindGitHubCli() is not null)
-            return;
-        if (code != 0)
-            throw new IOException($"GitHub CLI kurulamadı. {CommandError(code, output, error)}");
-        throw new IOException("Kurulum tamamlandı ancak GitHub CLI bulunamadı. Kurulum kılavuzunu açabilir veya yeniden deneyebilirsiniz.");
-    }
+    public static Task InstallAsync(CancellationToken token) =>
+        DevelopmentTools.InstallAsync(DevelopmentTool.GitHub, new Progress<string>(), token, acceptAgreements: false);
 
     public static Task LoginAsync(IProgress<string> progress, CancellationToken token) =>
         AuthorizeAsync(["auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key"], progress, token);
@@ -254,35 +235,7 @@ internal static class GitHubCli
         return info;
     }
 
-    private static string? FindGitHubCli() =>
-        ExistingFile(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"GitHub CLI\gh.exe") ??
-        ExistingFile(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), @"GitHub CLI\gh.exe") ??
-        ExistingFile(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\GitHub CLI\gh.exe") ??
-        FindOnPath("gh.exe");
-
-    private static string? FindOnPath(string name)
-    {
-        // An app that's already open still has the PATH from before the installer ran.
-        foreach (var target in new[] { EnvironmentVariableTarget.Process, EnvironmentVariableTarget.Machine, EnvironmentVariableTarget.User })
-        {
-            string path = Environment.GetEnvironmentVariable("Path", target) ?? "";
-            foreach (string entry in path.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-            {
-                string directory = Environment.ExpandEnvironmentVariables(entry.Trim('"'));
-                if (ExistingFile(directory, name) is { } executable)
-                    return executable;
-            }
-        }
-        return null;
-    }
-
-    private static string? ExistingFile(string directory, string name)
-    {
-        if (!Path.IsPathFullyQualified(directory))
-            return null;
-        string path = Path.Combine(directory, name);
-        return File.Exists(path) ? path : null;
-    }
+    private static string? FindGitHubCli() => DevelopmentTools.Find(DevelopmentTool.GitHub);
 
     private static string CommandError(int code, string output, string error)
     {

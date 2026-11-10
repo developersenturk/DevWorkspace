@@ -177,6 +177,8 @@ public partial class MainWindow
     {
         if (_initializingGit || project.Repository is not null || !Directory.Exists(project.Folder))
             return;
+        if (!EnsureTool(DevelopmentTool.Git))
+            return;
 
         string? workspace = _workspace?.Root;
         if (MessageBox.Show(this, $"Bu klasörde yerel Git deposu oluşturulsun mu?\n\n{project.Folder}\n\nVarsa .gitignore korunur, yoksa proje türüne uygun bir dosya hazırlanır. İlk commit veya uzak depo bağlantısı ayrıca yapılır.",

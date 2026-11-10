@@ -32,7 +32,7 @@ public partial class MainWindow
     private void OpenProject(ProjectEntry project)
     {
         string path = project.Kind is "Visual Studio" or ".NET / MSBuild" ? project.EntryFile ?? project.Folder : project.Folder;
-        if (OpenPath(path))
+        if (OpenPath(path, offerEditor: true))
         {
             if (_workspace is { } workspace && IsSolution(path))
                 _session.RememberSolution(workspace.Root, path);
@@ -89,7 +89,7 @@ public partial class MainWindow
         if (project is not null)
             OpenProject(project);
         else
-            OpenPath(path);
+            OpenPath(path, offerEditor: true);
     }
 
     private async void FavoriteClick(object sender, RoutedEventArgs e) =>
@@ -185,16 +185,21 @@ public partial class MainWindow
     private void ProjectCommandsClick(object sender, RoutedEventArgs e) => ShowProjectTools(ProjectToolView.Commands);
     private void ProjectHealthClick(object sender, RoutedEventArgs e) => ShowProjectTools(ProjectToolView.Health);
 
-    private void ShowProjectTools(ProjectToolView view, ProjectEntry? project = null)
+    private void ShowProjectTools(ProjectToolView view, ProjectEntry? project = null, HealthResult? healthReport = null)
     {
         project ??= ProjectGrid.SelectedItem as ProjectEntry;
         if (_workspace is not Workspace workspace || project is null)
             return;
 
-        var window = new ProjectToolsWindow(workspace, project, view, GetNuGetState(project)) { Owner = this };
+        var window = new ProjectToolsWindow(workspace, project, view, GetNuGetState(project), healthReport) { Owner = this };
         window.ShowDialog();
         if (window.UpdatedWorkspace is Workspace updated && _workspace?.Root == updated.Root)
             _workspace = updated;
+        if (window.OpenGitAfterClose)
+        {
+            NavigateFromDashboard(GitRepositoriesKey, project);
+            OpenGitWorkbench(project);
+        }
     }
 }
 

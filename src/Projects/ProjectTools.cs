@@ -102,6 +102,8 @@ internal static class ProjectTools
 
     internal static ProcessStartInfo CreateCaptureInfo(string executable, string folder, IEnumerable<string> arguments)
     {
+        if (DevelopmentTools.ForCommand(executable) is { } tool)
+            executable = DevelopmentTools.Require(tool);
         var info = new ProcessStartInfo(executable)
         {
             WorkingDirectory = folder, UseShellExecute = false, CreateNoWindow = true,
@@ -110,6 +112,7 @@ internal static class ProjectTools
         };
         foreach (string argument in arguments)
             info.ArgumentList.Add(argument);
+        DevelopmentTools.ApplyPath(info, Path.GetDirectoryName(executable) ?? Environment.SystemDirectory);
         return info;
     }
 
@@ -157,15 +160,57 @@ internal static class ProjectTools
             catch (System.ComponentModel.Win32Exception) { }
         });
 
+    internal static DevelopmentTool? RequiredTool(ProjectCommand command)
+    {
+        if (command.Executable.Equals("npm.cmd", StringComparison.OrdinalIgnoreCase))
+            return DevelopmentTool.Node;
+        if (command.Executable.Equals("cmd.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            if (command.Arguments?.StartsWith("/d /c npm.cmd ", StringComparison.OrdinalIgnoreCase) == true)
+                return DevelopmentTool.Node;
+            if (command.Arguments?.StartsWith("/d /c flutter.bat ", StringComparison.OrdinalIgnoreCase) == true)
+                return DevelopmentTool.Flutter;
+        }
+        return DevelopmentTools.ForCommand(command.Executable);
+    }
+
     public static async Task<int> RunAsync(ProjectCommand command, string folder, Action<string> output, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        var info = new ProcessStartInfo(command.Executable)
+        string executable = command.Executable;
+        string arguments = command.Arguments ?? "";
+        string? batch = null;
+        if (RequiredTool(command) is { } tool)
         {
-            WorkingDirectory = folder, Arguments = command.Arguments ?? "", UseShellExecute = false,
+            executable = DevelopmentTools.Require(tool);
+            bool wrapped = command.Executable.Equals("cmd.exe", StringComparison.OrdinalIgnoreCase);
+            if (wrapped || tool == DevelopmentTool.Flutter || command.Executable.Equals("npm.cmd", StringComparison.OrdinalIgnoreCase))
+            {
+                batch = tool == DevelopmentTool.Node ? Path.Combine(Path.GetDirectoryName(executable)!, "npm.cmd") : executable;
+                if (!File.Exists(batch))
+                    throw new ToolMissingException(DevelopmentTools.Get(tool));
+                string tail = wrapped ? arguments[(tool == DevelopmentTool.Node ? "/d /c npm.cmd ".Length : "/d /c flutter.bat ".Length)..] : arguments;
+                executable = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+                arguments = $"/d /v:off /s /c \"\"%DEVWORKSPACE_PROJECT_TOOL%\" {tail}\"";
+            }
+        }
+        var info = new ProcessStartInfo(executable)
+        {
+            WorkingDirectory = folder, Arguments = arguments, UseShellExecute = false,
             RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true,
             StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
         };
+        if (batch is not null)
+        {
+            info.Environment["DEVWORKSPACE_PROJECT_TOOL"] = batch;
+            string[] directories = DevelopmentTools.Find(DevelopmentTool.Git) is { } git
+                ? [Path.GetDirectoryName(batch)!, Path.GetDirectoryName(git)!] : [Path.GetDirectoryName(batch)!];
+            DevelopmentTools.ApplyPath(info, directories);
+        }
+        else
+        {
+            DevelopmentTools.ApplyPath(info);
+        }
         using var process = Process.Start(info) ?? throw new IOException("Komut başlatılamadı.");
         using var cancellation = KillOnCancellation(process, token);
         async Task Pump(StreamReader reader)

@@ -29,7 +29,8 @@ public partial class ProjectToolsWindow : ThemedWindow
     private bool _checking, _checked, _loading, _saving;
     internal Workspace? UpdatedWorkspace { get; private set; }
 
-    internal ProjectToolsWindow(Workspace workspace, ProjectEntry project, ProjectToolView view, NuGetScanState? nuGetState)
+    internal ProjectToolsWindow(Workspace workspace, ProjectEntry project, ProjectToolView view, NuGetScanState? nuGetState,
+        HealthResult? healthReport = null)
     {
         InitializeComponent();
         _workspace = workspace;
@@ -44,7 +45,10 @@ public partial class ProjectToolsWindow : ThemedWindow
         NuGetTab.Visibility = _nuGetState is null ? Visibility.Collapsed : Visibility.Visible;
         HealthNuGetButton.Visibility = NuGetTab.Visibility;
         ActionsTab.Visibility = project.Repository is null ? Visibility.Collapsed : Visibility.Visible;
+        UpdateWorkflowPanel();
         ComposeTab.Visibility = ProjectIntegrations.HasCompose(project) ? Visibility.Visible : Visibility.Collapsed;
+        if (healthReport is not null)
+            ShowHealthReport(healthReport);
         ToolTabs.SelectedItem = view switch
         {
             ProjectToolView.Health => HealthTab,
@@ -180,6 +184,14 @@ public partial class ProjectToolsWindow : ThemedWindow
         _outputTimer.Start();
         try
         {
+            if (ProjectTools.RequiredTool(option.Command) is { } tool)
+            {
+                if (tool == DevelopmentTool.Flutter && !await EnsureToolAsync(DevelopmentTool.Git, running.Token))
+                    return;
+                if (!await EnsureToolAsync(tool, running.Token))
+                    return;
+                CommandStatus.Text = "Komut çalışıyor…";
+            }
             int exitCode = await ProjectTools.RunAsync(option.Command, _project.Folder, QueueOutput, running.Token);
             if (!_closing.IsCancellationRequested)
                 CommandStatus.Text = exitCode == 0 ? "Komut tamamlandı." : $"Komut hata koduyla tamamlandı. Kod {exitCode}";
@@ -202,6 +214,17 @@ public partial class ProjectToolsWindow : ThemedWindow
                 UpdateCommandActions();
             }
         }
+    }
+
+    private void DevelopmentToolsClick(object sender, RoutedEventArgs e) =>
+        new ToolSetupWindow { Owner = this }.ShowDialog();
+
+    private async Task<bool> EnsureToolAsync(DevelopmentTool tool, CancellationToken token)
+    {
+        if (await ToolSetupWindow.EnsureReadyAsync(this, tool, token))
+            return true;
+        CommandStatus.Text = $"{DevelopmentTools.Get(tool).Name} hazır olmadığı için komut başlatılamadı.";
+        return false;
     }
 
     private void StopClick(object sender, RoutedEventArgs e) => _running?.Cancel();
@@ -263,11 +286,7 @@ public partial class ProjectToolsWindow : ThemedWindow
             var result = await Task.Run(() => ProjectHealth.CheckAsync(_workspace, _project, _closing.Token), _closing.Token);
             if (_closing.IsCancellationRequested)
                 return;
-            HealthGrid.ItemsSource = result.Findings;
-            _checked = true;
-            HealthSummary.Text = $"{result.FilesChecked:N0} dosya · {result.Findings.Count:N0} bulgu" +
-                (result.Unresolved > 0 ? $" · {result.Unresolved:N0} dinamik başvuru" : "") +
-                (result.Skipped > 0 ? $" · {result.Skipped:N0} atlandı" : "");
+            ShowHealthReport(result);
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
@@ -279,6 +298,15 @@ public partial class ProjectToolsWindow : ThemedWindow
             _checking = false;
             if (!_closing.IsCancellationRequested) HealthRefresh.IsEnabled = true;
         }
+    }
+
+    private void ShowHealthReport(HealthResult result)
+    {
+        HealthGrid.ItemsSource = result.Findings;
+        _checked = true;
+        HealthSummary.Text = $"{result.FilesChecked:N0} dosya · {result.Findings.Count:N0} bulgu" +
+            (result.Unresolved > 0 ? $" · {result.Unresolved:N0} dinamik başvuru" : "") +
+            (result.Skipped > 0 ? $" · {result.Skipped:N0} atlandı" : "");
     }
 
     private void HealthSelectionChanged(object sender, RoutedEventArgs e)

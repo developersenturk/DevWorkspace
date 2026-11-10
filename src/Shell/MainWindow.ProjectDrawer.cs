@@ -74,7 +74,8 @@ public partial class MainWindow
         DrawerNuGetCard.Visibility = nuGet is null ? Visibility.Collapsed : Visibility.Visible;
         DrawerActionsButton.Visibility = hasActions ? Visibility.Visible : Visibility.Collapsed;
         DrawerComposeButton.Visibility = hasCompose ? Visibility.Visible : Visibility.Collapsed;
-        DrawerToolsCard.Visibility = hasActions || hasCompose ? Visibility.Visible : Visibility.Collapsed;
+        DrawerCommandsButton.Visibility = folderExists ? Visibility.Visible : Visibility.Collapsed;
+        DrawerToolsCard.Visibility = folderExists ? Visibility.Visible : Visibility.Collapsed;
         if (ProjectPane.IsClosed)
             WorkbenchDock.DockController.Restore(ProjectPane);
         if (activate)
@@ -122,7 +123,7 @@ public partial class MainWindow
 
         if (project.Kind is "Visual Studio" or ".NET / MSBuild")
             OpenProject(project);
-        else if (OpenPath(entry))
+        else if (OpenPath(entry, offerEditor: true))
             RememberOpened(project);
     }
 
@@ -171,7 +172,7 @@ public partial class MainWindow
 
     private async void DrawerNuGetScanClick(object sender, RoutedEventArgs e)
     {
-        if (_drawerProject is { } project && GetNuGetState(project) is { } state)
+        if (_drawerProject is { } project && GetNuGetState(project) is { CanScan: true } state && await EnsureSdkAsync())
             await state.ScanAsync(project, _closing.Token);
     }
 

@@ -29,6 +29,18 @@
                     </DockPanel>
                 </dx:SimpleButton>
             </DataTemplate>
+            <Style x:Key="DashboardCheckRows" TargetType="ListBox">
+                <Setter Property="ItemTemplate" Value="{StaticResource DashboardLink}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+                <Setter Property="MaxHeight" Value="240"/>
+                <Setter Property="Margin" Value="0,6,0,0"/>
+                <Style.Triggers>
+                    <Trigger Property="HasItems" Value="False"><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+                </Style.Triggers>
+            </Style>
             <DataTemplate x:Key="DashboardMetric">
                 <dx:SimpleButton Click="DashboardLinkClick" Style="{StaticResource DashboardMetricButton}" ToolTip="{Binding Title}">
                     <StackPanel>
@@ -212,6 +224,7 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="ResetLayoutMenu" Header="Pencere düzenini sıfırla" Click="ResetDockLayoutClick"/>
                 </MenuItem>
                 <MenuItem Header="_Yardım" Tag="&#xE897;" Style="{StaticResource MainMenuItem}">
+                    <MenuItem Header="Geliştirme araçları…" Click="DevelopmentToolsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE765;}" Header="Klavye kısayolları" Click="KeyboardShortcutsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE713;}" Header="Ayar dosyalarının konumu" Click="SettingsLocationsClick"/>
                     <Separator/>
@@ -329,6 +342,8 @@
                                    TextWrapping="Wrap" FontWeight="SemiBold" AutomationProperties.LiveSetting="Polite"/>
                         <dx:SimpleButton x:Name="ScanSummaryChanges" Content="Değişiklikleri incele" Tag="changed"
                                          Click="NavigationLinkClick" Style="{StaticResource DashboardAction}" VerticalAlignment="Center"/>
+                        <dx:SimpleButton x:Name="ScanSummaryTools" Click="DevelopmentToolsClick" Visibility="Collapsed"
+                                         Style="{StaticResource DashboardAction}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                     </WrapPanel>
                 </Border>
                 <dxg:GridControl x:Name="ProjectGrid" Grid.Row="2" AutoGenerateColumns="None" SelectionMode="Row"
@@ -434,6 +449,8 @@
                         <Button x:Name="EmptyOpenButton" Style="{StaticResource Primary}" Click="ChooseWorkspaceClick"
                                 Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
                                 Margin="0,12,0,0" HorizontalAlignment="Center"/>
+                        <Button x:Name="EmptyToolsButton" Content="Geliştirme araçları" Click="DevelopmentToolsClick"
+                                Margin="0,6,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
 
@@ -496,13 +513,57 @@
                         <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,12,0,0">
                             <StackPanel>
                                 <DockPanel>
+                                    <dx:SimpleButton x:Name="DashboardHealthButton" DockPanel.Dock="Right" Content="Projeleri kontrol et"
+                                                     Click="DashboardHealthClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Çalışma alanı sağlığı" Style="{StaticResource DashboardSectionTitle}" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="DashboardHealthSummary" Style="{StaticResource DashboardSecondary}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DockPanel>
+                                <ListBox x:Name="DashboardHealthRows" Style="{StaticResource DashboardCheckRows}"
+                                         AutomationProperties.Name="Proje sağlığı sonuçları"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,12,0,0">
+                            <StackPanel>
+                                <DockPanel>
+                                    <dx:SimpleButton x:Name="DashboardActionsButton" DockPanel.Dock="Right" Content="Actions durumunu al"
+                                                     Click="DashboardActionsClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="Git ve CI" Style="{StaticResource DashboardSectionTitle}"/>
+                                        <TextBlock x:Name="DashboardActionsSummary" Style="{StaticResource DashboardSecondary}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DockPanel>
+                                <ListBox x:Name="DashboardAheadRows" Style="{StaticResource DashboardCheckRows}"
+                                         AutomationProperties.Name="Gönderilmemiş commit’ler"/>
+                                <ListBox x:Name="DashboardActionRows" Style="{StaticResource DashboardCheckRows}"
+                                         AutomationProperties.Name="GitHub Actions sonuçları"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,12,0,0">
+                            <StackPanel>
+                                <DockPanel>
+                                    <dx:SimpleButton x:Name="DashboardPackagesButton" DockPanel.Dock="Right" Content="Paketleri tara"
+                                                     Click="DashboardPackagesClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"/>
+                                    <StackPanel>
+                                        <TextBlock Text="JavaScript ve Flutter paket güvenliği" Style="{StaticResource DashboardSectionTitle}" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="DashboardPackagesSummary" Style="{StaticResource DashboardSecondary}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DockPanel>
+                                <ListBox x:Name="DashboardPackageRows" Style="{StaticResource DashboardCheckRows}"
+                                         AutomationProperties.Name="JavaScript ve Flutter paket güvenliği sonuçları"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,12,0,0">
+                            <StackPanel>
+                                <DockPanel>
                                     <dx:SimpleButton x:Name="DashboardScanButton" DockPanel.Dock="Right" Content="Tara"
                                                      Click="DashboardScanClick" Style="{StaticResource DashboardAction}"
                                                      Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
                                                      Margin="8,0,0,0"
                                                      ToolTip="Eksik paket bilgileri varsa paketler geri yüklenip tarama tekrarlanır."/>
                                     <StackPanel>
-                                        <TextBlock Text="Bağımlılık güvenliği" Style="{StaticResource DashboardSectionTitle}"/>
+                                        <TextBlock Text="NuGet paket güvenliği" Style="{StaticResource DashboardSectionTitle}"/>
                                         <TextBlock x:Name="DashboardNuGetSummary" Style="{StaticResource DashboardSecondary}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                 </DockPanel>
@@ -671,6 +732,8 @@
                                         <StackPanel>
                                             <TextBlock Text="Proje araçları" Style="{StaticResource DrawerHeading}"/>
                                             <WrapPanel>
+                                                <Button x:Name="DrawerCommandsButton" Content="Çalıştır ve test et…" Style="{StaticResource DrawerAction}"
+                                                        Tag="Commands" Click="DrawerToolClick"/>
                                                 <Button x:Name="DrawerActionsButton" Content="GitHub Actions" Style="{StaticResource DrawerAction}"
                                                         Tag="Actions" Click="DrawerToolClick"/>
                                                 <Button x:Name="DrawerComposeButton" Content="Docker Compose" Style="{StaticResource DrawerAction}"

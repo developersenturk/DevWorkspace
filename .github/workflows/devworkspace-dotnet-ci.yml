@@ -1,0 +1,35 @@
+name: .NET build and test
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: '.'
+    env:
+      DEVWORKSPACE_TARGET: './DevWorkspace.slnx'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: |
+            10.0.x
+      - name: Restore dependencies
+        run: dotnet restore "$env:DEVWORKSPACE_TARGET" -p:Configuration=Release
+      - name: Build
+        run: dotnet build "$env:DEVWORKSPACE_TARGET" --configuration Release --no-restore
+      - name: Test
+        run: dotnet test "$env:DEVWORKSPACE_TARGET" --configuration Release --no-build

@@ -59,7 +59,7 @@ public partial class MainWindow
 
     private async void GitHubRepositoriesClick(object sender, RoutedEventArgs e)
     {
-        if (_busy || _gitView?.IsBusy == true)
+        if (_busy || _gitView?.IsBusy == true || !EnsureTool(DevelopmentTool.Git))
             return;
 
         var window = new GitHubRepositoriesWindow(_workspace?.Root) { Owner = this };
@@ -83,6 +83,8 @@ public partial class MainWindow
     {
         if (_busy || _gitView?.IsBusy == true || sender is not MenuItem { Tag: string command } ||
             ProjectGrid.SelectedItem is not ProjectEntry { Repository: not null } project)
+            return;
+        if (!EnsureTool(DevelopmentTool.Git))
             return;
 
         if (command == "History")
@@ -111,7 +113,7 @@ public partial class MainWindow
 
         string[] repositories = SelectedProjects().Select(project => project.Repository).OfType<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if (repositories.Length == 0)
+        if (repositories.Length == 0 || !EnsureTool(DevelopmentTool.Git))
             return;
 
         new BatchFetchWindow(repositories) { Owner = this }.ShowDialog();
@@ -125,7 +127,11 @@ public partial class MainWindow
             await view.RefreshAsync();
     }
 
-    private async void OpenGitWorkbench(ProjectEntry project) => await OpenGitWorkbenchAsync(project);
+    private async void OpenGitWorkbench(ProjectEntry project)
+    {
+        if (!_busy && project.Repository is not null && EnsureTool(DevelopmentTool.Git))
+            await OpenGitWorkbenchAsync(project);
+    }
 
     private async Task<GitWorkbenchView?> OpenGitWorkbenchAsync(ProjectEntry project)
     {

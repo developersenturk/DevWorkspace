@@ -198,6 +198,8 @@ public partial class MainWindow : Window
             GitRecovery? recovery = RecoveryInventory;
             var (workspace, result, recoveryWarning) = await Task.Run(async () =>
             {
+                if (!background)
+                    DevelopmentTools.RefreshPaths();
                 Workspace opened = Workspace.Open(root);
                 ScanResult scan = await WorkspaceScanner.ScanAsync(opened, token);
                 string? warning = null;
@@ -233,6 +235,7 @@ public partial class MainWindow : Window
             if (!sameWorkspace && _workspace is not null)
             {
                 _dashboardScan?.Cancel();
+                _workspaceCheck?.Cancel();
                 CaptureWorkspaceView();
                 ResetGitPane();
                 CloseProjectDrawer();
@@ -396,9 +399,13 @@ public partial class MainWindow : Window
             ScanSummaryText.Text = $"{_projects.Count:N0} proje bulundu · {gitSummary}";
             ScanSummaryChanges.Visibility = changed > 0 ? Visibility.Visible : Visibility.Collapsed;
             ScanSummaryChanges.IsEnabled = !_busy;
+            UpdateScanToolNotice();
         }
         EmptyPanel.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyOpenButton.Visibility = !_busy && _projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyToolsButton.Visibility = !_busy && _workspace is null ? Visibility.Visible : Visibility.Collapsed;
+        EmptyToolsButton.Content = DevelopmentTools.Find(DevelopmentTool.Git) is null
+            ? "Git eksik · Geliştirme araçları" : "Geliştirme araçları";
         EmptyOpenButton.Content = _workspace is null ? "Proje klasörlerini tara" : "Başka klasör seç";
         EmptyTitle.Text = _busy ? "Çalışma alanı taranıyor" :
             _workspace is null ? "Projelerinizi bulun" : "Proje bulunamadı";
@@ -478,7 +485,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private bool OpenPath(string path)
+    private bool OpenPath(string path, bool offerEditor = false)
     {
         try
         {
@@ -487,8 +494,9 @@ public partial class MainWindow : Window
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
-            StatusText.Text = ex.Message;
-            return false;
+            StatusText.Text = ex.NativeErrorCode is 2 or 3 ? $"Dosya veya klasör bulunamadı. {path}" :
+                $"Açılamadı. {ex.Message}";
+            return offerEditor && (ex.NativeErrorCode is 31 or 1155) && File.Exists(path) && OfferProjectEditor(path);
         }
     }
 }

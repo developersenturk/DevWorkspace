@@ -10,10 +10,13 @@
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
     <Grid Margin="14">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-        <StackPanel Margin="3,0,0,11">
-            <TextBlock x:Name="ProjectNameText" FontSize="20" FontWeight="SemiBold"/>
-            <TextBlock x:Name="ProjectFolderText" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
-        </StackPanel>
+        <DockPanel Margin="3,0,0,11">
+            <Button Content="Geliştirme araçları…" DockPanel.Dock="Right" Click="DevelopmentToolsClick" Margin="8,0,0,0"/>
+            <StackPanel>
+                <TextBlock x:Name="ProjectNameText" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock x:Name="ProjectFolderText" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </DockPanel>
         <dx:DXTabControl x:Name="ToolTabs" Grid.Row="1" SelectionChanged="ToolTabChanged">
             <dx:DXTabItem Header="Komutlar">
                 <Grid Margin="11">
@@ -161,6 +164,31 @@
                             <TextBlock x:Name="ActionsFailures" TextWrapping="Wrap" Margin="0,0,0,9" Visibility="Collapsed"/>
                             <Button x:Name="ActionsOpenButton" Content="Çalışmayı ve logları GitHub’da aç" HorizontalAlignment="Left"
                                     Click="ActionsOpenClick"/>
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="WorkflowPanel" Visibility="Collapsed" BorderBrush="{DynamicResource Divider}"
+                            BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,12,0,0">
+                        <StackPanel>
+                            <TextBlock Text=".NET derleme ve test iş akışı" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="WorkflowStatus" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,5,0,8"
+                                       AutomationProperties.LiveSetting="Polite"/>
+                            <WrapPanel>
+                                <Button x:Name="WorkflowPreviewButton" Content="İş akışını önizle" Click="WorkflowPreviewClick"
+                                        Style="{StaticResource Primary}" Margin="0,0,7,5"/>
+                                <Button x:Name="WorkflowFileButton" Content="İş akışı dosyasını aç" Click="WorkflowFileClick"
+                                        Visibility="Collapsed" Margin="0,0,7,5"/>
+                                <Button x:Name="WorkflowGitButton" Content="Git işlemlerine geç" Click="WorkflowGitClick"
+                                        Visibility="Collapsed" Margin="0,0,7,5"/>
+                            </WrapPanel>
+                            <StackPanel x:Name="WorkflowPreviewPanel" Visibility="Collapsed" Margin="0,6,0,0">
+                                <TextBlock x:Name="WorkflowTargetText" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                <Button x:Name="WorkflowCreateButton" Content="İş akışı dosyasını oluştur" Click="WorkflowCreateClick"
+                                        Style="{StaticResource Primary}" Background="{DynamicResource BadgeAccentSurface}"
+                                        Foreground="{DynamicResource BadgeAccentText}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+                                <TextBox x:Name="WorkflowPreviewText" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
+                                         Height="190" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                         AutomationProperties.Name="GitHub Actions YAML önizlemesi"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>

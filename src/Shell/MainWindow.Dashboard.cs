@@ -8,7 +8,7 @@ public partial class MainWindow
 {
     private const string DashboardKey = "overview";
     private const int DashboardFindingPageSize = 5;
-    private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null);
+    private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null, Uri? Link = null);
     private sealed record DashboardFinding(string Severity, string Package, string Version, string Target,
         string Detail, ProjectEntry Project);
     private sealed record DashboardSeverityTile(string Severity, int Count);
@@ -52,6 +52,8 @@ public partial class MainWindow
             .GroupBy(project => project.Repository, StringComparer.OrdinalIgnoreCase).ToArray();
         var dirty = repositories.Select(group => group.FirstOrDefault(project => project.Git.State == GitState.Changed))
             .OfType<ProjectEntry>().OrderByDescending(project => project.Git.Changes).ToArray();
+        var ahead = repositories.Select(group => group.First()).Where(project => project.Git.Ahead > 0)
+            .OrderByDescending(project => project.Git.Ahead).ToArray();
         int warnings = repositories.Count(group => group.Any(HasGitWarning));
         DashboardMetrics.ItemsSource = new DashboardLink[]
         {
@@ -129,6 +131,7 @@ public partial class MainWindow
         if (unscanned + stale + incomplete > 0)
             tasks.Add(new("NuGet taramasını tamamla veya yenile",
                 $"{unscanned:N0} taranmamış · {stale:N0} eski · {incomplete:N0} uyarılı", "nuget-section"));
+        UpdateWorkspaceChecks(ahead, tasks);
         DashboardTasks.ItemsSource = tasks;
         DashboardTaskHint.Text = tasks.Count == 0 ? "Mevcut verilerde takip edilecek iş görünmüyor." :
             "Çalışma alanının güncel durumundan oluşturuldu.";
@@ -220,15 +223,53 @@ public partial class MainWindow
             return;
 
         var project = link.Project is { } previous ? FindDashboardProject(previous) : null;
-        if (link.Navigation == "nuget-report" && project is not null)
-            ShowProjectTools(ProjectToolView.NuGet, project);
-        else if (link.Navigation == "nuget-section")
+        switch (link.Navigation)
         {
-            DashboardScanButton.BringIntoView();
-            DashboardScanButton.Focus();
+            case "nuget-report" when project is not null:
+                ShowProjectTools(ProjectToolView.NuGet, project);
+                break;
+            case "health-report" when project is not null:
+                ShowProjectTools(ProjectToolView.Health, project, _healthReports.GetValueOrDefault(project.RelativePath));
+                break;
+            case "actions-report" when project is not null:
+                ShowProjectTools(ProjectToolView.Actions, project);
+                break;
+            case "git-workbench" when project is not null:
+                NavigateFromDashboard(GitRepositoriesKey, project);
+                OpenGitWorkbench(project);
+                break;
+            case "project":
+                NavigateFromDashboard("all", project);
+                break;
+            case "external" when link.Link is not null:
+                OpenCheckLink(link.Link);
+                break;
+            case "tools-git":
+                ShowDevelopmentTools(DevelopmentTool.Git);
+                break;
+            case "tools-osv":
+                ShowDevelopmentTools(DevelopmentTool.Osv);
+                break;
+            case "nuget-section":
+                DashboardScanButton.BringIntoView();
+                DashboardScanButton.Focus();
+                break;
+            case "health-section":
+                DashboardHealthButton.BringIntoView();
+                DashboardHealthButton.Focus();
+                break;
+            case "packages-section":
+                DashboardPackagesButton.BringIntoView();
+                DashboardPackagesButton.Focus();
+                break;
+            case "actions-section":
+                DashboardActionsButton.BringIntoView();
+                DashboardActionsButton.Focus();
+                break;
+            default:
+                NavigateFromDashboard(link.Navigation, project);
+                break;
         }
-        else
-            NavigateFromDashboard(link.Navigation, project);
     }
 
     private ProjectEntry? FindDashboardProject(ProjectEntry previous) => _projects.FirstOrDefault(item =>
@@ -270,6 +311,8 @@ public partial class MainWindow
         _dashboardScan = scan;
         try
         {
+            if (!await EnsureSdkAsync())
+                return;
             for (int i = 0; i < targets.Length && !scan.IsCancellationRequested; i++)
             {
                 if (!string.Equals(_workspace?.Root, workspace.Root, StringComparison.OrdinalIgnoreCase))

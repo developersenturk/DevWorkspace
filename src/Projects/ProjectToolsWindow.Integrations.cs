@@ -17,8 +17,15 @@ public partial class ProjectToolsWindow
 
     private async void NuGetScanClick(object sender, RoutedEventArgs e)
     {
-        if (_nuGetState is { } state)
-            await state.ScanAsync(_project, _closing.Token);
+        if (_nuGetState is not { CanScan: true } state)
+            return;
+        try
+        {
+            if (await ToolSetupWindow.EnsureReadyAsync(this, DevelopmentTool.DotNet, _closing.Token))
+                await state.ScanAsync(_project, _closing.Token);
+        }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+        catch (Exception ex) when (IsIntegrationError(ex)) { NuGetDetails.SetCurrentValue(TextBlock.TextProperty, IntegrationMessage(ex)); }
     }
 
     private Uri? SelectedAdvisory => NuGetGrid.CurrentItem is NuGetFinding finding &&
@@ -41,11 +48,15 @@ public partial class ProjectToolsWindow
 
     private async Task ReadActionsResultAsync()
     {
-        var run = await ProjectIntegrations.GetLatestRunAsync(_project, _closing.Token);
+        var (run, hasWorkflow) = await ProjectIntegrations.GetActionsOverviewAsync(_project, _closing.Token);
         if (_closing.IsCancellationRequested)
             return;
         _actionsLoaded = true;
-        ActionsStatus.Text = run is null ? "Bu depoda iş akışı çalışması bulunamadı." : "";
+        _remoteWorkflowExists = hasWorkflow;
+        ActionsStatus.Text = run is null
+            ? hasWorkflow ? "GitHub’da iş akışı tanımlı. Henüz görüntülenebilir bir çalıştırma kaydı yok."
+                : "GitHub’da henüz iş akışı tanımlı değil."
+            : "";
         if (run is null)
             return;
         ActionsHeadline.Text = $"{run.Workflow} · {run.Status}";
@@ -59,11 +70,12 @@ public partial class ProjectToolsWindow
         ActionsResult.Visibility = Visibility.Visible;
     }
 
-    private async Task RunActionsOperationAsync(string message, Func<Task> operation, bool retryInstall = false)
+    private async Task RunActionsOperationAsync(string message, Func<Task> operation)
     {
         if (!ActionsRefreshButton.IsEnabled || _closing.IsCancellationRequested)
             return;
         ActionsRefreshButton.IsEnabled = false;
+        WorkflowCreateButton.IsEnabled = false;
         ActionsResult.Visibility = ActionsInstallButton.Visibility = ActionsGuideButton.Visibility =
             ActionsLoginButton.Visibility = Visibility.Collapsed;
         _actionsLink = null;
@@ -84,22 +96,23 @@ public partial class ProjectToolsWindow
         catch (Exception ex) when (IsIntegrationError(ex))
         {
             ActionsStatus.Text = IntegrationMessage(ex);
-            if (retryInstall)
-                ActionsInstallButton.Visibility = ActionsGuideButton.Visibility = Visibility.Visible;
         }
         finally
         {
             if (!_closing.IsCancellationRequested)
+            {
                 ActionsRefreshButton.IsEnabled = true;
+                UpdateWorkflowPanel();
+            }
         }
     }
 
-    private async void ActionsInstallClick(object sender, RoutedEventArgs e) =>
-        await RunActionsOperationAsync("GitHub CLI, Windows Paket Yöneticisi ile kuruluyor…", async () =>
-        {
-            await GitHubCli.InstallAsync(_closing.Token);
-            await ReadActionsResultAsync();
-        }, retryInstall: true);
+    private async void ActionsInstallClick(object sender, RoutedEventArgs e)
+    {
+        new ToolSetupWindow(DevelopmentTool.GitHub) { Owner = this }.ShowDialog();
+        if (DevelopmentTools.Find(DevelopmentTool.GitHub) is not null)
+            await LoadActionsAsync();
+    }
 
     private void ActionsGuideClick(object sender, RoutedEventArgs e) => OpenIntegrationLink(GitHubCli.InstallGuide, ActionsStatus);
 
@@ -160,7 +173,12 @@ public partial class ProjectToolsWindow
         catch (Win32Exception ex) { status.SetCurrentValue(TextBlock.TextProperty, ex.Message); }
     }
 
-    private async void ComposeRefreshClick(object sender, RoutedEventArgs e) => await RefreshComposeAsync();
+    private async void ComposeRefreshClick(object sender, RoutedEventArgs e)
+    {
+        if (DevelopmentTools.Find(DevelopmentTool.Docker) is null)
+            new ToolSetupWindow(DevelopmentTool.Docker) { Owner = this }.ShowDialog();
+        await RefreshComposeAsync();
+    }
 
     private Task RefreshComposeAsync() => RunComposeOperationAsync("Docker Compose servisleri okunuyor…", UpdateComposeServicesAsync);
 

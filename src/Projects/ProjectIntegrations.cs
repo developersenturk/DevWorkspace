@@ -109,33 +109,44 @@ internal static class ProjectIntegrations
         }
     }
 
-    public static async Task<ActionsRun?> GetLatestRunAsync(ProjectEntry project, CancellationToken token)
+    public static async Task<(ActionsRun? Run, bool HasWorkflow)> GetActionsOverviewAsync(ProjectEntry project, CancellationToken token)
+    {
+        string githubRepository = await FindGitHubRepositoryAsync(project, token)
+            ?? throw new IOException("Bu Git deposunda bir github.com uzak adresi bulunamadı.");
+        var run = await ReadLatestRunAsync(githubRepository, includeJobs: true, token);
+        if (run is not null)
+            return (run, true);
+
+        string output = await GitHubCli.RunAsync(
+            ["workflow", "list", "--repo", githubRepository, "--all", "--limit", "1", "--json", "id"], token);
+        using var workflows = JsonDocument.Parse(output);
+        return (null, workflows.RootElement.GetArrayLength() > 0);
+    }
+
+    internal static async Task<string?> FindGitHubRepositoryAsync(ProjectEntry project, CancellationToken token)
     {
         if (project.Repository is not { } repository)
-            throw new IOException("Bu proje bir Git deposuna bağlı değil.");
+            return null;
 
         var remotes = project.Git.Remotes ?? [];
         string? upstream = remotes.OrderByDescending(name => name.Length).FirstOrDefault(name =>
             project.Git.Upstream?.StartsWith(name + "/", StringComparison.Ordinal) == true);
-        string? githubRepository = null;
         foreach (string remote in new[] { upstream, "origin" }.OfType<string>().Concat(remotes).Distinct())
         {
             var result = await GitProjectOperations.RunAsync(repository, ["remote", "get-url", "--", remote], token);
             if (result.Code == 0 && GitHubRepository(result.Output.Trim()) is { } match)
-            {
-                githubRepository = match;
-                break;
-            }
+                return match;
         }
+        return null;
+    }
 
-        if (githubRepository is null)
-            throw new IOException("Bu Git deposunda bir github.com uzak adresi bulunamadı.");
-
+    internal static async Task<ActionsRun?> ReadLatestRunAsync(string githubRepository, bool includeJobs, CancellationToken token)
+    {
         string output = await GitHubCli.RunAsync(
             ["run", "list", "--repo", githubRepository, "--limit", "1", "--json",
                 "workflowName,displayTitle,headBranch,createdAt,status,conclusion,url,databaseId"], token);
         var run = ParseActionsRun(output);
-        if (run is not { Failed: true, Id: > 0 })
+        if (!includeJobs || run is not { Failed: true, Id: > 0 })
             return run;
 
         try
