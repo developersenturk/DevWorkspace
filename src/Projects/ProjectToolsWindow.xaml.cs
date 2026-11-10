@@ -5,12 +5,13 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
 internal enum ProjectToolView { Commands, Health, NuGet, Actions, Compose }
 
-public partial class ProjectToolsWindow : Window
+public partial class ProjectToolsWindow : ThemedWindow
 {
     private sealed record Option(ProjectCommand Command, bool Saved)
     {
@@ -231,9 +232,9 @@ public partial class ProjectToolsWindow : Window
         CommandOutput.ScrollToEnd();
     }
 
-    private async void ToolTabChanged(object sender, SelectionChangedEventArgs e)
+    private async void ToolTabChanged(object sender, TabControlSelectionChangedEventArgs e)
     {
-        if (IsLoaded && !_loading && ReferenceEquals(sender, e.Source))
+        if (IsLoaded && !_loading)
             await LoadSelectedToolAsync();
     }
 
@@ -280,15 +281,15 @@ public partial class ProjectToolsWindow : Window
         }
     }
 
-    private void HealthSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void HealthSelectionChanged(object sender, RoutedEventArgs e)
     {
         if (OpenHealthFileButton is not null)
-            OpenHealthFileButton.IsEnabled = HealthGrid.SelectedItem is HealthFinding { File: string file } && File.Exists(file);
+            OpenHealthFileButton.IsEnabled = HealthGrid.CurrentItem is HealthFinding { File: string file } && File.Exists(file);
     }
 
     private void OpenHealthFileClick(object sender, RoutedEventArgs e)
     {
-        if (HealthGrid.SelectedItem is not HealthFinding { File: string file } || !File.Exists(file))
+        if (HealthGrid.CurrentItem is not HealthFinding { File: string file } || !File.Exists(file))
             return;
         try
         {

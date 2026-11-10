@@ -1,9 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
-public partial class ComparisonWindow : Window
+public partial class ComparisonWindow : ThemedWindow
 {
     private readonly Workspace _workspace;
     private readonly ProjectEntry _left;
@@ -61,7 +62,7 @@ public partial class ComparisonWindow : Window
             PreviewCaption.Text = query.Length == 0 ? "Gösterilecek dosya farkı yok." : "Aramaya uyan dosya farkı yok.";
     }
 
-    private async void DifferenceChanged(object sender, SelectionChangedEventArgs e)
+    private async void DifferenceChanged(object sender, RoutedEventArgs e)
     {
         _preview?.Cancel();
         LinesGrid.ItemsSource = null;

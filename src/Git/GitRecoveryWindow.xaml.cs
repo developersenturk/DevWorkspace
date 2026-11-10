@@ -2,10 +2,11 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
-public partial class GitRecoveryWindow : Window
+public partial class GitRecoveryWindow : ThemedWindow
 {
     private sealed record RecoveryRow(GitRecoveryEntry Entry, string Status)
     {
@@ -25,7 +26,7 @@ public partial class GitRecoveryWindow : Window
             "Seçimi değiştirmek için Ctrl ile satırlara tıklayın.";
     }
 
-    private void SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void SelectionChanged(object sender, RoutedEventArgs e)
     {
         if (RestoreButton is not null)
             RestoreButton.IsEnabled = !_restoring && !_finished && Repositories.SelectedItems.Count > 0;

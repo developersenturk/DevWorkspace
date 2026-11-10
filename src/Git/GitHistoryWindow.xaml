@@ -1,9 +1,12 @@
-<Window x:Class="DevWorkspace.GitHistoryWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-        Title="Git geçmişi" Width="880" Height="530" MinWidth="520" MinHeight="360" WindowStartupLocation="CenterOwner"
-        ShowInTaskbar="False" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
-        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="HistoryLoaded" Closed="HistoryClosed">
-    <Window.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></Window.Resources>
+<dx:ThemedWindow x:Class="DevWorkspace.GitHistoryWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+                 Title="Git geçmişi" Width="880" Height="530" MinWidth="520" MinHeight="360" WindowStartupLocation="CenterOwner"
+                 ShowInTaskbar="False" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
+                 FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="HistoryLoaded" Closed="HistoryClosed">
+    <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
     <Grid Margin="14">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <StackPanel Margin="3,0,0,10">
@@ -15,7 +18,7 @@
                     <dxg:GridColumn Header="COMMIT" FieldName="Hash" Width="92"/>
                     <dxg:GridColumn Header="TARİH" FieldName="Date" Width="108"/>
                     <dxg:GridColumn Header="YAZAR" FieldName="Author" Width="145"/>
-                    <dxg:GridColumn Header="MESAJ" FieldName="Subject" Width="*" MinWidth="135"/>
+                    <dxg:GridColumn Header="MESAJ" FieldName="Subject" Width="490" MinWidth="135"/>
                 </dxg:GridControl.Columns>
                 <dxg:GridControl.View>
                     <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -28,4 +31,4 @@
                        VerticalAlignment="Center" TextWrapping="Wrap"/>
         </DockPanel>
     </Grid>
-</Window>
+</dx:ThemedWindow>

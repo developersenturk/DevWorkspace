@@ -1,9 +1,10 @@
 using System.IO;
 using System.Windows;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
-public partial class GitHistoryWindow : Window
+public partial class GitHistoryWindow : ThemedWindow
 {
     private readonly string _repository;
     private readonly CancellationTokenSource _closing = new();

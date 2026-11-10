@@ -21,10 +21,10 @@ public partial class ProjectToolsWindow
             await state.ScanAsync(_project, _closing.Token);
     }
 
-    private Uri? SelectedAdvisory => NuGetGrid.SelectedItem is NuGetFinding finding &&
+    private Uri? SelectedAdvisory => NuGetGrid.CurrentItem is NuGetFinding finding &&
         Uri.TryCreate(finding.Advisory, UriKind.Absolute, out var uri) && uri.Scheme is "https" or "http" ? uri : null;
 
-    private void NuGetSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void NuGetSelectionChanged(object sender, RoutedEventArgs e)
     {
         if (NuGetAdvisoryButton is not null)
             NuGetAdvisoryButton.IsEnabled = SelectedAdvisory is not null;
@@ -166,7 +166,7 @@ public partial class ProjectToolsWindow
 
     private async Task UpdateComposeServicesAsync()
     {
-        string? selected = (ComposeGrid.SelectedItem as ComposeService)?.Name;
+        string? selected = (ComposeGrid.CurrentItem as ComposeService)?.Name;
         _composeLoaded = false;
         try
         {
@@ -174,7 +174,7 @@ public partial class ProjectToolsWindow
             if (_closing.IsCancellationRequested)
                 return;
             ComposeGrid.ItemsSource = services;
-            ComposeGrid.SelectedItem = services.FirstOrDefault(service => service.Name == selected) ?? services.FirstOrDefault();
+            ComposeGrid.CurrentItem = services.FirstOrDefault(service => service.Name == selected) ?? services.FirstOrDefault();
             _composeLoaded = true;
             ComposeStatus.Text = services.Count == 0 ? "Etkin bir Compose servisi bulunamadı." : $"{services.Count:N0} servis";
         }
@@ -194,7 +194,7 @@ public partial class ProjectToolsWindow
 
     private Task ChangeComposeAsync(bool start)
     {
-        if (ComposeGrid.SelectedItem is not ComposeService service)
+        if (ComposeGrid.CurrentItem is not ComposeService service)
             return Task.CompletedTask;
         return RunComposeOperationAsync($"{service.Name} {(start ? "başlatılıyor" : "durduruluyor")}…", async () =>
         {
@@ -207,7 +207,7 @@ public partial class ProjectToolsWindow
 
     private async void ComposeLogsClick(object sender, RoutedEventArgs e)
     {
-        if (ComposeGrid.SelectedItem is not ComposeService service)
+        if (ComposeGrid.CurrentItem is not ComposeService service)
             return;
         await RunComposeOperationAsync($"{service.Name} logları okunuyor…", async () =>
         {
@@ -239,12 +239,12 @@ public partial class ProjectToolsWindow
         }
     }
 
-    private void ComposeSelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void ComposeSelectionChanged(object sender, RoutedEventArgs e)
     {
         if (ComposeOutput is null)
             return;
         ComposeOutput.Clear();
-        if (!_composeBusy && ComposeGrid.SelectedItem is ComposeService service)
+        if (!_composeBusy && ComposeGrid.CurrentItem is ComposeService service)
             ComposeStatus.Text = $"{service.Name} · {service.Status}";
         UpdateComposeActions();
     }
@@ -252,7 +252,7 @@ public partial class ProjectToolsWindow
     private void UpdateComposeActions()
     {
         ComposeRefreshButton.IsEnabled = ComposeGrid.IsEnabled = !_composeBusy;
-        bool canAct = !_composeBusy && ComposeGrid.SelectedItem is ComposeService;
+        bool canAct = !_composeBusy && ComposeGrid.CurrentItem is ComposeService;
         ComposeStartButton.IsEnabled = ComposeStopButton.IsEnabled = ComposeLogsButton.IsEnabled = canAct;
     }
 

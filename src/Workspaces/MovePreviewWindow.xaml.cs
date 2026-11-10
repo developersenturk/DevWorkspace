@@ -2,10 +2,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
-public partial class MovePreviewWindow : Window
+public partial class MovePreviewWindow : ThemedWindow
 {
     private readonly Workspace _workspace;
     private readonly ProjectEntry _project;

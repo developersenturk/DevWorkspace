@@ -18,7 +18,7 @@ public partial class GitRemotesWindow : ThemedWindow
         RemoteList.ItemsSource = remotes;
     }
 
-    private void RemoteSelectionChanged(object sender, SelectionChangedEventArgs e) =>
+    private void RemoteSelectionChanged(object sender, RoutedEventArgs e) =>
         RemoveButton.IsEnabled = RemoteList.SelectedItem is GitRemote;
 
     private void RemoveClick(object sender, RoutedEventArgs e)

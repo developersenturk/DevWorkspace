@@ -1,10 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
-public partial class ProjectPickerWindow : Window
+public partial class ProjectPickerWindow : ThemedWindow
 {
     private readonly ProjectEntry[] _ordered;
     internal ProjectEntry? Chosen { get; private set; }
@@ -64,20 +65,24 @@ public partial class ProjectPickerWindow : Window
                 break;
             case Key.Up:
             case Key.Down:
-                if (Results.Items.Count == 0)
+                if (Results.ItemsSource is not ProjectEntry[] { Length: > 0 } matches)
                     return;
                 e.Handled = true;
-                Results.SelectedIndex = Math.Clamp(Results.SelectedIndex + (e.Key == Key.Down ? 1 : -1), 0, Results.Items.Count - 1);
+                Results.SelectedIndex = Math.Clamp(Results.SelectedIndex + (e.Key == Key.Down ? 1 : -1), 0, matches.Length - 1);
                 Results.ScrollIntoView(Results.SelectedItem);
                 break;
         }
     }
 
     private void ChooseClick(object sender, RoutedEventArgs e) => Choose();
-    private void ResultDoubleClick(object sender, MouseButtonEventArgs e)
+    private void ResultClick(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement(Results, source) is ListBoxItem)
+        if (e.ClickCount == 2 && sender is FrameworkElement { DataContext: ProjectEntry project })
+        {
+            e.Handled = true;
+            Results.SelectedItem = project;
             Choose();
+        }
     }
 
     private void Choose()

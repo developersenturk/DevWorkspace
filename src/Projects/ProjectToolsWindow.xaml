@@ -1,17 +1,21 @@
-<Window x:Class="DevWorkspace.ProjectToolsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Proje işlemleri" Width="850" Height="565"
-        MinWidth="620" MinHeight="405" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
-        Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
-        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="WindowLoaded" Closed="WindowClosed">
-    <Window.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></Window.Resources>
+<dx:ThemedWindow x:Class="DevWorkspace.ProjectToolsWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+                 Title="Proje işlemleri" Width="850" Height="565"
+                 MinWidth="620" MinHeight="405" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+                 Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
+                 FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="WindowLoaded" Closed="WindowClosed">
+    <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
     <Grid Margin="14">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <StackPanel Margin="3,0,0,11">
             <TextBlock x:Name="ProjectNameText" FontSize="20" FontWeight="SemiBold"/>
             <TextBlock x:Name="ProjectFolderText" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
-        <TabControl x:Name="ToolTabs" Grid.Row="1" SelectionChanged="ToolTabChanged" Background="{DynamicResource Canvas}" BorderBrush="{DynamicResource Line}">
-            <TabItem Header="Komutlar">
+        <dx:DXTabControl x:Name="ToolTabs" Grid.Row="1" SelectionChanged="ToolTabChanged">
+            <dx:DXTabItem Header="Komutlar">
                 <Grid Margin="11">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
@@ -45,24 +49,32 @@
                     <TextBlock x:Name="CommandStatus" Grid.Row="4" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="1,7,0,0"
                                Text="Bir komut seçin veya kendi komutunuzu kaydedin."/>
                 </Grid>
-            </TabItem>
-            <TabItem x:Name="HealthTab" Header="Sağlık kontrolü">
+            </dx:DXTabItem>
+            <dx:DXTabItem x:Name="HealthTab" Header="Sağlık kontrolü">
                 <Grid Margin="11">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
                         <Button x:Name="HealthRefresh" DockPanel.Dock="Right" Content="Yeniden kontrol et" Click="HealthRefreshClick" Margin="7,0,0,0"/>
                         <TextBlock x:Name="HealthSummary" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"/>
                     </DockPanel>
-                    <DataGrid x:Name="HealthGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                              SelectionChanged="HealthSelectionChanged" MouseDoubleClick="OpenHealthFileClick" RowHeight="31" GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="{DynamicResource Divider}" AutomationProperties.Name="Sağlık kontrolü bulguları">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="DURUM" Binding="{Binding Severity}" Width="100" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="BULGU" Binding="{Binding Description}" Width="2*" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="KAYNAK DOSYA" Binding="{Binding File}" Width="*" ElementStyle="{StaticResource CellText}"/>
-                        </DataGrid.Columns>
-                        <DataGrid.RowStyle><Style TargetType="DataGridRow"><Setter Property="ToolTip" Value="{Binding Description}"/></Style></DataGrid.RowStyle>
-                    </DataGrid>
+                    <dxg:GridControl x:Name="HealthGrid" AutoGenerateColumns="None" Grid.Row="1" CurrentItemChanged="HealthSelectionChanged"
+                                     AutomationProperties.Name="Sağlık kontrolü bulguları">
+                        <dxg:GridControl.Columns>
+                            <dxg:GridColumn Header="DURUM" FieldName="Severity" Width="100"/>
+                            <dxg:GridColumn Header="BULGU" FieldName="Description" Width="390"/>
+                            <dxg:GridColumn Header="KAYNAK DOSYA" FieldName="File" Width="265"/>
+                        </dxg:GridControl.Columns>
+                        <dxg:GridControl.View>
+                            <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
+                                           ShowIndicator="False" AllowColumnFiltering="False" RowDoubleClick="OpenHealthFileClick" RowMinHeight="31">
+                                <dxg:TableView.RowStyle>
+                                    <Style TargetType="dxg:RowControl">
+                                        <Setter Property="ToolTip" Value="{Binding Row.Description}"/>
+                                    </Style>
+                                </dxg:TableView.RowStyle>
+                            </dxg:TableView>
+                        </dxg:GridControl.View>
+                    </dxg:GridControl>
                     <DockPanel Grid.Row="2" Margin="0,8,0,0">
                         <Button x:Name="OpenHealthFileButton" DockPanel.Dock="Right" Content="Kaynak dosyayı aç" Click="OpenHealthFileClick"
                                 IsEnabled="False" Margin="8,0,0,0"/>
@@ -72,8 +84,8 @@
                                    Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
                     </DockPanel>
                 </Grid>
-            </TabItem>
-            <TabItem x:Name="NuGetTab" Header="NuGet güvenliği">
+            </dx:DXTabItem>
+            <dx:DXTabItem x:Name="NuGetTab" Header="NuGet güvenliği">
                 <Grid Margin="11">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
@@ -89,18 +101,21 @@
                                        Visibility="{Binding HasResult, Converter={StaticResource VisibleWhenTrue}, FallbackValue=Collapsed}"/>
                         </StackPanel>
                     </DockPanel>
-                    <DataGrid x:Name="NuGetGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                              SelectionMode="Single" SelectionChanged="NuGetSelectionChanged" ItemsSource="{Binding Report.Findings}"
-                              AutomationProperties.Name="NuGet güvenlik bulguları">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Paket" Binding="{Binding Package}" Width="2*" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Sürüm" Binding="{Binding Version}" Width="74" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Önem" Binding="{Binding Severity}" Width="82" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Bağımlılık" Binding="{Binding Scope}" Width="88" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Proje" Binding="{Binding Project}" Width="*" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Hedef" Binding="{Binding Framework}" Width="*" ElementStyle="{StaticResource CellText}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <dxg:GridControl x:Name="NuGetGrid" AutoGenerateColumns="None" Grid.Row="1" CurrentItemChanged="NuGetSelectionChanged" ItemsSource="{Binding Report.Findings}"
+                                     AutomationProperties.Name="NuGet güvenlik bulguları">
+                        <dxg:GridControl.Columns>
+                            <dxg:GridColumn Header="Paket" FieldName="Package" Width="268" MinWidth="120"/>
+                            <dxg:GridColumn Header="Sürüm" FieldName="Version" Width="74" MinWidth="55"/>
+                            <dxg:GridColumn Header="Önem" FieldName="Severity" Width="82"/>
+                            <dxg:GridColumn Header="Bağımlılık" FieldName="Scope" Width="88"/>
+                            <dxg:GridColumn Header="Proje" FieldName="Project" Width="146" MinWidth="80"/>
+                            <dxg:GridColumn Header="Hedef" FieldName="Framework" Width="80" MinWidth="55"/>
+                        </dxg:GridControl.Columns>
+                        <dxg:GridControl.View>
+                            <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
+                                           ShowIndicator="False" AllowColumnFiltering="False" RowMinHeight="28"/>
+                        </dxg:GridControl.View>
+                    </dxg:GridControl>
                     <DockPanel Grid.Row="2" Margin="0,8,0,0">
                         <Button x:Name="NuGetAdvisoryButton" DockPanel.Dock="Right" Content="Açık kaydını aç" IsEnabled="False"
                                 Click="NuGetAdvisoryClick" VerticalAlignment="Center" Margin="7,0,0,0"/>
@@ -108,8 +123,8 @@
                                    VerticalAlignment="Center" Text="{Binding ShortDetails}" ToolTip="{Binding Details}"/>
                     </DockPanel>
                 </Grid>
-            </TabItem>
-            <TabItem x:Name="ActionsTab" Header="GitHub Actions">
+            </dx:DXTabItem>
+            <dx:DXTabItem x:Name="ActionsTab" Header="GitHub Actions">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="13">
                     <DockPanel Margin="0,0,0,14">
@@ -150,8 +165,8 @@
                     </Border>
                 </StackPanel>
                 </ScrollViewer>
-            </TabItem>
-            <TabItem x:Name="ComposeTab" Header="Docker Compose">
+            </dx:DXTabItem>
+            <dx:DXTabItem x:Name="ComposeTab" Header="Docker Compose">
                 <Grid Margin="11">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
@@ -162,20 +177,23 @@
                         <Button x:Name="ComposeStopButton" Content="Durdur" Click="ComposeStopClick" IsEnabled="False" Margin="0,0,7,0"/>
                         <Button x:Name="ComposeLogsButton" Content="Logları göster" Click="ComposeLogsClick" IsEnabled="False"/>
                     </WrapPanel>
-                    <DataGrid x:Name="ComposeGrid" Grid.Row="1" MaxHeight="160" AutoGenerateColumns="False" IsReadOnly="True"
-                              HeadersVisibility="Column" SelectionMode="Single" SelectionChanged="ComposeSelectionChanged"
-                              AutomationProperties.Name="Docker Compose servisleri">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Servis" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource CellText}"/>
-                            <DataGridTextColumn Header="Durum" Binding="{Binding Status}" Width="*" ElementStyle="{StaticResource CellText}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <dxg:GridControl x:Name="ComposeGrid" AutoGenerateColumns="None" Grid.Row="1" MaxHeight="160" CurrentItemChanged="ComposeSelectionChanged"
+                                     AutomationProperties.Name="Docker Compose servisleri">
+                        <dxg:GridControl.Columns>
+                            <dxg:GridColumn Header="Servis" FieldName="Name" Width="300"/>
+                            <dxg:GridColumn Header="Durum" FieldName="Status" Width="300"/>
+                        </dxg:GridControl.Columns>
+                        <dxg:GridControl.View>
+                            <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
+                                           ShowIndicator="False" AllowColumnFiltering="False" RowMinHeight="28"/>
+                        </dxg:GridControl.View>
+                    </dxg:GridControl>
                     <TextBox x:Name="ComposeOutput" Grid.Row="2" Margin="0,8,0,0" IsReadOnly="True" FontFamily="Consolas"
                              FontSize="12" Background="{DynamicResource PanelSoft}" TextWrapping="NoWrap"
                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Seçili servisin logları"/>
                     <TextBlock x:Name="ComposeStatus" Grid.Row="3" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,7,0,0"/>
                 </Grid>
-            </TabItem>
-        </TabControl>
+            </dx:DXTabItem>
+        </dx:DXTabControl>
     </Grid>
-</Window>
+</dx:ThemedWindow>

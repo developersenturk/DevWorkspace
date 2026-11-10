@@ -1,11 +1,16 @@
 <dx:ThemedWindow x:Class="DevWorkspace.GitHubRepositoriesWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors" xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
                  Title="GitHub depoları" Width="1230" Height="690" MinWidth="880" MinHeight="460"
                  ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Loaded="WindowLoaded" Closing="WindowClosing"
                  KeyDown="WindowKeyDown">
+    <dx:ThemedWindow.Resources>
+        <Style x:Key="RepositoryOwnerRow" TargetType="dxe:ListBoxEditItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+    </dx:ThemedWindow.Resources>
     <Grid Margin="16">
       <Grid x:Name="RepositoryBrowser">
         <Grid.RowDefinitions>
@@ -35,10 +40,10 @@
             </Grid.ColumnDefinitions>
             <DockPanel Margin="0,0,12,0">
                 <TextBlock DockPanel.Dock="Top" Text="Sahipler ve organizasyonlar" FontWeight="SemiBold" Margin="0,0,0,7"/>
-                <ListBox x:Name="Owners" SelectionChanged="SearchChanged" AutomationProperties.Name="Depo sahipleri"
+                <dxe:ListBoxEdit x:Name="Owners" SelectedIndexChanged="SearchChanged" AutomationProperties.Name="Depo sahipleri"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         HorizontalContentAlignment="Stretch">
-                    <ListBox.ItemTemplate>
+                         ItemContainerStyle="{StaticResource RepositoryOwnerRow}">
+                    <dxe:ListBoxEdit.ItemTemplate>
                         <DataTemplate>
                             <DockPanel Margin="3,4">
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Count}" Margin="6,0,0,0" VerticalAlignment="Center"/>
@@ -48,8 +53,8 @@
                                 </StackPanel>
                             </DockPanel>
                         </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                    </dxe:ListBoxEdit.ItemTemplate>
+                </dxe:ListBoxEdit>
             </DockPanel>
             <DockPanel Grid.Column="1">
                 <TextBlock x:Name="ListHeading" DockPanel.Dock="Top" Text="Tüm depolar" FontWeight="SemiBold" Margin="0,0,0,7"/>
