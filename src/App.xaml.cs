@@ -31,6 +31,11 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (SshAskPass.TryRun(e.Args) is int exitCode)
+        {
+            Shutdown(exitCode);
+            return;
+        }
         if (MainWindow is not null)
             return;
 

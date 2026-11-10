@@ -371,7 +371,7 @@ internal sealed class GitWorkbench(string repository)
 
         var (code, output, error) = await GitProjectOperations.RunAsync(repository,
             ["-c", $"remote.{remote}.mirror=false", "push", "--porcelain", "--no-follow-tags",
-                "--recurse-submodules=no", $"--force-with-lease={reference}:", "--", remote, $"{commit}:{reference}"], token, 120);
+                "--recurse-submodules=no", $"--force-with-lease={reference}:", "--", remote, $"{commit}:{reference}"], token, 300, promptForSsh: true);
         if (output.Split('\n').Any(line => line.StartsWith("=\t", StringComparison.Ordinal)) ||
             output.Contains("(stale info)", StringComparison.Ordinal))
             throw new IOException($"{remote}/{branch} dalı zaten var.");
@@ -421,7 +421,7 @@ internal sealed class GitWorkbench(string repository)
         string[] tracking = destination.SetUpstream ? ["--set-upstream"] : [];
         string source = destination.SetUpstream ? head : commit;
         await RunAsync(["-c", $"remote.{destination.Remote}.mirror=false", "push", "--porcelain",
-            "--no-follow-tags", "--recurse-submodules=no", .. tracking, "--", destination.Remote, $"{source}:{destination.Ref}"], token, 120);
+            "--no-follow-tags", "--recurse-submodules=no", .. tracking, "--", destination.Remote, $"{source}:{destination.Ref}"], token, 300, promptForSsh: true);
     }
 
     public async Task FetchAsync(string remote, CancellationToken token)
@@ -429,7 +429,7 @@ internal sealed class GitWorkbench(string repository)
         await VerifyRepositoryAsync(token);
         if ((await ReadRemoteAsync(remote, token)).Url is null)
             throw new IOException("Seçilen uzak deponun adresi bulunamadı.");
-        await RunAsync(["fetch", "--no-recurse-submodules", "--", remote], token, 120);
+        await RunAsync(["fetch", "--no-recurse-submodules", "--", remote], token, 300, promptForSsh: true);
     }
 
     public async Task PullAsync(GitWorkbenchState expected, CancellationToken token)
@@ -446,7 +446,7 @@ internal sealed class GitWorkbench(string repository)
 
         GitDestination target = current.Upstream!;
         await RunAsync(["pull", "--ff-only", "--no-rebase", "--no-autostash", "--no-recurse-submodules",
-            "--", target.Remote, target.Ref], token, 120);
+            "--", target.Remote, target.Ref], token, 300, promptForSsh: true);
     }
 
     public async Task<GitRemote> ReadRemoteAsync(string remote, CancellationToken token)
@@ -520,9 +520,9 @@ internal sealed class GitWorkbench(string repository)
         };
     }
 
-    private async Task<string> RunAsync(string[] args, CancellationToken token, int timeoutSeconds = 12)
+    private async Task<string> RunAsync(string[] args, CancellationToken token, int timeoutSeconds = 12, bool promptForSsh = false)
     {
-        var (code, output, error) = await GitProjectOperations.RunAsync(repository, args, token, timeoutSeconds);
+        var (code, output, error) = await GitProjectOperations.RunAsync(repository, args, token, timeoutSeconds, promptForSsh);
         if (code != 0)
             throw new IOException(ErrorText(string.IsNullOrWhiteSpace(error) ? output : error));
         return output;

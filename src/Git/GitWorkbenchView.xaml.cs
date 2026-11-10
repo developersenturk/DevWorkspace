@@ -117,8 +117,7 @@ public partial class GitWorkbenchView : UserControl
             StagedTitle.Text = "Hazırlananlar";
             WorkingTitle.Text = "Değişiklikler";
             UpdateFileListLayout(0, 0);
-            PushRemote.ItemsSource = null;
-            PushRemoteRow.Visibility = Visibility.Collapsed;
+            PushSelectedItem.Items.Clear();
             FetchRemote.ItemsSource = null;
             UpdateFetchTooltip();
             StatusMessage.Text = string.IsNullOrEmpty(result) ? ex.Message : result + Environment.NewLine + ex.Message;
@@ -157,7 +156,6 @@ public partial class GitWorkbenchView : UserControl
     {
         var selected = SelectedFile;
         bool wasStaged = StagedFiles.SelectedItem is not null;
-        string? previousRemote = (PushRemote.SelectedItem as GitDestination)?.Remote;
         string? previousFetchRemote = (FetchRemote.SelectedItem as GitRemote)?.Name;
         _state = state;
         GitFileChange[] staged = (state.Status.Files ?? []).Where(file => file.IsStaged).ToArray();
@@ -189,20 +187,24 @@ public partial class GitWorkbenchView : UserControl
             ?? (remotes.Length == 1 ? remotes[0] : null);
         UpdateFetchTooltip();
 
-        GitDestination[] choices = state.Status.HeadRef is string head
-            ? state.Remotes.Select(remote => state.Upstream is { } upstream && upstream.Remote == remote
-                ? upstream : new GitDestination(remote, head, state.Upstream is null)).ToArray() : [];
-        PushRemote.ItemsSource = choices;
-        PushRemote.SelectedItem = choices.FirstOrDefault(choice => choice.Remote == previousRemote)
-            ?? choices.FirstOrDefault(choice => choice == state.Upstream)
-            ?? (choices.Length == 1 ? choices[0] : null);
-        PushRemoteRow.Visibility = choices.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
+        PushSelectedItem.Items.Clear();
+        if (state.Remotes.Length > 1)
+        {
+            foreach (GitDestination destination in state.AllPushTargets)
+            {
+                var singleDestination = destination with { SetUpstream = state.Upstream is null };
+                var item = new MenuItem { Header = new TextBlock { Text = singleDestination.Label } };
+                item.Click += async (_, _) => await PushSelectedAsync(singleDestination);
+                PushSelectedItem.Items.Add(item);
+            }
+        }
         _ = LoadDiffAsync();
     }
 
     private GitFileChange? SelectedFile => StagedFiles.SelectedItem as GitFileChange
         ?? (WorkingFiles.SelectedItems.Count == 1 ? WorkingFiles.SelectedItem as GitFileChange : null);
-    private GitDestination? PushTarget => PushRemote.SelectedItem as GitDestination;
+    private GitDestination? SinglePushTarget => _state is { Remotes.Length: 1 } state &&
+        state.AllPushTargets.FirstOrDefault() is { } target ? target with { SetUpstream = state.Upstream is null } : null;
 
     private void UpdateFileListLayout(int working, int staged)
     {
@@ -236,7 +238,6 @@ public partial class GitWorkbenchView : UserControl
 
         ChangeControls.IsEnabled = RefreshButton.IsEnabled = MoreButton.IsEnabled = !_busy;
         BranchButton.IsEnabled = !_busy && _state is not null;
-        PushRemote.IsEnabled = !_busy;
         FetchRemote.IsEnabled = !_busy;
         FetchRemoteRow.Visibility = _state is { Remotes.Length: > 1 } ? Visibility.Visible : Visibility.Collapsed;
         FetchButton.IsEnabled = !_busy && _state is not null && FetchRemote.SelectedItem is GitRemote { Url: not null };
@@ -246,17 +247,14 @@ public partial class GitWorkbenchView : UserControl
         CommitButton.IsEnabled = !_busy && _state is { InProgress: null } state && state.Status.HeadRef is not null
             && (state.Status.Files ?? []).Any(file => file.IsStaged) && !(state.Status.Files ?? []).Any(file => file.IsConflict)
             && !string.IsNullOrWhiteSpace(CommitMessage.Text);
-        var target = PushTarget;
+        var target = SinglePushTarget;
         bool multipleTargets = _state is { Remotes.Length: > 1, Status.HeadRef: not null };
-        bool canPushSelected = !_busy && _state?.Status.CommitId is not null && target is not null
-            && _state.Remotes.Contains(target.Remote, StringComparer.Ordinal);
-        PushSelectedItem.IsEnabled = canPushSelected;
+        PushSelectedItem.IsEnabled = !_busy && multipleTargets && _state?.Status.CommitId is not null;
         PushSelectedItem.Visibility = multipleTargets ? Visibility.Visible : Visibility.Collapsed;
-        PushButton.IsEnabled = canPushSelected || !_busy && multipleTargets && _state?.Status.CommitId is not null;
+        PushButton.IsEnabled = !_busy && _state?.Status.CommitId is not null && (multipleTargets || target is not null);
         CommitMenuButton.IsEnabled = !_busy && _state is not null;
         CommitMenuItem.IsEnabled = CommitButton.IsEnabled;
-        CommitPushMenuItem.IsEnabled = CommitButton.IsEnabled && (multipleTargets ||
-            target is not null && _state!.Remotes.Contains(target.Remote, StringComparer.Ordinal));
+        CommitPushMenuItem.IsEnabled = CommitButton.IsEnabled && (multipleTargets || target is not null);
         CommitPushMenuItem.Header = multipleTargets ? "Commit et ve tüm hedeflere gönder" : "Commit et ve gönder";
         CommitPushMenuItem.ToolTip = multipleTargets ? "Commit’i bağlı tüm uzak depolara gönder."
             : target is null ? "Push için bir uzak depo gerekli." : $"Hedef {target.Label}";
@@ -330,7 +328,6 @@ public partial class GitWorkbenchView : UserControl
     }
 
     private void CommitMessageChanged(object sender, EditValueChangedEventArgs e) => UpdateActions();
-    private void PushRemoteChanged(object sender, EditValueChangedEventArgs e) => UpdateActions();
 
     private void FetchRemoteChanged(object sender, EditValueChangedEventArgs e)
     {
@@ -447,7 +444,7 @@ public partial class GitWorkbenchView : UserControl
                 await CommitAsync(null, targets);
             return;
         }
-        if (PushTarget is not { } target)
+        if (SinglePushTarget is not { } target)
             return;
 
         if (MessageBox.Show(_owner, $"Hazırlanan değişiklikler commit edilip {target.Label} hedefine gönderilsin mi?",
@@ -530,15 +527,14 @@ public partial class GitWorkbenchView : UserControl
 
     private async void PushClick(object sender, RoutedEventArgs e) => await PushAsync();
 
-    private async void PushSelectedClick(object sender, RoutedEventArgs e) => await PushSelectedAsync();
-
     private async Task PushAsync()
     {
         if (!PushButton.IsEnabled || _state is not GitWorkbenchState state)
             return;
         if (state.Remotes.Length < 2)
         {
-            await PushSelectedAsync();
+            if (SinglePushTarget is { } target)
+                await PushSelectedAsync(target);
             return;
         }
 
@@ -572,9 +568,10 @@ public partial class GitWorkbenchView : UserControl
             succeeded == results.Length ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
 
-    private async Task PushSelectedAsync()
+    private async Task PushSelectedAsync(GitDestination target)
     {
-        if (!PushSelectedItem.IsEnabled || _state is not GitWorkbenchState state || PushTarget is not GitDestination target)
+        if (_busy || _state is not { Status.CommitId: not null } state ||
+            !state.Remotes.Contains(target.Remote, StringComparer.Ordinal))
             return;
 
         string detail = target.SetUpstream ? "\nİlk push ile bu dal takip edilmeye başlanacak." : "";
@@ -679,7 +676,7 @@ public partial class GitWorkbenchView : UserControl
         if (_busy || _state is not { Remotes.Length: > 0, Status.CommitId: not null, InProgress: null } state)
             return;
 
-        var dialog = new GitRemoteBranchWindow(state.Remotes, PushTarget?.Remote, state.Status.Branch) { Owner = _owner };
+        var dialog = new GitRemoteBranchWindow(state.Remotes, state.Upstream?.Remote, state.Status.Branch) { Owner = _owner };
         if (dialog.ShowDialog() == true)
             await RunOperationAsync("Uzak dal oluşturuluyor…",
                 token => _git.CreateRemoteBranchAsync(state.Status, dialog.Remote, dialog.Branch, token),

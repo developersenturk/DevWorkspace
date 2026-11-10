@@ -81,8 +81,13 @@ internal static class GitProjectOperations
     }
 
     internal static async Task<(int Code, string Output, string Error)> RunAsync(string folder, string[] arguments,
-        CancellationToken token, int timeoutSeconds = 12) =>
-        await ProjectTools.CaptureAsync(CreateStartInfo(folder, arguments), "Git", timeoutSeconds, token).ConfigureAwait(false);
+        CancellationToken token, int timeoutSeconds = 12, bool promptForSsh = false)
+    {
+        var startInfo = CreateStartInfo(folder, arguments);
+        if (promptForSsh)
+            SshAskPass.Configure(startInfo);
+        return await ProjectTools.CaptureAsync(startInfo, "Git", timeoutSeconds, token).ConfigureAwait(false);
+    }
 
     internal static ProcessStartInfo CreateStartInfo(string folder, IEnumerable<string> arguments)
     {

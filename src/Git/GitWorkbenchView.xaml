@@ -117,7 +117,7 @@
                             <ContextMenu>
                                 <MenuItem x:Name="AddRemoteItem" Header="Uzak depo ekle…" Click="AddRemoteClick"/>
                                 <MenuItem x:Name="PublishMenuItem" Header="GitHub’da yayımla…" Click="PublishClick"/>
-                                <MenuItem x:Name="PushSelectedItem" Header="Yalnızca seçili hedefe gönder…" Click="PushSelectedClick"
+                                <MenuItem x:Name="PushSelectedItem" Header="Tek uzak depoya gönder"
                                           Visibility="Collapsed"/>
                                 <Separator/>
                                 <MenuItem x:Name="HistoryButton" Header="Git geçmişi" Click="HistoryClick" Icon="{local:MenuGlyph &#xE81C;}"/>
@@ -145,11 +145,6 @@
                 <TextBlock DockPanel.Dock="Left" Text="Fetch hedefi" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <dxe:ComboBoxEdit x:Name="FetchRemote" DisplayMember="Name" IsTextEditable="False"
                                   EditValueChanged="FetchRemoteChanged" AutomationProperties.Name="Fetch için uzak depo"/>
-            </DockPanel>
-            <DockPanel x:Name="PushRemoteRow" Margin="0,0,0,6" Visibility="Collapsed">
-                <TextBlock DockPanel.Dock="Left" Text="Push hedefi" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <dxe:ComboBoxEdit x:Name="PushRemote" DisplayMember="Label" IsTextEditable="False" NullText="Push hedefi seçin"
-                                  EditValueChanged="PushRemoteChanged" AutomationProperties.Name="Push hedefi"/>
             </DockPanel>
             <dxe:TextEdit x:Name="CommitMessage" Height="66" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                           MaxLength="4096" NullText="Commit mesajı (gerekli)" ShowNullTextForEmptyValue="True" EditValueChanged="CommitMessageChanged"

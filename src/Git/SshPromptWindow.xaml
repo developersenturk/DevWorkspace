@@ -1,0 +1,18 @@
+<Window x:Class="DevWorkspace.SshPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="SSH bağlantısı" Icon="../Assets/DevWorkspace.ico" Width="530" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen" Topmost="True"
+        Background="{DynamicResource Shell}" Foreground="{DynamicResource Ink}" FontFamily="Segoe UI" FontSize="13">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="Heading" FontSize="18" FontWeight="SemiBold"/>
+        <TextBlock x:Name="Instructions" TextWrapping="Wrap" Margin="0,7,0,10" Foreground="{DynamicResource Muted}"/>
+        <TextBox x:Name="PromptText" IsReadOnly="True" TextWrapping="Wrap" Padding="8" MaxHeight="200"
+                 VerticalScrollBarVisibility="Auto" AutomationProperties.Name="SSH isteği"/>
+        <PasswordBox x:Name="Secret" Margin="0,10,0,0" Padding="8,5" AutomationProperties.Name="SSH parola veya doğrulama kodu"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button x:Name="ContinueButton" Click="ContinueClick" Padding="10,5"/>
+            <Button x:Name="CancelButton" Content="Vazgeç" IsCancel="True" Margin="8,0,0,0" Padding="10,5"/>
+        </StackPanel>
+    </StackPanel>
+</Window>
