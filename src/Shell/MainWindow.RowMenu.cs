@@ -147,7 +147,7 @@ public partial class MainWindow
             Add("Seçili iki sürümü karşılaştır", "\uE8AB", () => new ComparisonWindow(workspace, pair[0], pair[1]) { Owner = this }.ShowDialog());
         else
             Add("Bir sürümle karşılaştır…", "\uE8AB", () => CompareProjectClick(this, new()));
-        Add("Taşıma planı", "\uE8DE", () => PreviewMoveClick(this, new()), folderExists && project.LinkPath is null);
+        Add("Taşıma planı", "\uE8DE", () => PreviewMoveClick(this, new()), folderExists && project.LinkPath is null && !project.IsWorkspaceRoot);
         if (project.LinkPath is not null)
             Add("Bağlantıyı kaldır", "\uE738", () => UnlinkProjectClick(this, new()));
     }

@@ -178,7 +178,7 @@ public partial class MainWindow
 
     private void PreviewMoveClick(object sender, RoutedEventArgs e)
     {
-        if (_workspace is Workspace workspace && ProjectGrid.SelectedItem is ProjectEntry project)
+        if (_workspace is Workspace workspace && ProjectGrid.SelectedItem is ProjectEntry { IsWorkspaceRoot: false } project)
             new MovePreviewWindow(workspace, project) { Owner = this }.ShowDialog();
     }
 

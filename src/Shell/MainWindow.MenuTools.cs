@@ -133,7 +133,8 @@ public partial class MainWindow
         {
             using (var archive = ZipFile.Open(temporary, ZipArchiveMode.Create))
             {
-                archive.CreateEntryFromFile(Path.Combine(workspace.Root, Workspace.ConfigFileName), Workspace.ConfigFileName);
+                using (var configuration = archive.CreateEntry(Workspace.ConfigFileName).Open())
+                    workspace.WriteConfiguration(configuration);
                 using var inventory = archive.CreateEntry("projeler.json").Open();
                 JsonSerializer.Serialize(inventory, projects.Select(project => new
                 {

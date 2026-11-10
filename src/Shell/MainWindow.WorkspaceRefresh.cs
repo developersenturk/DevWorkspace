@@ -146,7 +146,7 @@ public partial class MainWindow
 
         string[] recent = _session.Workspaces.OrderByDescending(pair => pair.Value?.LastUsedUtc)
             .Select(pair => pair.Key).Where(path => !path.Equals(_workspace?.Root, StringComparison.OrdinalIgnoreCase) &&
-                Path.IsPathFullyQualified(path) && File.Exists(Path.Combine(path, Workspace.ConfigFileName))).Take(6).ToArray();
+                Path.IsPathFullyQualified(path) && Directory.Exists(path)).Take(6).ToArray();
         RecentWorkspacesMenu.Items.Clear();
         RecentWorkspacesMenu.IsEnabled = !_busy && recent.Length > 0;
         foreach (string path in recent)

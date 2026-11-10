@@ -49,7 +49,7 @@ public partial class MainWindow : Window
             _startupLayoutRestored = true;
             string[] args = Environment.GetCommandLineArgs();
             string? root = args.Length == 2 ? args[1] : _session.LastWorkspace;
-            if (root is not null && (args.Length == 2 || File.Exists(Path.Combine(root, Workspace.ConfigFileName))))
+            if (root is not null && (args.Length == 2 || Directory.Exists(root)))
                 await OpenWorkspaceAsync(root);
             _startupReady.TrySetResult();
         }
@@ -92,7 +92,7 @@ public partial class MainWindow : Window
         if (_busy)
             return;
 
-        var picker = new OpenFolderDialog { Title = "Çalışma alanı klasörünü seçin" };
+        var picker = new OpenFolderDialog { Title = "Taranacak proje veya çalışma alanı klasörünü seçin" };
         if (_workspace is { } workspace && Directory.Exists(workspace.Root))
             picker.InitialDirectory = workspace.Root;
 
@@ -384,13 +384,27 @@ public partial class MainWindow : Window
         ViewHeading.Text = navigation?.Label ?? "Tüm projeler";
         ViewCaption.Text = navigation?.Hint ?? "Çalışma alanındaki çözümler ve depolar";
         FilterCount.Text = $"{count:N0} proje";
+        bool showScanSummary = _projects.Count > 0 && SelectedNavigationKey == "all" && query.Length == 0;
+        ScanSummaryPanel.Visibility = showScanSummary ? Visibility.Visible : Visibility.Collapsed;
+        if (showScanSummary)
+        {
+            int changed = CountRepositories(project => project.Git.State == GitState.Changed);
+            int warnings = CountRepositories(HasGitWarning);
+            string gitSummary = changed > 0 ? $"{changed:N0} depoda değişiklik var" :
+                warnings > 0 ? $"{warnings:N0} Git uyarısı" :
+                _projects.Any(project => project.Repository is not null) ? "Yerel değişiklik yok" : "Git deposu bulunamadı";
+            ScanSummaryText.Text = $"{_projects.Count:N0} proje bulundu · {gitSummary}";
+            ScanSummaryChanges.Visibility = changed > 0 ? Visibility.Visible : Visibility.Collapsed;
+            ScanSummaryChanges.IsEnabled = !_busy;
+        }
         EmptyPanel.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyOpenButton.Visibility = _workspace is null && !_busy ? Visibility.Visible : Visibility.Collapsed;
+        EmptyOpenButton.Visibility = !_busy && _projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyOpenButton.Content = _workspace is null ? "Proje klasörlerini tara" : "Başka klasör seç";
         EmptyTitle.Text = _busy ? "Çalışma alanı taranıyor" :
-            _workspace is null ? "Çalışma alanı seçin" : "Proje bulunamadı";
+            _workspace is null ? "Projelerinizi bulun" : "Proje bulunamadı";
         EmptyHint.Text = _busy ? "Projeler ve Git durumları okunuyor." :
-            _workspace is null ? "Projelerinizi görmek için bir klasör açın." :
-            _projects.Count == 0 ? "Bir proje klasörünü buraya bırakın veya Gezgin’den bir klasör ekleyin." :
+            _workspace is null ? "Bir proje klasörü veya projelerinizi içeren üst klasörü seçin. DevWorkspace projeleri ve Git durumlarını listeler." :
+            _projects.Count == 0 ? "Bu klasörde desteklenen bir proje veya Git deposu bulunamadı. Başka bir klasör seçin ya da bir proje klasörünü buraya bırakın." :
             "Arama veya sol taraftaki seçimi değiştirin.";
         UpdateCentralView();
     }

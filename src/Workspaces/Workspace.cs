@@ -298,8 +298,9 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
 
     private Workspace EditConfig(Action<JsonObject> update) => WithConfigLock(Root, configPath =>
     {
-        string original = File.ReadAllText(configPath);
-        var document = JsonNode.Parse(original) as JsonObject ?? throw new InvalidDataException("Çalışma alanı ayarları geçersiz.");
+        string? original = File.Exists(configPath) ? File.ReadAllText(configPath) : null;
+        var document = (original is null ? JsonSerializer.SerializeToNode(Config, JsonOptions) : JsonNode.Parse(original))
+            as JsonObject ?? throw new InvalidDataException("Çalışma alanı ayarları geçersiz.");
         update(document);
 
         WorkspaceConfig config = document.Deserialize<WorkspaceConfig>(JsonOptions)
@@ -308,9 +309,9 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
         try
         {
             File.WriteAllText(temporaryPath, document.ToJsonString(EditJsonOptions) + Environment.NewLine);
-            if (File.ReadAllText(configPath) != original)
+            if (original is not null && File.ReadAllText(configPath) != original)
                 throw new IOException("Çalışma alanı ayarları değişti. Tekrar deneyin.");
-            File.Move(temporaryPath, configPath, overwrite: true);
+            File.Move(temporaryPath, configPath, overwrite: original is not null);
         }
         finally
         {
@@ -395,27 +396,21 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             [".git", ".vs", ".cr", ".runtime", ".artifacts", ".codex-temp", ".pgdata", "bin", "obj",
              "node_modules", "packages", "artifacts", "dist", "build", "publish", "vendor"]);
 
-        string temporaryPath = Path.Combine(root, $".devworkspace-{Guid.NewGuid():N}.tmp");
-        try
-        {
-            using (var stream = new FileStream(temporaryPath, FileMode.CreateNew))
-                JsonSerializer.Serialize(stream, config, JsonOptions);
-
-            try
-            {
-                File.Move(temporaryPath, configPath);
-            }
-            catch (IOException) when (File.Exists(configPath))
-            {
-                return OpenExisting(root, configPath);
-            }
-        }
-        finally
-        {
-            File.Delete(temporaryPath);
-        }
-
         return new(root, config);
+    }
+
+    internal void WriteConfiguration(Stream destination)
+    {
+        string path = Path.Combine(Root, ConfigFileName);
+        if (File.Exists(path))
+        {
+            using var source = File.OpenRead(path);
+            source.CopyTo(destination);
+        }
+        else
+        {
+            JsonSerializer.Serialize(destination, Config, JsonOptions);
+        }
     }
 
     private static Workspace OpenExisting(string root, string configPath)

@@ -301,7 +301,7 @@
             <Grid>
             <Border x:Name="ProjectListPanel">
             <Grid>
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <DockPanel Margin="14,12,13,10">
                     <Button x:Name="LastSolutionButton" DockPanel.Dock="Right" Content="Son çözümü yeniden aç"
                             Click="LastSolutionClick" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
@@ -322,7 +322,16 @@
                                    FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </DockPanel>
-                <dxg:GridControl x:Name="ProjectGrid" Grid.Row="1" AutoGenerateColumns="None" SelectionMode="Row"
+                <Border x:Name="ScanSummaryPanel" Grid.Row="1" Margin="14,0,13,10" Padding="10,5" CornerRadius="7"
+                        Background="{DynamicResource PanelSoft}" BorderBrush="{DynamicResource Line}" BorderThickness="1" Visibility="Collapsed">
+                    <WrapPanel>
+                        <TextBlock x:Name="ScanSummaryText" Margin="0,5,12,5" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" FontWeight="SemiBold" AutomationProperties.LiveSetting="Polite"/>
+                        <dx:SimpleButton x:Name="ScanSummaryChanges" Content="Değişiklikleri incele" Tag="changed"
+                                         Click="NavigationLinkClick" Style="{StaticResource DashboardAction}" VerticalAlignment="Center"/>
+                    </WrapPanel>
+                </Border>
+                <dxg:GridControl x:Name="ProjectGrid" Grid.Row="2" AutoGenerateColumns="None" SelectionMode="Row"
                                  Background="{DynamicResource Canvas}" DataAreaBackground="{DynamicResource Canvas}"
                                  ShowBorder="False" AutoExpandAllGroups="False" RestoreStateOnSourceChange="True"
                                  PreviewMouseLeftButtonDown="ProjectRowLeftClick" PreviewMouseRightButtonDown="PreserveProjectContextSelection"
@@ -331,7 +340,7 @@
                                  RestoreStateKeyFieldName="RelativePath" SelectionChanged="ProjectSelectionChanged"
                                  AutomationProperties.Name="Bulunan projeler">
                     <dxg:GridControl.Columns>
-                        <dxg:GridColumn Header="PROJE" FieldName="Name" Width="240" MinWidth="135">
+                        <dxg:GridColumn Header="PROJE" FieldName="Name" Width="210" MinWidth="130" VisibleIndex="0">
                             <dxg:GridColumn.CellTemplate>
                                 <DataTemplate>
                                     <DockPanel x:Name="ProjectCell" Margin="6,0,4,0" LastChildFill="True">
@@ -359,8 +368,15 @@
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
-                        <dxg:GridColumn Header="KONUM" FieldName="DisplayPath" Width="420" MinWidth="115"/>
-                        <dxg:GridColumn Header="GİT DURUMU" FieldName="Git.Label" Width="122">
+                        <dxg:GridColumn Header="KONUM" FieldName="DisplayPath" Width="320" MinWidth="100" VisibleIndex="3">
+                            <dxg:GridColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Value}" ToolTip="{Binding RowData.Row.Folder}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0"/>
+                                </DataTemplate>
+                            </dxg:GridColumn.CellTemplate>
+                        </dxg:GridColumn>
+                        <dxg:GridColumn Header="GİT DURUMU" FieldName="Git.Label" Width="122" MinWidth="114" VisibleIndex="1">
                             <dxg:GridColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border DataContext="{Binding RowData.Row}" Style="{StaticResource StatusBadge}"
@@ -370,8 +386,8 @@
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
-                        <dxg:GridColumn Header="DAL" FieldName="Branch" Width="103"/>
-                        <dxg:GridColumn x:Name="RemoteColumn" Header="UZAK DEPO" FieldName="Git.RemoteSummary" Width="135">
+                        <dxg:GridColumn Header="DAL" FieldName="Branch" Width="103" MinWidth="64" VisibleIndex="2"/>
+                        <dxg:GridColumn x:Name="RemoteColumn" Header="UZAK DEPO" FieldName="Git.RemoteSummary" Width="135" MinWidth="78" VisibleIndex="4">
                             <dxg:GridColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding RowData.Row.Git.RemoteSummary}"
@@ -380,7 +396,7 @@
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
-                        <dxg:GridColumn Header="DEĞ." FieldName="ChangedFiles" Width="60"/>
+                        <dxg:GridColumn Header="DEĞ." FieldName="ChangedFiles" Width="60" MinWidth="42" VisibleIndex="5"/>
                         <dxg:GridColumn x:Name="VersionColumn" Header="Grup" FieldName="ProjectGroupKey"
                                         Visible="False" ShowInColumnChooser="False"/>
                     </dxg:GridControl.Columns>
@@ -388,7 +404,7 @@
                         <dxg:GridSummaryItem FieldName="Name" SummaryType="Count" DisplayFormat="{}{0} proje"/>
                     </dxg:GridControl.GroupSummary>
                     <dxg:GridControl.View>
-                        <dxg:TableView x:Name="ProjectTableView" AutoWidth="False" HorizontalScrollbarVisibility="Auto"
+                        <dxg:TableView x:Name="ProjectTableView" AutoWidth="True" HorizontalScrollbarVisibility="Auto"
                                        NavigationStyle="Row" AllowEditing="False"
                                        ShowGroupPanel="False" ShowIndicator="False" ShowGroupedColumns="False" AllowPartialGrouping="True"
                                        AllowColumnFiltering="False" ShowHorizontalLines="True" ShowVerticalLines="False">
@@ -410,12 +426,14 @@
                     </dxg:GridControl.View>
                 </dxg:GridControl>
 
-                <Border x:Name="EmptyPanel" Grid.Row="1" Background="{DynamicResource Canvas}">
+                <Border x:Name="EmptyPanel" Grid.Row="2" Background="{DynamicResource Canvas}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="290">
                         <TextBlock Text="&#xE8B7;" Style="{StaticResource Icon}" FontSize="22" Foreground="{DynamicResource Ink}" HorizontalAlignment="Center"/>
-                        <TextBlock x:Name="EmptyTitle" Text="Çalışma alanı seçin" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" Margin="0,10,0,4"/>
-                        <TextBlock x:Name="EmptyHint" Text="Projelerinizi görmek için bir klasör açın." TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource Muted}"/>
-                        <Button x:Name="EmptyOpenButton" Content="Çalışma alanı aç" Style="{StaticResource Primary}" Click="ChooseWorkspaceClick" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="EmptyTitle" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" Margin="0,10,0,4"/>
+                        <TextBlock x:Name="EmptyHint" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource Muted}"/>
+                        <Button x:Name="EmptyOpenButton" Style="{StaticResource Primary}" Click="ChooseWorkspaceClick"
+                                Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
+                                Margin="0,12,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
 
@@ -443,61 +461,6 @@
                                 <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
-                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,0,0,12">
-                            <StackPanel>
-                                <DockPanel Margin="0,0,0,10">
-                                    <dx:SimpleButton x:Name="DashboardScanButton" DockPanel.Dock="Right" Content="Tara"
-                                                     Click="DashboardScanClick" Style="{StaticResource DashboardAction}"
-                                                     Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
-                                                     Margin="8,0,0,0"
-                                                     ToolTip="Eksik paket bilgileri varsa paketler geri yüklenip tarama tekrarlanır."/>
-                                    <StackPanel>
-                                        <TextBlock Text="Bağımlılık güvenliği" Style="{StaticResource DashboardSectionTitle}"/>
-                                        <TextBlock x:Name="DashboardNuGetSummary" Style="{StaticResource DashboardSecondary}" Margin="0,2,0,0"/>
-                                    </StackPanel>
-                                </DockPanel>
-                                <ItemsControl x:Name="DashboardSeverityMetrics" ItemTemplate="{StaticResource DashboardSeverityMetric}" Margin="0,0,-7,5" Tag="4">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-                                <Border Style="{StaticResource DashboardSurface}" CornerRadius="7">
-                                    <StackPanel>
-                                        <DockPanel Margin="8,6">
-                                            <dx:SimpleButton x:Name="DashboardAllSeverities" DockPanel.Dock="Left" Content="Tümü"
-                                                             Click="DashboardSeverityClick" Style="{StaticResource DashboardAction}" Margin="0,0,6,0"/>
-                                            <dxe:TextEdit x:Name="DashboardFindingQuery" NullText="Paket, proje veya duyuru ara"
-                                                          ShowNullTextForEmptyValue="True" EditValueChanged="DashboardFindingQueryChanged"
-                                                          AutomationProperties.Name="NuGet bulgularında ara"/>
-                                        </DockPanel>
-                                        <Border Background="{DynamicResource SurfaceRaised}" Padding="12,6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="75"/><ColumnDefinition Width="1.25*"/>
-                                                    <ColumnDefinition Width="68"/><ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Text="ÖNEM" Style="{StaticResource DashboardColumnHeader}"/>
-                                                <TextBlock Grid.Column="1" Text="PAKET" Style="{StaticResource DashboardColumnHeader}"/>
-                                                <TextBlock Grid.Column="2" Text="SÜRÜM" Style="{StaticResource DashboardColumnHeader}"/>
-                                                <TextBlock Grid.Column="3" Text="PROJE / ÇÖZÜM" Style="{StaticResource DashboardColumnHeader}"/>
-                                            </Grid>
-                                        </Border>
-                                        <ItemsControl x:Name="DashboardNuGet" ItemTemplate="{StaticResource DashboardFindingRow}"/>
-                                        <TextBlock x:Name="DashboardFindingEmpty" Style="{StaticResource DashboardSecondary}" Margin="12,10"/>
-                                        <DockPanel x:Name="DashboardFindingFooter" Margin="10,4,8,6">
-                                            <StackPanel x:Name="DashboardFindingPager" DockPanel.Dock="Right" Orientation="Horizontal">
-                                                <dx:SimpleButton x:Name="DashboardPreviousFindings" Content="‹" Click="DashboardPreviousFindingsClick"
-                                                                 Style="{StaticResource DashboardAction}" AutomationProperties.Name="Önceki bulgular"/>
-                                                <dx:SimpleButton x:Name="DashboardNextFindings" Content="›" Click="DashboardNextFindingsClick"
-                                                                 Style="{StaticResource DashboardAction}" Margin="4,0,0,0" AutomationProperties.Name="Sonraki bulgular"/>
-                                            </StackPanel>
-                                            <TextBlock x:Name="DashboardFindingCount" Style="{StaticResource DashboardSecondary}" VerticalAlignment="Center"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                                <ItemsControl x:Name="DashboardNuGetWarnings" ItemTemplate="{StaticResource DashboardLink}" Margin="0,5,0,0"/>
-                            </StackPanel>
-                        </Border>
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="1.12*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -508,7 +471,7 @@
                                     <ItemsControl x:Name="DashboardTasks" ItemTemplate="{StaticResource DashboardLink}"/>
                                     <Separator Margin="0,8"/>
                                     <DockPanel>
-                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="changed" Click="DashboardListClick" Style="{StaticResource DashboardAction}"/>
+                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="changed" Click="NavigationLinkClick" Style="{StaticResource DashboardAction}"/>
                                         <TextBlock Text="Değişiklikli depolar" Style="{StaticResource DashboardSectionTitle}"/>
                                     </DockPanel>
                                     <TextBlock x:Name="DashboardDirtyHint" Style="{StaticResource DashboardSecondary}"/>
@@ -518,7 +481,7 @@
                             <Border x:Name="DashboardRecentPanel" Grid.Column="1" Style="{StaticResource DashboardSurface}" Padding="12" Margin="6,0,0,0">
                                 <StackPanel>
                                     <DockPanel>
-                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="recent" Click="DashboardListClick" Style="{StaticResource DashboardAction}"/>
+                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="recent" Click="NavigationLinkClick" Style="{StaticResource DashboardAction}"/>
                                         <TextBlock Text="Son açılanlar" Style="{StaticResource DashboardSectionTitle}"/>
                                     </DockPanel>
                                     <TextBlock x:Name="DashboardRecentHint" Style="{StaticResource DashboardSecondary}"/>
@@ -530,6 +493,63 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,12,0,0">
+                            <StackPanel>
+                                <DockPanel>
+                                    <dx:SimpleButton x:Name="DashboardScanButton" DockPanel.Dock="Right" Content="Tara"
+                                                     Click="DashboardScanClick" Style="{StaticResource DashboardAction}"
+                                                     Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
+                                                     Margin="8,0,0,0"
+                                                     ToolTip="Eksik paket bilgileri varsa paketler geri yüklenip tarama tekrarlanır."/>
+                                    <StackPanel>
+                                        <TextBlock Text="Bağımlılık güvenliği" Style="{StaticResource DashboardSectionTitle}"/>
+                                        <TextBlock x:Name="DashboardNuGetSummary" Style="{StaticResource DashboardSecondary}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
+                                <StackPanel x:Name="DashboardNuGetResults" Margin="0,10,0,0" Visibility="Collapsed">
+                                    <ItemsControl x:Name="DashboardSeverityMetrics" ItemTemplate="{StaticResource DashboardSeverityMetric}" Margin="0,0,-7,5" Tag="4">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                    <Border Style="{StaticResource DashboardSurface}" CornerRadius="7">
+                                        <StackPanel>
+                                            <DockPanel Margin="8,6">
+                                                <dx:SimpleButton x:Name="DashboardAllSeverities" DockPanel.Dock="Left" Content="Tümü"
+                                                                 Click="DashboardSeverityClick" Style="{StaticResource DashboardAction}" Margin="0,0,6,0"/>
+                                                <dxe:TextEdit x:Name="DashboardFindingQuery" NullText="Paket, proje veya duyuru ara"
+                                                              ShowNullTextForEmptyValue="True" EditValueChanged="DashboardFindingQueryChanged"
+                                                              AutomationProperties.Name="NuGet bulgularında ara"/>
+                                            </DockPanel>
+                                            <Border Background="{DynamicResource SurfaceRaised}" Padding="12,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="75"/><ColumnDefinition Width="1.25*"/>
+                                                        <ColumnDefinition Width="68"/><ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="ÖNEM" Style="{StaticResource DashboardColumnHeader}"/>
+                                                    <TextBlock Grid.Column="1" Text="PAKET" Style="{StaticResource DashboardColumnHeader}"/>
+                                                    <TextBlock Grid.Column="2" Text="SÜRÜM" Style="{StaticResource DashboardColumnHeader}"/>
+                                                    <TextBlock Grid.Column="3" Text="PROJE / ÇÖZÜM" Style="{StaticResource DashboardColumnHeader}"/>
+                                                </Grid>
+                                            </Border>
+                                            <ItemsControl x:Name="DashboardNuGet" ItemTemplate="{StaticResource DashboardFindingRow}"/>
+                                            <TextBlock x:Name="DashboardFindingEmpty" Style="{StaticResource DashboardSecondary}" Margin="12,10"/>
+                                            <DockPanel x:Name="DashboardFindingFooter" Margin="10,4,8,6">
+                                                <StackPanel x:Name="DashboardFindingPager" DockPanel.Dock="Right" Orientation="Horizontal">
+                                                    <dx:SimpleButton x:Name="DashboardPreviousFindings" Content="‹" Click="DashboardPreviousFindingsClick"
+                                                                     Style="{StaticResource DashboardAction}" AutomationProperties.Name="Önceki bulgular"/>
+                                                    <dx:SimpleButton x:Name="DashboardNextFindings" Content="›" Click="DashboardNextFindingsClick"
+                                                                     Style="{StaticResource DashboardAction}" Margin="4,0,0,0" AutomationProperties.Name="Sonraki bulgular"/>
+                                                </StackPanel>
+                                                <TextBlock x:Name="DashboardFindingCount" Style="{StaticResource DashboardSecondary}" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <ItemsControl x:Name="DashboardNuGetWarnings" ItemTemplate="{StaticResource DashboardLink}"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
                 <Border x:Name="GitDiffPanel" Visibility="Collapsed"

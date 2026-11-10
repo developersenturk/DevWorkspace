@@ -265,20 +265,24 @@ public partial class MainWindow
 
     private string? AskName(string title, string label)
     {
-        var nameInput = new TextBox { MaxLength = 60, MinWidth = 290, Margin = new(0, 5, 0, 12) };
+        var nameInput = new TextBox { MaxLength = 60, MinWidth = 290, Margin = new(0, 5, 0, 0) };
         System.Windows.Automation.AutomationProperties.SetName(nameInput, label);
         var dialog = new ThemedWindow { Owner = this, Title = title, WindowStartupLocation = WindowStartupLocation.CenterOwner,
             SizeToContent = SizeToContent.WidthAndHeight, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false };
-        var save = new Button { Content = "Kaydet", IsDefault = true, IsEnabled = false, MinWidth = 75 };
+        var save = new ThemedWindowDialogButton
+        {
+            Content = "Kaydet", IsDefault = true, IsEnabled = false, MinWidth = 75, AllowCloseWindow = false
+        };
         save.Click += (_, _) => dialog.DialogResult = true;
         nameInput.TextChanged += (_, _) => save.IsEnabled = !string.IsNullOrWhiteSpace(nameInput.Text);
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        buttons.Children.Add(new Button { Content = "Vazgeç", IsCancel = true, MinWidth = 75, Margin = new(0, 0, 6, 0) });
-        buttons.Children.Add(save);
+        dialog.DialogButtons.Add(new ThemedWindowDialogButton
+        {
+            Content = "Vazgeç", IsCancel = true, DialogResult = MessageBoxResult.Cancel, MinWidth = 75
+        });
+        dialog.DialogButtons.Add(save);
         var form = new StackPanel { Margin = new(14) };
         form.Children.Add(new TextBlock { Text = label });
         form.Children.Add(nameInput);
-        form.Children.Add(buttons);
         dialog.Content = form;
         dialog.Loaded += (_, _) => nameInput.Focus();
         return dialog.ShowDialog() == true ? nameInput.Text.Trim() : null;

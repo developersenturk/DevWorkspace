@@ -57,7 +57,7 @@ public partial class MainWindow
             for (int index = 0; index < orderedSubfolders.Length; index++)
                 _folderOrder.TryAdd(Workspace.ExplorerFolderPath(orderedSubfolders[index]), index);
             var sections = new List<NavigationItem>();
-            foreach (ProjectEntry project in _projects.Where(project => project.LinkPath is null))
+            foreach (ProjectEntry project in _projects.Where(project => project.LinkPath is null && !project.IsWorkspaceRoot))
             {
                 for (string? path = project.RelativePath; !string.IsNullOrEmpty(path); path = Path.GetDirectoryName(path))
                     _folderCounts[path] = _folderCounts.GetValueOrDefault(path) + 1;

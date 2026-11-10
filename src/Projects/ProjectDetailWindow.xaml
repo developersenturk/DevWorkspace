@@ -5,8 +5,19 @@
         MinWidth="400" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
         Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
-        Loaded="DetailLoaded" Closing="DetailClosing" Closed="DetailClosed">
+        Loaded="DetailLoaded" Closing="DetailClosing" Closed="DetailClosed" PreviewKeyDown="DetailKeyDown">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
+    <dx:ThemedWindow.DialogButtons>
+        <dx:ThemedWindowDialogButton x:Name="RemoveGroupButton" Content="Gruptan çıkar" Placement="Left"
+                                     AllowCloseWindow="False" Click="RemoveGroupClick" Visibility="Collapsed"/>
+        <dx:ThemedWindowDialogButton x:Name="CloseButton" Content="Kapat" IsCancel="True" DialogResult="Cancel" MinWidth="72"/>
+        <dx:ThemedWindowDialogButton x:Name="PurposeCancelButton" Content="Vazgeç" AllowCloseWindow="False"
+                                     Click="CancelPurposeClick" MinWidth="72" Visibility="Collapsed"/>
+        <dx:ThemedWindowDialogButton x:Name="PurposeSaveButton" Content="Kaydet" AllowCloseWindow="False"
+                                     Click="SavePurposeClick" MinWidth="72" Visibility="Collapsed"/>
+        <dx:ThemedWindowDialogButton x:Name="OrganizationSaveButton" Content="Kaydet" IsDefault="True" AllowCloseWindow="False"
+                                     Click="SaveOrganizationClick" MinWidth="72" Visibility="Collapsed"/>
+    </dx:ThemedWindow.DialogButtons>
     <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
@@ -25,10 +36,6 @@
                             <TextBox x:Name="PurposeInput" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="82" MaxHeight="145"
                                      MaxLength="1200" VerticalScrollBarVisibility="Auto" Padding="6"
                                      AutomationProperties.Name="Proje amacı"/>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-                                <Button Content="Vazgeç" Click="CancelPurposeClick" Margin="0,0,5,0"/>
-                                <Button Content="Kaydet" Click="SavePurposeClick" Style="{StaticResource Primary}"/>
-                            </StackPanel>
                         </StackPanel>
                         <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Margin="0,13,0,0" Padding="0,8,0,0">
                             <StackPanel>
@@ -45,8 +52,12 @@
                         </Border>
                     </StackPanel>
                 </ScrollViewer>
-                <StackPanel x:Name="OrganizationEditor" Visibility="Collapsed" Margin="14">
-                    <ScrollViewer x:Name="BulkGroupProjects" Visibility="Collapsed" MaxHeight="130"
+                <Grid x:Name="OrganizationEditor" Visibility="Collapsed" Margin="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition x:Name="BulkProjectRow" Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer x:Name="BulkGroupProjects" Visibility="Collapsed"
                                   VerticalScrollBarVisibility="Auto" Margin="0,0,0,9" AutomationProperties.Name="Seçilen projeler">
                         <ItemsControl x:Name="BulkGroupProjectList">
                             <ItemsControl.ItemTemplate>
@@ -60,16 +71,13 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <TextBlock Text="Proje grubu" Style="{StaticResource SmallLabel}"/>
-                    <ComboBox x:Name="ProjectGroupBox" IsEditable="True" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Proje grubu"/>
-                    <TextBlock x:Name="ProjectLabelTitle" Text="Sürüm etiketi" Style="{StaticResource SmallLabel}"/>
-                    <ComboBox x:Name="ProjectLabelBox" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Sürüm etiketi"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="RemoveGroupButton" Content="Gruptan çıkar" Click="RemoveGroupClick" Visibility="Collapsed" Margin="0,0,8,0"/>
-                        <Button Content="Vazgeç" IsCancel="True" Margin="0,0,5,0"/>
-                        <Button Content="Kaydet" IsDefault="True" Click="SaveOrganizationClick" Style="{StaticResource Primary}"/>
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Text="Proje grubu" Style="{StaticResource SmallLabel}"/>
+                        <ComboBox x:Name="ProjectGroupBox" IsEditable="True" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Proje grubu"/>
+                        <TextBlock x:Name="ProjectLabelTitle" Text="Sürüm etiketi" Style="{StaticResource SmallLabel}"/>
+                        <ComboBox x:Name="ProjectLabelBox" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Sürüm etiketi"/>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
                 <Grid x:Name="DocumentsView" Background="{DynamicResource Canvas}" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="*"/>
@@ -89,9 +97,6 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12"/>
                 </Grid>
             </Grid>
-        <DockPanel Grid.Row="2" Margin="0,9,0,0">
-            <Button x:Name="CloseButton" DockPanel.Dock="Right" Content="Kapat" IsCancel="True" MinWidth="72"/>
-            <TextBlock x:Name="DetailMessage" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="3,0,8,0"/>
-        </DockPanel>
+        <TextBlock x:Name="DetailMessage" Grid.Row="2" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="3,0"/>
     </Grid>
 </dx:ThemedWindow>

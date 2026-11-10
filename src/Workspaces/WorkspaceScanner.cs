@@ -16,7 +16,8 @@ internal sealed record ProjectEntry(
     public string Label => Preference.Label ?? "";
     public string ProjectGroupKey => string.IsNullOrWhiteSpace(Preference.Group)
         ? $"project:{RelativePath}" : $"group:{Preference.Group.Trim().ToUpperInvariant()}";
-    public string DisplayPath => LinkPath is null ? RelativePath : EntryFile ?? Folder;
+    public bool IsWorkspaceRoot => LinkPath is null && RelativePath == ".";
+    public string DisplayPath => IsWorkspaceRoot ? "Çalışma alanı kökü" : LinkPath is null ? RelativePath : EntryFile ?? Folder;
     public string Summary => string.IsNullOrEmpty(Git.Detail) ? Folder : $"{Folder}\n{Git.Detail}";
 
     public bool HasSameSnapshot(ProjectEntry other) =>
@@ -32,7 +33,7 @@ internal sealed record ScanResult(
 internal static class WorkspaceScanner
 {
     private sealed record FolderScan(string Path, string? Repository, bool InProject, FileInfo? ParentSolution = null);
-    private sealed record ScanScope(string Category, string Folder, string? Link = null);
+    private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
         "^Project\\(\"(?<type>[^\"]+)\"\\)\\s*=\\s*\"[^\"]*\",\\s*\"(?<path>[^\"]+)\"",
         RegexOptions.CultureInvariant);
@@ -50,7 +51,8 @@ internal static class WorkspaceScanner
         var hiddenSubfolders = subfolders.Where(folder => !folder.IsVisible).Select(folder => folder.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         string[] folders = layout.Where(folder => folder.IsVisible).Select(folder => folder.Name).ToArray();
-        var scopes = folders.Select(category => new ScanScope(category, Path.Combine(workspace.Root, category))).ToList();
+        var scopes = new List<ScanScope> { new("Çalışma alanı", workspace.Root, RootOnly: true) };
+        scopes.AddRange(folders.Select(category => new ScanScope(category, Path.Combine(workspace.Root, category))));
         foreach (string link in (workspace.Config.LinkedProjects ?? []).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!Path.IsPathFullyQualified(link) || link.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase))
@@ -79,6 +81,8 @@ internal static class WorkspaceScanner
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string folderName = Path.GetFileName(current.Path);
+                if (folderName.Length == 0)
+                    folderName = workspace.Config.Name;
                 if (folderName.StartsWith(GitRecovery.StagingPrefix, StringComparison.OrdinalIgnoreCase) ||
                     folderName.StartsWith(GitHubCli.CloneStagingPrefix, StringComparison.OrdinalIgnoreCase))
                     continue;
@@ -150,6 +154,9 @@ internal static class WorkspaceScanner
                 }
                 else if (isRepoRoot)
                     repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, "Git deposu", repo, new(GitState.None), LinkPath: scope.Link));
+
+                if (scope.RootOnly)
+                    continue;
 
                 FileInfo? parentSolution = entry is not null && IsExtension(entry, ".slnx") ? entry : null;
                 foreach (var child in entries.OfType<DirectoryInfo>())

@@ -16,7 +16,6 @@ public partial class MainWindow
     private string? _dashboardSeverity;
     private string? _dashboardWorkspaceRoot;
     private int _dashboardFindingPage;
-    private string _dashboardFindingEmptyText = "";
     private CancellationTokenSource? _dashboardScan;
     private string? _dashboardScanProgress;
 
@@ -93,9 +92,12 @@ public partial class MainWindow
         int stale = audits.Count(item => item.Snapshot is { FinishedAt: var finished } && finished < freshSince);
         int completed = audits.Count(item => item.Snapshot is not null);
         DashboardNuGetSummary.Text = _dashboardScanProgress ?? (targets.Length == 0 ? "Taranabilir .NET projesi veya çözümü yok." :
-            $"{completed:N0}/{targets.Length:N0} hedefte kayıtlı tarama · {affected.Length:N0} hedefte bulgu" +
+            (completed == 0
+                ? incomplete > 0 ? "Tamamlanan NuGet taraması yok" : "Henüz taranmadı"
+                : $"{completed:N0}/{targets.Length:N0} hedefte kayıtlı tarama · {affected.Length:N0} hedefte bulgu") +
             (incomplete > 0 ? $" · {incomplete:N0} hedefte tarama uyarısı" : "") +
             (stale > 0 ? $" · {stale:N0} tarama 7 günden eski" : ""));
+        DashboardNuGetResults.Visibility = completed > 0 ? Visibility.Visible : Visibility.Collapsed;
         DashboardScanButton.Content = _dashboardScan is null ? "NuGet tara" : "Durdur";
         DashboardScanButton.IsEnabled = _dashboardScan is { IsCancellationRequested: false } ||
             _dashboardScan is null && !_busy && targets.Length > 0;
@@ -109,8 +111,6 @@ public partial class MainWindow
             .ToArray();
         DashboardSeverityMetrics.ItemsSource = new[] { "Kritik", "Yüksek", "Orta", "Düşük" }
             .Select(severity => new DashboardSeverityTile(severity, _dashboardFindings.Count(row => row.Severity == severity))).ToArray();
-        _dashboardFindingEmptyText = completed == 0 ? "Bulguları görmek için bir NuGet taraması başlat." :
-            "Kayıtlı raporlarda bilinen açık bulunmuyor.";
         UpdateDashboardFindingTable();
         DashboardNuGetWarnings.ItemsSource = audits.Where(item => item.Failed || item.Snapshot?.Report.Diagnostics.Count > 0)
             .Select(item => new DashboardLink(item.Project.Name, "Tarama uyarısını incele", "nuget-report", item.Project)).ToArray();
@@ -189,7 +189,8 @@ public partial class MainWindow
         var rows = filtered.Skip(start).Take(DashboardFindingPageSize).ToArray();
         DashboardNuGet.ItemsSource = rows;
         DashboardAllSeverities.Content = _dashboardSeverity is null ? "Tümü" : $"{_dashboardSeverity} ×";
-        DashboardFindingEmpty.Text = query.Length > 0 || _dashboardSeverity is not null ? "Bu filtreyle eşleşen bulgu yok." : _dashboardFindingEmptyText;
+        DashboardFindingEmpty.Text = query.Length > 0 || _dashboardSeverity is not null
+            ? "Bu filtreyle eşleşen bulgu yok." : "Kayıtlı raporlarda bilinen açık bulunmuyor.";
         DashboardFindingEmpty.Visibility = filtered.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         DashboardFindingFooter.Visibility = filtered.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         DashboardFindingCount.Text = lastPage == 0 ? $"{filtered.Length:N0} bulgu" :
@@ -233,7 +234,7 @@ public partial class MainWindow
     private ProjectEntry? FindDashboardProject(ProjectEntry previous) => _projects.FirstOrDefault(item =>
         item.RelativePath.Equals(previous.RelativePath, StringComparison.OrdinalIgnoreCase));
 
-    private void DashboardListClick(object sender, RoutedEventArgs e)
+    private void NavigationLinkClick(object sender, RoutedEventArgs e)
     {
         if (!_busy && sender is Button { Tag: string key })
             NavigateFromDashboard(key);

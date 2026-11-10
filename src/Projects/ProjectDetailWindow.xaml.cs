@@ -2,6 +2,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
@@ -55,7 +56,8 @@ public partial class ProjectDetailWindow : ThemedWindow
                 Height = 290;
                 MinHeight = 270;
                 OrganizationEditor.Visibility = Visibility.Visible;
-                CloseButton.Visibility = Visibility.Collapsed;
+                CloseButton.Content = "Vazgeç";
+                OrganizationSaveButton.Visibility = Visibility.Visible;
                 ProjectGroupBox.ItemsSource = projects.Select(entry => entry.Preference.Group)
                     .Where(group => !string.IsNullOrWhiteSpace(group)).Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(group => group, StringComparer.CurrentCultureIgnoreCase).ToArray();
@@ -79,8 +81,9 @@ public partial class ProjectDetailWindow : ThemedWindow
         Title = "Seçili projeleri grupla";
         ProjectTitle.Text = $"{selection.Count} proje seçildi";
         Width = 525;
-        Height = 335;
+        Height = 365;
         MinHeight = 320;
+        BulkProjectRow.Height = new GridLength(1, GridUnitType.Star);
         BulkGroupProjects.Visibility = Visibility.Visible;
         BulkGroupProjectList.ItemsSource = selection;
         ProjectLabelTitle.Visibility = ProjectLabelBox.Visibility = Visibility.Collapsed;
@@ -100,6 +103,17 @@ public partial class ProjectDetailWindow : ThemedWindow
     }
 
     private void DetailClosing(object? sender, System.ComponentModel.CancelEventArgs e) => e.Cancel = _savingPurpose;
+
+    private void DetailKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || PurposeEditor.Visibility != Visibility.Visible)
+            return;
+
+        e.Handled = true;
+        if (!_savingPurpose)
+            CancelPurposeClick(sender, e);
+    }
+
     private void DetailClosed(object? sender, EventArgs e)
     {
         _closing.Cancel();
@@ -132,22 +146,26 @@ public partial class ProjectDetailWindow : ThemedWindow
     {
         string description = (UpdatedWorkspace ?? _workspace).DescriptionFor(_project.RelativePath);
         PurposeText.Text = description.Length == 0 ? "Henüz bir amaç notu eklenmedi." : description;
-        PurposeEditor.Visibility = Visibility.Collapsed;
-        PurposeText.Visibility = Visibility.Visible;
-        EditPurposeButton.Visibility = Visibility.Visible;
+        SetPurposeEditing(false);
     }
 
     private void EditPurposeClick(object sender, RoutedEventArgs e)
     {
         DetailMessage.Text = "";
         PurposeInput.Text = (UpdatedWorkspace ?? _workspace).DescriptionFor(_project.RelativePath);
-        PurposeEditor.Visibility = Visibility.Visible;
-        PurposeText.Visibility = Visibility.Collapsed;
-        EditPurposeButton.Visibility = Visibility.Collapsed;
+        SetPurposeEditing(true);
         PurposeInput.Focus();
     }
 
     private void CancelPurposeClick(object sender, RoutedEventArgs e) => UpdatePurpose();
+
+    private void SetPurposeEditing(bool editing)
+    {
+        PurposeEditor.Visibility = PurposeSaveButton.Visibility = PurposeCancelButton.Visibility =
+            editing ? Visibility.Visible : Visibility.Collapsed;
+        PurposeText.Visibility = EditPurposeButton.Visibility = CloseButton.Visibility =
+            editing ? Visibility.Collapsed : Visibility.Visible;
+    }
 
     private async void SavePurposeClick(object sender, RoutedEventArgs e)
     {
@@ -156,7 +174,7 @@ public partial class ProjectDetailWindow : ThemedWindow
 
         string description = PurposeInput.Text.Trim();
         _savingPurpose = true;
-        PurposeEditor.IsEnabled = CloseButton.IsEnabled = false;
+        PurposeEditor.IsEnabled = PurposeSaveButton.IsEnabled = PurposeCancelButton.IsEnabled = false;
         try
         {
             Workspace workspace = UpdatedWorkspace ?? _workspace;
@@ -172,7 +190,7 @@ public partial class ProjectDetailWindow : ThemedWindow
         finally
         {
             _savingPurpose = false;
-            PurposeEditor.IsEnabled = CloseButton.IsEnabled = true;
+            PurposeEditor.IsEnabled = PurposeSaveButton.IsEnabled = PurposeCancelButton.IsEnabled = true;
         }
     }
 
