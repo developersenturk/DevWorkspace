@@ -12,6 +12,10 @@ internal sealed record GitDestination(string Remote, string Ref, bool SetUpstrea
 internal sealed record GitWorkbenchState(GitStatus Status, string IndexSnapshot, string? InProgress,
     GitDestination? Upstream, string[] Remotes)
 {
+    public GitDestination[] AllPushTargets => Status.HeadRef is string head
+        ? Remotes.Select(remote => Upstream is { } upstream && upstream.Remote == remote
+            ? upstream : new GitDestination(remote, head, false)).ToArray() : [];
+
     public string? PullBlockReason =>
         Status.HeadRef is null || Status.CommitId is null ? "Pull için commit içeren bir dalda olmalısınız." :
         Upstream is null || !Remotes.Contains(Upstream.Remote, StringComparer.Ordinal) ? "Pull için dalın bir uzak dalı takip etmesi gerekir." :
@@ -19,6 +23,7 @@ internal sealed record GitWorkbenchState(GitStatus Status, string IndexSnapshot,
 }
 
 internal sealed record GitRemote(string Name, string? Url);
+internal sealed record GitPushResult(GitDestination Target, string? Error);
 
 internal sealed record GitRemoteSuggestion(string Address, string Prefix);
 
@@ -200,6 +205,16 @@ internal sealed class GitWorkbench(string repository)
         }
     }
 
+    internal async Task DropStashAsync(GitStash stash, CancellationToken token)
+    {
+        await VerifyRepositoryAsync(token);
+        if (!Regex.IsMatch(stash.Selector, @"\Astash@\{[0-9]+\}\z") ||
+            !(await ReadStashesAsync(token)).Any(entry => entry.Selector == stash.Selector && entry.CommitId == stash.CommitId))
+            throw new IOException("Geçici kayıt listesi değişti. Silmek istediğiniz kaydı yeniden seçin.");
+
+        await RunAsync(["stash", "drop", stash.Selector], token);
+    }
+
     private async Task VerifyStashOperationAsync(GitStatus expected, CancellationToken token)
     {
         await VerifyHeadAsync(expected, token);
@@ -364,6 +379,25 @@ internal sealed class GitWorkbench(string repository)
             throw new IOException(ErrorText(string.IsNullOrWhiteSpace(error) ? output : error));
     }
 
+    internal async Task<GitPushResult[]> PushAllAsync(GitWorkbenchState expected, GitDestination[] targets, CancellationToken token)
+    {
+        var results = new List<GitPushResult>();
+        foreach (var target in targets)
+        {
+            token.ThrowIfCancellationRequested();
+            try
+            {
+                await PushAsync(expected, target, token);
+                results.Add(new(target, null));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+            {
+                results.Add(new(target, ex.Message));
+            }
+        }
+        return results.ToArray();
+    }
+
     public async Task PushAsync(GitWorkbenchState expected, GitDestination destination, CancellationToken token)
     {
         if (expected.Status.HeadRef is not string head || expected.Status.CommitId is not string commit)
@@ -496,6 +530,11 @@ internal sealed class GitWorkbench(string repository)
 
     private static string ErrorText(string error)
     {
+        if (error.Contains("REMOTE HOST IDENTIFICATION HAS CHANGED", StringComparison.OrdinalIgnoreCase))
+            return "SSH sunucusunun kayıtlı anahtarı değişmiş. Sunucu yöneticisinden yeni parmak izini doğrulayın.";
+        if (error.Contains("Host key verification failed", StringComparison.OrdinalIgnoreCase))
+            return "SSH sunucu anahtarı doğrulanamadı. Sunucu parmak izini güvenilir bir kaynaktan doğrulayıp SSH bağlantısını bir kez onaylayın.";
+
         string message = Regex.Replace(error.Trim(), @"(https?://)[^\s/@]+@", "$1", RegexOptions.IgnoreCase);
         return message.Length == 0 ? "Git işlemi tamamlanamadı." : message;
     }

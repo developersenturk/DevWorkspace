@@ -117,6 +117,8 @@
                             <ContextMenu>
                                 <MenuItem x:Name="AddRemoteItem" Header="Uzak depo ekle…" Click="AddRemoteClick"/>
                                 <MenuItem x:Name="PublishMenuItem" Header="GitHub’da yayımla…" Click="PublishClick"/>
+                                <MenuItem x:Name="PushSelectedItem" Header="Yalnızca seçili hedefe gönder…" Click="PushSelectedClick"
+                                          Visibility="Collapsed"/>
                                 <Separator/>
                                 <MenuItem x:Name="HistoryButton" Header="Git geçmişi" Click="HistoryClick" Icon="{local:MenuGlyph &#xE81C;}"/>
                                 <MenuItem Header="Dallar ve etiketler…" Click="ReferencesClick"/>
@@ -171,10 +173,22 @@
             </WrapPanel>
             <Border Height="1" Background="{DynamicResource Divider}" Margin="0,9,0,4"/>
         </StackPanel>
-        <StackPanel DockPanel.Dock="Bottom" Margin="0,3,0,0">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,3,0,0">
+            <Button DockPanel.Dock="Right" Content="{local:MenuGlyph &#xE711;}" Height="24" Width="24" Margin="5,0,0,0"
+                    Click="DismissStatusClick" ToolTip="Mesajı kapat" AutomationProperties.Name="Git durum mesajını kapat">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource GitToolButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=StatusMessage}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
             <TextBlock x:Name="StatusMessage" Margin="0,6,0,0" MaxHeight="34" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="{DynamicResource Muted}" FontSize="11"/>
-        </StackPanel>
+        </DockPanel>
         <Grid x:Name="ChangeControls">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/><RowDefinition x:Name="StagedRow" Height="Auto"/>
@@ -217,6 +231,8 @@
                         Click="SaveStashClick" IsEnabled="False" AutomationProperties.Name="Tümünü geçici kaydet"/>
                 <Button x:Name="ApplyStashButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE7A7;}"
                         Click="ApplyStashClick" IsEnabled="False" ToolTip="Seçili kaydı geri uygula" AutomationProperties.Name="Seçili kaydı geri uygula"/>
+                <Button x:Name="DropStashButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE74D;}"
+                        Click="DropStashClick" IsEnabled="False" ToolTip="Seçili geçici kaydı sil" AutomationProperties.Name="Seçili geçici kaydı sil"/>
                 <ToggleButton x:Name="StashSection" Style="{StaticResource GitSectionHeader}" IsChecked="False" Click="ToggleSectionClick">
                     <TextBlock x:Name="StashTitle" Text="Geçici kayıtlar" Foreground="{DynamicResource Ink}"/>
                 </ToggleButton>

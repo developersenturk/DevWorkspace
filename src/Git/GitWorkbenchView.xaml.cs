@@ -231,7 +231,7 @@ public partial class GitWorkbenchView : UserControl
     private void UpdateActions()
     {
         if (CommitButton is null || PublishButton is null || FetchRemote is null || FileAction is null ||
-            UnstageButton is null || CommitPushMenuItem is null || PublishMenuItem is null || StashList is null)
+            UnstageButton is null || CommitPushMenuItem is null || PublishMenuItem is null || StashList is null || DropStashButton is null)
             return;
 
         ChangeControls.IsEnabled = RefreshButton.IsEnabled = MoreButton.IsEnabled = !_busy;
@@ -247,14 +247,21 @@ public partial class GitWorkbenchView : UserControl
             && (state.Status.Files ?? []).Any(file => file.IsStaged) && !(state.Status.Files ?? []).Any(file => file.IsConflict)
             && !string.IsNullOrWhiteSpace(CommitMessage.Text);
         var target = PushTarget;
-        PushButton.IsEnabled = !_busy && _state?.Status.CommitId is not null && target is not null
+        bool multipleTargets = _state is { Remotes.Length: > 1, Status.HeadRef: not null };
+        bool canPushSelected = !_busy && _state?.Status.CommitId is not null && target is not null
             && _state.Remotes.Contains(target.Remote, StringComparer.Ordinal);
+        PushSelectedItem.IsEnabled = canPushSelected;
+        PushSelectedItem.Visibility = multipleTargets ? Visibility.Visible : Visibility.Collapsed;
+        PushButton.IsEnabled = canPushSelected || !_busy && multipleTargets && _state?.Status.CommitId is not null;
         CommitMenuButton.IsEnabled = !_busy && _state is not null;
         CommitMenuItem.IsEnabled = CommitButton.IsEnabled;
-        CommitPushMenuItem.IsEnabled = CommitButton.IsEnabled && target is not null &&
-            _state!.Remotes.Contains(target.Remote, StringComparer.Ordinal);
-        CommitPushMenuItem.ToolTip = target is null ? "Önce ilk push için bir uzak depo seçin." : $"Hedef {target.Label}";
-        PushButton.ToolTip = target is null ? "Push için uzak depo ve hedef dal gerekli." : $"Hedef {target.Label}";
+        CommitPushMenuItem.IsEnabled = CommitButton.IsEnabled && (multipleTargets ||
+            target is not null && _state!.Remotes.Contains(target.Remote, StringComparer.Ordinal));
+        CommitPushMenuItem.Header = multipleTargets ? "Commit et ve tüm hedeflere gönder" : "Commit et ve gönder";
+        CommitPushMenuItem.ToolTip = multipleTargets ? "Commit’i bağlı tüm uzak depolara gönder."
+            : target is null ? "Push için bir uzak depo gerekli." : $"Hedef {target.Label}";
+        PushButton.ToolTip = multipleTargets ? "Tüm uzak depolara gönder"
+            : target is null ? "Push için uzak depo ve hedef dal gerekli." : $"Hedef {target.Label}";
         PublishButton.Visibility = _state is { Remotes.Length: 0 } ? Visibility.Visible : Visibility.Collapsed;
         AddRemoteItem.IsEnabled = !_busy && _state is not null;
         PublishMenuItem.IsEnabled = PublishButton.IsEnabled =
@@ -277,7 +284,10 @@ public partial class GitWorkbenchView : UserControl
             : hasConflict ? "Geçici kayıttan önce çakışmaları çözün."
             : "Hazırlanan, hazırlanmamış ve yeni dosyaları geçici kaydet.";
         ApplyStashButton.IsEnabled = canUseStash && StashSection.IsChecked == true && StashList.SelectedItem is GitStash;
+        DropStashButton.IsEnabled = !_busy && StashSection.IsChecked == true && StashList.SelectedItem is GitStash;
     }
+
+    private void DismissStatusClick(object sender, RoutedEventArgs e) => StatusMessage.Text = "";
 
     private void StashSelectionChanged(object sender, RoutedEventArgs e) => UpdateActions();
 
@@ -306,6 +316,17 @@ public partial class GitWorkbenchView : UserControl
 
         await RunOperationAsync("Geçici kayıt uygulanıyor…", token => _git.ApplyStashAsync(state.Status, stash, token),
             "Değişiklikler geri uygulandı. Geçici kayıt listede duruyor.");
+    }
+
+    private async void DropStashClick(object sender, RoutedEventArgs e)
+    {
+        if (!DropStashButton.IsEnabled || StashList.SelectedItem is not GitStash stash)
+            return;
+        if (MessageBox.Show(_owner, $"{stash.Label}\n\nBu geçici kayıt kalıcı olarak silinsin mi? Çalışma dosyaları korunur.",
+            "Geçici kaydı sil", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+            return;
+
+        await RunOperationAsync("Geçici kayıt siliniyor…", token => _git.DropStashAsync(stash, token), "Seçili geçici kayıt silindi.");
     }
 
     private void CommitMessageChanged(object sender, EditValueChangedEventArgs e) => UpdateActions();
@@ -417,7 +438,16 @@ public partial class GitWorkbenchView : UserControl
 
     private async void CommitPushClick(object sender, RoutedEventArgs e)
     {
-        if (!CommitPushMenuItem.IsEnabled || PushTarget is not { } target)
+        if (!CommitPushMenuItem.IsEnabled || _state is not { } state)
+            return;
+        if (state.Remotes.Length > 1)
+        {
+            GitDestination[] targets = state.AllPushTargets;
+            if (ConfirmPushAll(state.Status.Branch, targets, commit: true))
+                await CommitAsync(null, targets);
+            return;
+        }
+        if (PushTarget is not { } target)
             return;
 
         if (MessageBox.Show(_owner, $"Hazırlanan değişiklikler commit edilip {target.Label} hedefine gönderilsin mi?",
@@ -425,17 +455,18 @@ public partial class GitWorkbenchView : UserControl
             await CommitAsync(target);
     }
 
-    private async Task CommitAsync(GitDestination? target)
+    private async Task CommitAsync(GitDestination? target, GitDestination[]? allTargets = null)
     {
         if (!CommitButton.IsEnabled || _state is not GitWorkbenchState state)
             return;
 
         string message = CommitMessage.Text.Trim();
+        GitPushResult[]? results = null;
         await RunOperationAsync("Commit oluşturuluyor…", async token =>
         {
             await _git.CommitAsync(state, message, token);
             CommitMessage.EditValue = null;
-            if (target is not null)
+            if (target is not null || allTargets is not null)
             {
                 StatusMessage.Text = "Commit kaydedildi. Uzak depoya gönderiliyor…";
                 try
@@ -443,7 +474,10 @@ public partial class GitWorkbenchView : UserControl
                     GitWorkbenchState afterCommit = await _git.ReadAsync(token);
                     if (afterCommit.Status.HeadRef != state.Status.HeadRef)
                         throw new IOException("Etkin dal değişti. Push hedefini kontrol edin.");
-                    await _git.PushAsync(afterCommit, target, token);
+                    if (allTargets is not null)
+                        results = await _git.PushAllAsync(afterCommit, allTargets, token);
+                    else
+                        await _git.PushAsync(afterCommit, target!, token);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
                 {
@@ -451,6 +485,8 @@ public partial class GitWorkbenchView : UserControl
                 }
             }
         }, target is null ? "Commit yerel depoya kaydedildi." : $"Commit gönderildi. Hedef {target.Label}.");
+        if (results is not null)
+            ShowPushResults(results, "Commit yerel depoya kaydedildi. ");
     }
 
     private async void PublishClick(object sender, RoutedEventArgs e) => await PublishRepositoryAsync();
@@ -494,9 +530,51 @@ public partial class GitWorkbenchView : UserControl
 
     private async void PushClick(object sender, RoutedEventArgs e) => await PushAsync();
 
+    private async void PushSelectedClick(object sender, RoutedEventArgs e) => await PushSelectedAsync();
+
     private async Task PushAsync()
     {
-        if (!PushButton.IsEnabled || _state is not GitWorkbenchState state || PushTarget is not GitDestination target)
+        if (!PushButton.IsEnabled || _state is not GitWorkbenchState state)
+            return;
+        if (state.Remotes.Length < 2)
+        {
+            await PushSelectedAsync();
+            return;
+        }
+
+        GitDestination[] targets = state.AllPushTargets;
+        if (!ConfirmPushAll(state.Status.Branch, targets, commit: false))
+            return;
+
+        GitPushResult[]? results = null;
+        await RunOperationAsync("Commit’ler tüm uzak depolara gönderiliyor…", async token =>
+        {
+            results = await _git.PushAllAsync(state, targets, token);
+        });
+        if (results is not null)
+            ShowPushResults(results);
+    }
+
+    private bool ConfirmPushAll(string branch, GitDestination[] targets, bool commit)
+    {
+        string action = commit ? "Hazırlanan değişiklikler commit edilip aşağıdaki hedeflere gönderilsin mi?"
+            : $"{branch} dalındaki commit’ler aşağıdaki hedeflere gönderilsin mi?";
+        return MessageBox.Show(_owner, $"{action}\n\n{string.Join(Environment.NewLine, targets.Select(target => target.Label))}",
+            "Tüm uzak depolara gönder", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes;
+    }
+
+    private void ShowPushResults(GitPushResult[] results, string prefix = "")
+    {
+        int succeeded = results.Count(result => result.Error is null);
+        StatusMessage.Text = $"{prefix}{succeeded}/{results.Length} uzak depoda push başarılı.";
+        string details = string.Join("\n\n", results.Select(result => $"{result.Target.Label} · {result.Error ?? "Başarılı"}"));
+        MessageBox.Show(_owner, $"{StatusMessage.Text}\n\n{details}", "Push sonuçları", MessageBoxButton.OK,
+            succeeded == results.Length ? MessageBoxImage.Information : MessageBoxImage.Warning);
+    }
+
+    private async Task PushSelectedAsync()
+    {
+        if (!PushSelectedItem.IsEnabled || _state is not GitWorkbenchState state || PushTarget is not GitDestination target)
             return;
 
         string detail = target.SetUpstream ? "\nİlk push ile bu dal takip edilmeye başlanacak." : "";
