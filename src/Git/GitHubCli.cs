@@ -10,6 +10,9 @@ internal sealed class GitHubCliMissingException() : IOException("Bu işlem için
 
 internal sealed class GitHubLoginRequiredException() : IOException("Bu işlem için GitHub’a giriş yapın.");
 
+internal sealed class GitHubWorkflowPermissionException() : IOException(
+    "GitHub Actions dosyalarını göndermek için GitHub hesabında ek izin gerekiyor.");
+
 internal sealed record GitHubRepositoryOwner(string Login, bool IsOrganization)
 {
     public string Label => IsOrganization ? $"{Login} (organizasyon)" : $"{Login} (kişisel hesap)";
@@ -71,9 +74,15 @@ internal static class GitHubCli
         throw new IOException("Kurulum tamamlandı ancak GitHub CLI bulunamadı. Kurulum kılavuzunu açabilir veya yeniden deneyebilirsiniz.");
     }
 
-    public static async Task LoginAsync(IProgress<string> progress, CancellationToken token)
+    public static Task LoginAsync(IProgress<string> progress, CancellationToken token) =>
+        AuthorizeAsync(["auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key"], progress, token);
+
+    internal static Task AuthorizeWorkflowsAsync(IProgress<string> progress, CancellationToken token) =>
+        AuthorizeAsync(["auth", "refresh", "--hostname", "github.com", "--scopes", "workflow"], progress, token);
+
+    private static async Task AuthorizeAsync(string[] args, IProgress<string> progress, CancellationToken token)
     {
-        var info = CreateInfo(["auth", "login", "--hostname", "github.com", "--web", "--skip-ssh-key"]);
+        var info = CreateInfo(args);
         var (code, output, error) = await ProjectTools.CaptureAsync(info, "GitHub girişi", 900, token, line =>
         {
             var match = DeviceCode.Match(line);
@@ -99,6 +108,16 @@ internal static class GitHubCli
 
     public static async Task<string> ReadAccountAsync(CancellationToken token) =>
         (await RunAsync(["api", "--hostname", "github.com", "user", "--jq", ".login"], token)).Trim();
+
+    internal static async Task VerifyWorkflowPermissionAsync(CancellationToken token)
+    {
+        string response = await RunAsync(["api", "--hostname", "github.com", "--include", "user", "--jq", ".login"], token);
+        var scopes = Regex.Match(response, @"^X-OAuth-Scopes:[ \t]*(?<scopes>[^\r\n]*)",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        if (scopes.Success && !scopes.Groups["scopes"].Value.Split(',', StringSplitOptions.TrimEntries)
+                .Contains("workflow", StringComparer.OrdinalIgnoreCase))
+            throw new GitHubWorkflowPermissionException();
+    }
 
     private static bool IsRepositoryName(string name) =>
         Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}\z") &&

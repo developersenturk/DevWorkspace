@@ -371,7 +371,15 @@
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
                         <dxg:GridColumn Header="DAL" FieldName="Branch" Width="103"/>
-                        <dxg:GridColumn x:Name="RemoteColumn" Header="UZAK DEPO" FieldName="Git.RemoteSummary" Width="135"/>
+                        <dxg:GridColumn x:Name="RemoteColumn" Header="UZAK DEPO" FieldName="Git.RemoteSummary" Width="135">
+                            <dxg:GridColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding RowData.Row.Git.RemoteSummary}"
+                                               ToolTip="{Binding RowData.Row.Git.RemoteSummary}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="4,0"/>
+                                </DataTemplate>
+                            </dxg:GridColumn.CellTemplate>
+                        </dxg:GridColumn>
                         <dxg:GridColumn Header="DEĞ." FieldName="ChangedFiles" Width="60"/>
                         <dxg:GridColumn x:Name="VersionColumn" Header="Grup" FieldName="ProjectGroupKey"
                                         Visible="False" ShowInColumnChooser="False"/>

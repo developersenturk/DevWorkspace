@@ -116,6 +116,7 @@
                         <Button.ContextMenu>
                             <ContextMenu>
                                 <MenuItem x:Name="AddRemoteItem" Header="Uzak depo ekle…" Click="AddRemoteClick"/>
+                                <MenuItem x:Name="ManageRemotesItem" Header="Uzak depoları yönet…" Click="ManageRemotesClick"/>
                                 <MenuItem x:Name="PublishMenuItem" Header="GitHub’da yayımla…" Click="PublishClick"/>
                                 <MenuItem x:Name="PushSelectedItem" Header="Tek uzak depoya gönder"
                                           Visibility="Collapsed"/>

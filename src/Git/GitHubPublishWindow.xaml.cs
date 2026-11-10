@@ -13,6 +13,7 @@ public partial class GitHubPublishWindow : ThemedWindow
     private readonly GitStatus _expected;
     private string? _account;
     private bool _busy;
+    private bool _workflowPermissionRequired;
     private CancellationTokenSource? _loginCancellation;
 
     internal Uri? RepositoryUrl { get; private set; }
@@ -73,9 +74,12 @@ public partial class GitHubPublishWindow : ThemedWindow
     }
 
     private async void LoginClick(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub giriş kodu alınıyor…", SignInAsync);
+        await RunAsync("GitHub giriş kodu alınıyor…", () => SignInAsync(false));
 
-    private async Task SignInAsync()
+    private async void WorkflowPermissionClick(object sender, RoutedEventArgs e) =>
+        await RunAsync("GitHub Actions izni için onay kodu alınıyor…", () => SignInAsync(true));
+
+    private async Task SignInAsync(bool authorizeWorkflows)
     {
         using var cancellation = new CancellationTokenSource();
         _loginCancellation = cancellation;
@@ -90,8 +94,21 @@ public partial class GitHubPublishWindow : ThemedWindow
         });
         try
         {
-            await GitHubCli.LoginAsync(progress, cancellation.Token);
-            await ReadAccountAsync();
+            if (authorizeWorkflows)
+            {
+                if (!string.Equals(_account, await GitHubCli.ReadAccountAsync(cancellation.Token), StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+                await GitHubCli.AuthorizeWorkflowsAsync(progress, cancellation.Token);
+                await GitHubCli.VerifyWorkflowPermissionAsync(cancellation.Token);
+                _workflowPermissionRequired = false;
+                Status.Text = "GitHub Actions izni alındı. Gönderimi yeniden deneyin.";
+            }
+            else
+            {
+                await GitHubCli.LoginAsync(progress, cancellation.Token);
+                await ReadAccountAsync();
+                _workflowPermissionRequired = false;
+            }
         }
         finally
         {
@@ -117,6 +134,9 @@ public partial class GitHubPublishWindow : ThemedWindow
 
         await RunAsync(RepositoryCreated ? "İlk push yeniden deneniyor…" : "GitHub deposu oluşturuluyor…", async () =>
         {
+            if (RepositoryCreated && !string.Equals(account, await GitHubCli.ReadAccountAsync(CancellationToken.None), StringComparison.OrdinalIgnoreCase))
+                throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+            await _git.VerifyGitHubPublishPermissionAsync(_expected, CancellationToken.None);
             if (!RepositoryCreated)
             {
                 await _git.VerifyNewPublishAsync(_expected, CancellationToken.None);
@@ -154,11 +174,17 @@ public partial class GitHubPublishWindow : ThemedWindow
         catch (OperationCanceledException)
         {
             Status.Text = "GitHub girişi iptal edildi.";
-            LoginButton.Visibility = Visibility.Visible;
+            if (!_workflowPermissionRequired)
+                LoginButton.Visibility = Visibility.Visible;
+        }
+        catch (GitHubWorkflowPermissionException ex)
+        {
+            _workflowPermissionRequired = true;
+            Status.Text = RepositoryCreated ? $"İlk push tamamlanmadı. {ex.Message}" : ex.Message;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            Status.Text = RepositoryCreated ? $"Depo oluşturuldu. İlk push tamamlanmadı. {ex.Message}" : ex.Message;
+            Status.Text = RepositoryCreated ? $"İlk push tamamlanmadı. {ex.Message}" : ex.Message;
             if (_account is null)
                 RetryButton.Visibility = Visibility.Visible;
         }
@@ -180,7 +206,10 @@ public partial class GitHubPublishWindow : ThemedWindow
         RepositoryName.IsEnabled = PrivateRepository.IsEnabled = !_busy && !RepositoryCreated;
         RepositoryTarget.Text = RepositoryUrl?.AbsoluteUri ??
             (owner is null || name.Length == 0 ? "" : $"github.com/{owner.Login}/{name}");
-        Publish.IsEnabled = !_busy && _account is not null && !Published && owner is not null &&
+        WorkflowPermissionButton.Visibility = _workflowPermissionRequired && _account is not null
+            ? Visibility.Visible : Visibility.Collapsed;
+        WorkflowPermissionButton.IsEnabled = !_busy;
+        Publish.IsEnabled = !_busy && !_workflowPermissionRequired && _account is not null && !Published && owner is not null &&
             (RepositoryCreated || Regex.IsMatch(name, @"\A[A-Za-z0-9_.-]{1,100}\z") &&
                 name is not ("." or "..") && !name.EndsWith(".git", StringComparison.OrdinalIgnoreCase));
         Publish.Content = RepositoryCreated ? "Push’u yeniden dene" : "Oluştur ve push et";

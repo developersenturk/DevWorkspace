@@ -317,11 +317,30 @@ internal sealed class GitWorkbench(string repository)
         await ConfigureGitHubCredentialAsync(url, helper, token);
     }
 
+    internal async Task RemoveRemoteAsync(GitRemote remote, CancellationToken token)
+    {
+        await VerifyRepositoryAsync(token);
+        if (!(await ReadRemoteNamesAsync(token)).Contains(remote.Name, StringComparer.Ordinal) ||
+            await ReadRemoteAsync(remote.Name, token) != remote)
+            throw new IOException("Uzak depo bağlantısı değişti. Listeyi kontrol edip yeniden deneyin.");
+
+        await RunAsync(["remote", "remove", "--", remote.Name], token);
+    }
+
     private async Task ConfigureGitHubCredentialAsync(string url, string helper, CancellationToken token)
     {
         string key = $"credential.{url}.helper";
         await RunAsync(["config", "--local", "--replace-all", key, ""], token);
         await RunAsync(["config", "--local", "--add", key, helper], token);
+    }
+
+    internal async Task VerifyGitHubPublishPermissionAsync(GitStatus expected, CancellationToken token)
+    {
+        await VerifyHeadAsync(expected, token);
+        string files = await RunAsync(["ls-tree", "-r", "--name-only", "-z", expected.CommitId!, "--", ".github/workflows"], token);
+        if (files.Split('\0').Any(path => path.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) ||
+                                           path.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase)))
+            await GitHubCli.VerifyWorkflowPermissionAsync(token);
     }
 
     internal async Task PublishToGitHubAsync(GitStatus expected, Uri repositoryUrl, CancellationToken token)
@@ -420,8 +439,21 @@ internal sealed class GitWorkbench(string repository)
 
         string[] tracking = destination.SetUpstream ? ["--set-upstream"] : [];
         string source = destination.SetUpstream ? head : commit;
-        await RunAsync(["-c", $"remote.{destination.Remote}.mirror=false", "push", "--porcelain",
+        var (code, output, error) = await GitProjectOperations.RunAsync(repository,
+            ["-c", $"remote.{destination.Remote}.mirror=false", "push", "--porcelain",
             "--no-follow-tags", "--recurse-submodules=no", .. tracking, "--", destination.Remote, $"{source}:{destination.Ref}"], token, 300, promptForSsh: true);
+        if (code != 0)
+            throw PushError(output, error);
+    }
+
+    private static IOException PushError(string output, string error)
+    {
+        string detail = ErrorText($"{output.Trim()}\n{error.Trim()}");
+        if (detail.Contains("without `workflow` scope", StringComparison.OrdinalIgnoreCase))
+            return new GitHubWorkflowPermissionException();
+        if (detail.Contains("remote: Repository not found", StringComparison.OrdinalIgnoreCase))
+            detail = $"Uzak depo bulunamadı veya bu hesapla erişilemiyor. Depo adresini ve hesabı kontrol edin.\n{detail}";
+        return new IOException(detail);
     }
 
     public async Task FetchAsync(string remote, CancellationToken token)

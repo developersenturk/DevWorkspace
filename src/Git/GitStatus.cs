@@ -38,7 +38,7 @@ internal sealed record GitStatus(
 
     public string Tracking => Ahead.HasValue ? $"↑ {Ahead}   ↓ {Behind}" : "—";
     public string RemoteNames => Remotes is { Count: > 0 } ? string.Join(", ", Remotes) : "—";
-    public string RemoteSummary => Upstream ?? RemoteNames;
+    public string RemoteSummary => Remotes is { Count: > 1 } ? RemoteNames : Upstream ?? RemoteNames;
 
     public bool HasSameSnapshot(GitStatus other) =>
         this with { Files = other.Files, Remotes = other.Remotes } == other &&

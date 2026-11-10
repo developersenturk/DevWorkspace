@@ -262,6 +262,7 @@ public partial class GitWorkbenchView : UserControl
             : target is null ? "Push için uzak depo ve hedef dal gerekli." : $"Hedef {target.Label}";
         PublishButton.Visibility = _state is { Remotes.Length: 0 } ? Visibility.Visible : Visibility.Collapsed;
         AddRemoteItem.IsEnabled = !_busy && _state is not null;
+        ManageRemotesItem.IsEnabled = !_busy && FetchRemote.ItemsSource is GitRemote[] { Length: > 0 };
         PublishMenuItem.IsEnabled = PublishButton.IsEnabled =
             !_busy && _state is { InProgress: null, Status: { HeadRef: not null, CommitId: not null } };
         PublishButton.ToolTip = PublishButton.IsEnabled ? "Yeni bir GitHub deposu oluştur ve etkin dalı gönder."
@@ -502,6 +503,17 @@ public partial class GitWorkbenchView : UserControl
                 : $"GitHub deposu oluşturuldu. {dialog.RepositoryUrl} · İlk push tamamlanmadı.";
             _owner.GitRepositoryChanged();
         }
+    }
+
+    private async void ManageRemotesClick(object sender, RoutedEventArgs e)
+    {
+        if (_busy || FetchRemote.ItemsSource is not GitRemote[] { Length: > 0 } remotes)
+            return;
+
+        var dialog = new GitRemotesWindow(Project.Name, remotes, _state?.Upstream?.Remote) { Owner = _owner };
+        if (dialog.ShowDialog() == true && dialog.RemoteToRemove is { } remote)
+            await RunOperationAsync("Uzak depo bağlantısı kaldırılıyor…", token => _git.RemoveRemoteAsync(remote, token),
+                $"{remote.Name} bağlantısı kaldırıldı.");
     }
 
     private async void AddRemoteClick(object sender, RoutedEventArgs e)
