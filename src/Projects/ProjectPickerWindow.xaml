@@ -1,0 +1,33 @@
+<Window x:Class="DevWorkspace.ProjectPickerWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Width="650" Height="415" MinWidth="455" MinHeight="300"
+        Title="Hızlı proje aç" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True" PreviewKeyDown="PickerKeyDown" Loaded="PickerLoaded">
+    <Window.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></Window.Resources>
+    <Grid Margin="13">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <TextBox x:Name="QueryBox" Height="35" Padding="8,4" VerticalContentAlignment="Center" TextChanged="QueryChanged"
+                 AutomationProperties.Name="Proje adı, yolu veya grup" ToolTip="Proje adı, yolu veya grup"/>
+        <ListBox x:Name="Results" Grid.Row="1" Margin="0,9,0,8" MouseDoubleClick="ResultDoubleClick"
+                 ItemContainerStyle="{StaticResource NavRow}" AutomationProperties.Name="Proje sonuçları"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel Margin="0,2">
+                        <Border DockPanel.Dock="Right" Style="{StaticResource StatusBadge}" VerticalAlignment="Center" Margin="8,0,0,0">
+                            <TextBlock Text="{Binding Git.Label}" Style="{StaticResource StatusLabel}"/>
+                        </Border>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding DisplayPath}" Foreground="{DynamicResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <DockPanel Grid.Row="2">
+            <Button x:Name="ChooseButton" DockPanel.Dock="Right" Content="Aç" Style="{StaticResource Primary}" Click="ChooseClick" Margin="9,0,0,0"/>
+            <TextBlock x:Name="PickerHint" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+    </Grid>
+</Window>
+

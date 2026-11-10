@@ -1,0 +1,102 @@
+<Window x:Class="DevWorkspace.ComparisonWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Proje karşılaştırması" Width="1110" Height="630"
+        MinWidth="735" MinHeight="420" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" Loaded="WindowLoaded" Closed="WindowClosed">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="../Resources/Workbench.xaml"/></ResourceDictionary.MergedDictionaries>
+            <Style x:Key="RemovedDiff" TargetType="Border">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Removed}" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource BadgeErrorSurface}"/>
+                        <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeErrorText}"/>
+                        <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <Style x:Key="AddedDiff" TargetType="Border">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Added}" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource BadgeSuccessSurface}"/>
+                        <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeSuccessText}"/>
+                        <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,10">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,8,0">
+                <TextBlock x:Name="LeftName" FontWeight="SemiBold" FontSize="16"/>
+                <TextBlock x:Name="LeftPathText" Style="{StaticResource SmallLabel}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                <TextBlock x:Name="RightName" FontWeight="SemiBold" FontSize="16"/>
+                <TextBlock x:Name="RightPathText" Style="{StaticResource SmallLabel}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="250" MinWidth="165"/><ColumnDefinition Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <DockPanel Background="{DynamicResource Canvas}">
+                <TextBox x:Name="FileQuery" DockPanel.Dock="Top" Height="30" Padding="6,4" TextChanged="FileQueryChanged"
+                         ToolTip="Değişen dosyalarda ara" AutomationProperties.Name="Değişen dosyalarda ara"/>
+                <ListBox x:Name="DifferenceList" SelectionChanged="DifferenceChanged" ItemContainerStyle="{StaticResource NavRow}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Dosya farkları">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Path}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding Path}"/>
+                                <TextBlock Text="{Binding Label}" Style="{StaticResource SmallLabel}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" ResizeBehavior="PreviousAndNext" ShowsPreview="True" Background="{DynamicResource Line}"/>
+            <DockPanel Grid.Column="2" Background="{DynamicResource Canvas}">
+                <TextBlock x:Name="PreviewCaption" DockPanel.Dock="Top" Padding="9,7" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
+                <DataGrid x:Name="LinesGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column" RowHeight="23"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource Divider}" CanUserSortColumns="False"
+                          EnableRowVirtualization="True" BorderBrush="{DynamicResource Line}" FontFamily="Consolas" FontSize="12"
+                          AutomationProperties.Name="Yan yana dosya farkları">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="SOL DOSYA" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource RemovedDiff}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left" Width="40" Text="{Binding LeftNumber}" TextAlignment="Right" Margin="0,0,8,0"
+                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Left}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Left}"/>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="SAĞ DOSYA" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource AddedDiff}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Left" Width="40" Text="{Binding RightNumber}" TextAlignment="Right" Margin="0,0,8,0"
+                                                       Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Right}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Right}"/>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Grid>
+        <DockPanel Grid.Row="2" Margin="0,8,0,0">
+            <Button DockPanel.Dock="Right" IsCancel="True" Content="Kapat" Margin="8,0,0,0"/>
+            <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Text="Dosyalar karşılaştırılıyor…" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
+        </DockPanel>
+    </Grid>
+</Window>
+

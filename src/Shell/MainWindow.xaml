@@ -1,0 +1,700 @@
+<Window x:Class="DevWorkspace.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+        xmlns:dxdo="http://schemas.devexpress.com/winfx/2008/xaml/docking"
+        xmlns:local="clr-namespace:DevWorkspace"
+        xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid" xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors" Title="DevWorkspace"
+        Icon="../Assets/DevWorkspace.ico" Width="1240" Height="700" MinWidth="800" MinHeight="480" WindowStartupLocation="CenterScreen"
+        Loaded="OnLoaded" Closing="OnClosing" Closed="OnClosed" PreviewKeyDown="WindowKeyDown"
+        AllowDrop="True" PreviewDragOver="ProjectDragOver" PreviewDrop="ProjectDrop"
+        Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Resources/Workbench.xaml"/>
+                <ResourceDictionary Source="../Resources/DashboardStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <local:ProjectGroupMembershipConverter x:Key="ProjectGroupMembership"/>
+            <DataTemplate x:Key="DashboardLink">
+                <dx:SimpleButton Click="DashboardLinkClick" Style="{StaticResource DashboardRowButton}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="&#xE72A;" Style="{StaticResource Icon}"
+                                   Foreground="{DynamicResource Muted}" Margin="8,0,0,0"/>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}"/>
+                            <TextBlock Text="{Binding Detail}" Foreground="{DynamicResource Muted}" FontSize="11"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Detail}"/>
+                        </StackPanel>
+                    </DockPanel>
+                </dx:SimpleButton>
+            </DataTemplate>
+            <DataTemplate x:Key="DashboardMetric">
+                <dx:SimpleButton Click="DashboardLinkClick" Style="{StaticResource DashboardMetricButton}" ToolTip="{Binding Title}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource DashboardColumnHeader}"/>
+                        <TextBlock Text="{Binding Detail}" FontSize="23" FontWeight="SemiBold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Navigation}" Value="changed">
+                                            <Setter Property="Foreground" Value="{DynamicResource BadgeWarningText}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Navigation}" Value="warning">
+                                            <Setter Property="Foreground" Value="{DynamicResource BadgeErrorText}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Detail}" Value="0">
+                                            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </dx:SimpleButton>
+            </DataTemplate>
+            <DataTemplate x:Key="DashboardSeverityMetric">
+                <dx:SimpleButton Style="{StaticResource DashboardMetricButton}"
+                                 AutomationProperties.Name="{Binding Severity}" ToolTip="{Binding Severity}">
+                    <StackPanel>
+                        <Border Style="{StaticResource DashboardSeverity}">
+                            <TextBlock Text="{Binding Severity}" FontSize="10" FontWeight="SemiBold"/>
+                        </Border>
+                        <TextBlock Text="{Binding Count}" FontSize="19" FontWeight="SemiBold" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </dx:SimpleButton>
+            </DataTemplate>
+            <DataTemplate x:Key="DashboardFindingRow">
+                <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0">
+                    <dx:SimpleButton Style="{StaticResource DashboardRowButton}"
+                                     AutomationProperties.Name="{Binding Package}" ToolTip="{Binding Detail}">
+                        <Grid Margin="4,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="75"/><ColumnDefinition Width="1.25*"/>
+                                <ColumnDefinition Width="68"/><ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource DashboardSeverity}">
+                                <TextBlock Text="{Binding Severity}" FontSize="10" FontWeight="SemiBold"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="{Binding Package}" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Version}" FontFamily="Consolas"
+                                       FontSize="11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Target}" Foreground="{DynamicResource Muted}"
+                                       FontSize="11" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        </Grid>
+                    </dx:SimpleButton>
+                </Border>
+            </DataTemplate>
+            <Style x:Key="MainMenuItem" TargetType="MenuItem">
+                <Setter Property="HeaderTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=MenuItem}}"
+                                           Style="{StaticResource Icon}" FontSize="12" Margin="0,0,5,0"/>
+                                <AccessText Text="{Binding}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="ExplorerActionButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+                <Setter Property="Width" Value="24"/><Setter Property="Height" Value="23"/>
+                <Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/>
+                <Setter Property="FontSize" Value="15"/><Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            </Style>
+            <DataTemplate x:Key="ExplorerNodeLabel">
+                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsSection}" Value="True">
+                                    <Setter Property="FontSize" Value="11"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </DataTemplate>
+            <DataTemplate x:Key="ExplorerNodeEditor">
+                <dxe:TextEdit x:Name="InlineFolderName" EditValue="{Binding FolderEdit.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              Loaded="ExplorerInlineEditorLoaded"
+                              Height="23" Margin="0,1" Padding="4,0" VerticalContentAlignment="Center"
+                              AutomationProperties.Name="Klasör adı" ToolTip="Enter ile kaydet · Esc ile iptal et"/>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid Background="{DynamicResource WorkspaceBackground}">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="29"/></Grid.RowDefinitions>
+
+        <DockPanel Margin="8,3">
+            <DockPanel DockPanel.Dock="Right" Width="350" Height="28" VerticalAlignment="Center" Margin="8,0,0,0">
+                <TextBlock DockPanel.Dock="Left" Text="&#xE721;" Style="{StaticResource Icon}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0"/>
+                <Button DockPanel.Dock="Right" x:Name="ClearSearchButton" Content="×" FontSize="17" Width="25" MinHeight="23"
+                        Style="{StaticResource IconButton}" Padding="2,0" Visibility="Collapsed"
+                        Click="ClearSearchClick" AutomationProperties.Name="Aramayı temizle"/>
+                <dxe:TextEdit x:Name="SearchBox" EditValueChanged="FilterChanged" Padding="7,0"
+                              NullText="Proje veya yol ara" NullTextForeground="{DynamicResource Muted}"
+                              ShowNullTextForEmptyValue="True" ShowNullTextIfFocused="False"
+                              VerticalContentAlignment="Center" AutomationProperties.Name="Proje veya yol ara"/>
+            </DockPanel>
+            <Menu x:Name="MainMenu" VerticalAlignment="Center">
+                <MenuItem x:Name="FileMenu" Header="_Dosya" Tag="&#xE8A5;" Style="{StaticResource MainMenuItem}" SubmenuOpened="FileMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE838;}" x:Name="OpenWorkspaceMenu" Header="Çalışma alanı aç veya kur…" InputGestureText="Ctrl+O" Click="ChooseWorkspaceClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE81C;}" x:Name="RecentWorkspacesMenu" Header="Son çalışma alanları"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE721;}" x:Name="QuickOpenMenu" Header="Hızlı proje aç…" InputGestureText="Ctrl+K" Click="QuickOpenClick" IsEnabled="False"/>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE71B;}" x:Name="LinkSolutionMenu" Header="Çözüm bağla…" Click="LinkSolutionClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE71B;}" x:Name="LinkFolderMenu" Header="Klasör bağla…" Click="LinkFolderClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE74E;}" x:Name="ExportWorkspaceMenu" Header="Çalışma alanını dışa aktar…" Click="ExportWorkspaceClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE896;}" x:Name="ImportWorkspaceMenu" Header="Çalışma alanını içe aktar…" Click="ImportWorkspaceClick"/>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE8BB;}" Header="Çıkış" InputGestureText="Alt+F4" Click="ExitClick"/>
+                </MenuItem>
+                <MenuItem x:Name="ProjectMenu" Header="_Proje" Tag="&#xE8B7;" Style="{StaticResource MainMenuItem}" SubmenuOpened="ProjectMenuOpened">
+                    <MenuItem Header="Bir proje seçin" IsEnabled="False"/>
+                </MenuItem>
+                <MenuItem Header="Gi_t" Tag="&#xE8F1;" Style="{StaticResource MainMenuItem}" SubmenuOpened="GitMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE8F1;}" x:Name="SelectedRepositoryMenu" Header="Seçili depo" IsEnabled="False">
+                        <MenuItem Icon="{local:MenuGlyph {x:Static local:MenuGlyphExtension.GitHistory}}" Header="Git geçmişi" Tag="History" Click="RepositoryCommandClick"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE8F1;}" Header="Dallar ve etiketler…" Tag="References" Click="RepositoryCommandClick"/>
+                        <Separator/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE896;}" Header="Fetch · Uzak değişiklikleri al" Tag="Fetch" Click="RepositoryCommandClick"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE72C;}" Header="Pull · Yerel dalı güncelle" Tag="Pull" Click="RepositoryCommandClick"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE898;}" Header="Push · Commit’leri gönder" Tag="Push" Click="RepositoryCommandClick"/>
+                    </MenuItem>
+                    <MenuItem x:Name="BatchFetchMenu" Icon="{local:MenuGlyph &#xE896;}" Header="Seçili depoları getir (Fetch)…" Click="BatchFetchClick"
+                              ToolTip="Proje listesinde Ctrl veya Shift ile birden fazla proje seçin." IsEnabled="False"/>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE890;}" x:Name="GitNavigationMenu" Header="Git görünümleri" IsEnabled="False">
+                        <MenuItem Icon="{local:MenuGlyph &#xE8F1;}" Header="Git depoları" Tag="repositories" Click="NavigateFromMenu"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE70F;}" Header="Değişiklikler" Tag="changed" Click="NavigateFromMenu"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE7BA;}" Header="Git uyarıları" Tag="warning" Click="NavigateFromMenu"/>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="GitRecoveryMenu" Header="Git projelerini geri yükle…" Click="GitRecoveryClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE8B7;}" x:Name="GitRecoveryFolderMenu" Header="Git yedek klasörünü seç…" Click="GitRecoveryFolderClick"
+                              ToolTip="Format sonrasında erişebileceğiniz bir yedek klasörü seçin."/>
+                </MenuItem>
+                <MenuItem x:Name="ViewMenu" Header="_Görünüm" Tag="&#xE890;" Style="{StaticResource MainMenuItem}" SubmenuOpened="ViewMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE72C;}" x:Name="RefreshMenu" Header="Yeniden tara" InputGestureText="F5" Click="RefreshClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE721;}" Header="Projelerde ara" InputGestureText="Ctrl+F" Click="FocusSearchClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE890;}" Header="Proje görünümleri">
+                        <MenuItem Icon="{local:MenuGlyph &#xE80A;}" Header="Genel Bakış" Tag="overview" Click="NavigateFromMenu"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE80A;}" Header="Tüm projeler" Tag="all" Click="NavigateFromMenu"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE734;}" Header="Favoriler" Tag="favorites" Click="NavigateFromMenu"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE81C;}" Header="Son açılanlar" Tag="recent" Click="NavigateFromMenu"/>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE8FD;}" Header="Satır yoğunluğu">
+                        <MenuItem Icon="{local:MenuGlyph &#xE8CB;}" x:Name="CompactMenu" Header="Kompakt" IsCheckable="True" Click="CompactDensityClick"/>
+                        <MenuItem Icon="{local:MenuGlyph &#xE8CE;}" x:Name="ComfortableMenu" Header="Rahat" IsCheckable="True" Click="ComfortableDensityClick"/>
+                    </MenuItem>
+                    <MenuItem Icon="{local:MenuGlyph &#xE790;}" x:Name="ThemeMenu" Header="Tema"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE8A9;}" x:Name="ColumnsMenu" Header="Sütunlar"/>
+                    <Separator/>
+                    <MenuItem x:Name="SaveFilterMenu" Icon="{local:MenuGlyph &#xE74E;}" Header="Geçerli filtreyi kaydet…" Click="SaveFilterClick"/>
+                    <MenuItem x:Name="RemoveFilterMenu" Icon="{local:MenuGlyph &#xE74D;}" Header="Seçili kayıtlı filtreyi sil" Click="RemoveFilterClick" IsEnabled="False"/>
+                </MenuItem>
+                <MenuItem x:Name="WindowsMenu" Header="P_encereler" Tag="&#xE78B;" Style="{StaticResource MainMenuItem}" SubmenuOpened="WindowsMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE8B7;}" Header="Gezgin" Click="ShowExplorerClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE80A;}" Header="Proje listesi" Click="ShowProjectListClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE946;}" x:Name="ShowProjectInfoMenu" Header="Proje bilgileri" Click="ShowProjectInfoClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph {x:Static local:MenuGlyphExtension.GitOperations}}" x:Name="ShowGitMenu" Header="Git işlemleri" Click="ShowGitClick" IsEnabled="False"/>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE74E;}" Header="Düzeni kaydet…" Click="SaveNamedLayoutClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE78B;}" x:Name="SavedLayoutsMenu" Header="Kayıtlı düzenler"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="ResetLayoutMenu" Header="Pencere düzenini sıfırla" Click="ResetDockLayoutClick"/>
+                </MenuItem>
+                <MenuItem Header="_Yardım" Tag="&#xE897;" Style="{StaticResource MainMenuItem}">
+                    <MenuItem Icon="{local:MenuGlyph &#xE765;}" Header="Klavye kısayolları" Click="KeyboardShortcutsClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE713;}" Header="Ayar dosyalarının konumu" Click="SettingsLocationsClick"/>
+                    <Separator/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE946;}" Header="DevWorkspace hakkında" Click="AboutClick"/>
+                </MenuItem>
+            </Menu>
+        </DockPanel>
+
+        <dxdo:DockLayoutManager x:Name="WorkbenchDock" Grid.Row="1" Margin="10,0,10,0"
+                                DockingStyle="VS2010" ClosedPanelsBarVisibility="Never"
+                                DockItemClosed="WorkbenchPaneClosed">
+            <dxdo:LayoutGroup x:Name="WorkbenchRoot" Orientation="Horizontal" DockItemInterval="6">
+                <dxdo:LayoutPanel x:Name="ExplorerPane" Caption="Gezgin" ItemWidth="207" MinWidth="155" MaxWidth="400"
+                                  AllowClose="False" ShowCloseButton="False">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="14,7,10,7">
+                        <TextBlock x:Name="WorkspacePath" Text="Yerel çalışma alanı" FontSize="11" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"
+                                   FontFamily="Consolas" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    </DockPanel>
+                    <dxg:TreeViewControl x:Name="Navigation" Background="{DynamicResource PanelSoft}"
+                        DataAreaBackground="{DynamicResource PanelSoft}" BorderThickness="0"
+                        TreeViewFieldName="Label" ChildNodesPath="Children" HasChildNodesPath="HasChildren"
+                        ExpandStateFieldName="Expanded" EnableDynamicLoading="True" FetchSublevelChildrenOnExpand="False"
+                        ShowRootIndent="False" NodeIndent="13" AllowEditing="False" HorizontalScrollbarVisibility="Disabled"
+                        SelectedItemChanged="NavigationChanged" NodeExpanded="FolderExpanded" NodeCollapsed="FolderCollapsed"
+                        PreviewKeyDown="ExplorerNavigationKeyDown" AutomationProperties.Name="Proje gezgini">
+                        <dxg:TreeViewControl.NodeContentTemplate>
+                            <DataTemplate>
+                                <DockPanel x:Name="FolderRow" DataContext="{Binding RowData.Row}" ToolTip="{Binding Hint}"
+                                           Background="Transparent" Margin="1,0,6,0" MinHeight="26"
+                                           PreviewMouseRightButtonDown="ExplorerFolderRightClick">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Icon}" Style="{StaticResource Icon}" Margin="0,0,6,0"/>
+                                    <StackPanel x:Name="FolderActions" DockPanel.Dock="Right" Orientation="Horizontal" Visibility="Collapsed">
+                                        <Button Content="+" Style="{StaticResource ExplorerActionButton}" Click="AddExplorerFolderClick"
+                                                AutomationProperties.Name="Yeni klasör" ToolTip="Yeni klasör ekle"/>
+                                        <Button Content="⋯" Style="{StaticResource ExplorerActionButton}" Click="ExplorerFolderMenuClick"
+                                                AutomationProperties.Name="Klasör işlemleri" ToolTip="Klasör işlemleri"/>
+                                    </StackPanel>
+                                    <Border x:Name="FolderCount" DockPanel.Dock="Right" Style="{StaticResource NavigationCountBadge}">
+                                        <TextBlock Text="{Binding Count}" Style="{StaticResource NavigationCountLabel}"/>
+                                    </Border>
+                                    <ContentControl Content="{Binding}" IsTabStop="False" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+                                        <ContentControl.Style>
+                                            <Style TargetType="ContentControl">
+                                                <Setter Property="ContentTemplate" Value="{StaticResource ExplorerNodeLabel}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource ExplorerNodeEditor}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ContentControl.Style>
+                                    </ContentControl>
+                                </DockPanel>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.Count, ElementName=FolderRow}" Value="{x:Null}">
+                                        <Setter TargetName="FolderCount" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding DataContext.IsEditing, ElementName=FolderRow}" Value="True">
+                                        <Setter TargetName="FolderCount" Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding DataContext.HasFolderActions, ElementName=FolderRow}" Value="True"/>
+                                            <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=dxg:RowControl}}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter TargetName="FolderActions" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="FolderCount" Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding DataContext.HasFolderActions, ElementName=FolderRow}" Value="True"/>
+                                            <Condition Binding="{Binding IsKeyboardFocusWithin, ElementName=FolderRow}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter TargetName="FolderActions" Property="Visibility" Value="Visible"/>
+                                        <Setter TargetName="FolderCount" Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </dxg:TreeViewControl.NodeContentTemplate>
+                    </dxg:TreeViewControl>
+                </DockPanel>
+                </dxdo:LayoutPanel>
+                <dxdo:LayoutGroup x:Name="ProjectArea" Orientation="Vertical" MinWidth="290" DockItemInterval="6">
+                    <dxdo:LayoutPanel x:Name="ProjectsPane" Caption="Projeler" ShowCaption="False" AllowClose="False"
+                                      AllowHide="False" AllowFloat="False" AllowMove="False" AllowDock="False">
+            <Grid>
+            <Border x:Name="ProjectListPanel">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                <DockPanel Margin="14,12,13,10">
+                    <Button x:Name="LastSolutionButton" DockPanel.Dock="Right" Content="Son çözümü yeniden aç"
+                            Click="LastSolutionClick" Margin="8,0,0,0" VerticalAlignment="Center" Visibility="Collapsed"/>
+                    <CheckBox x:Name="GroupVersionsToggle" DockPanel.Dock="Right" Content="Proje gruplarını göster"
+                              VerticalAlignment="Center" Margin="8,0,0,0" Checked="GroupingChanged" Unchecked="GroupingChanged"
+                              Style="{StaticResource SoftCheck}" ToolTip="Aynı gruba atanmış projeleri birlikte göster"/>
+                    <Button x:Name="GroupSelectionButton" DockPanel.Dock="Right" Content="Seçili projeleri grupla"
+                            Click="GroupSelectionClick" Visibility="Collapsed" Margin="8,0,0,0" VerticalAlignment="Center"
+                            Style="{StaticResource Primary}" ToolTip="Ctrl veya Shift ile seçtiğiniz projeleri aynı gruba ekleyin"/>
+                    <Button x:Name="CompareSelectionButton" DockPanel.Dock="Right" Content="2 sürümü karşılaştır"
+                            Click="CompareSelectionClick" Visibility="Collapsed" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                    <Border DockPanel.Dock="Right" Style="{StaticResource NavigationCountBadge}" Padding="8,0" Margin="8,0,0,0">
+                        <TextBlock x:Name="FilterCount" Text="0 proje" Style="{StaticResource NavigationCountLabel}"/>
+                    </Border>
+                    <StackPanel>
+                        <TextBlock x:Name="ViewHeading" Text="Tüm projeler" FontSize="23" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="ViewCaption" Text="Çalışma alanındaki çözümler ve depolar" Foreground="{DynamicResource Muted}"
+                                   FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </DockPanel>
+                <dxg:GridControl x:Name="ProjectGrid" Grid.Row="1" AutoGenerateColumns="None" SelectionMode="Row"
+                                 Background="{DynamicResource Canvas}" DataAreaBackground="{DynamicResource Canvas}"
+                                 ShowBorder="False" AutoExpandAllGroups="False" RestoreStateOnSourceChange="True"
+                                 PreviewMouseLeftButtonDown="ProjectRowLeftClick" PreviewMouseRightButtonDown="PreserveProjectContextSelection"
+                                 PreviewMouseRightButtonUp="ProjectRowRightClick"
+                                 PreviewKeyDown="ProjectGridMenuKeyDown" CustomGroupDisplayText="ProjectGroupDisplayText"
+                                 RestoreStateKeyFieldName="RelativePath" SelectionChanged="ProjectSelectionChanged"
+                                 AutomationProperties.Name="Bulunan projeler">
+                    <dxg:GridControl.Columns>
+                        <dxg:GridColumn Header="PROJE" FieldName="Name" Width="240" MinWidth="135">
+                            <dxg:GridColumn.CellTemplate>
+                                <DataTemplate>
+                                    <DockPanel x:Name="ProjectCell" Margin="6,0,4,0" LastChildFill="True">
+                                        <Border x:Name="GroupRail" DockPanel.Dock="Left" Width="3" Margin="0,2,8,2" CornerRadius="1.5"
+                                                Background="{DynamicResource Line}" Visibility="Collapsed"/>
+                                        <Path DockPanel.Dock="Left" Data="M 2 1 L 8 1 L 11 4 L 11 13 L 2 13 Z M 8 1 L 8 4 L 11 4 M 4 7 L 9 7 M 4 10 L 8 10"
+                                              Stroke="{Binding Path=(TextElement.Foreground), RelativeSource={RelativeSource Self}}" StrokeThickness="1.05" StrokeLineJoin="Round" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding RowData.Row.Label}"
+                                                   FontSize="10" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Value}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Value="True">
+                                            <DataTrigger.Binding>
+                                                <MultiBinding Converter="{StaticResource ProjectGroupMembership}" Mode="OneWay">
+                                                    <Binding Path="RowData.Row.ProjectGroupKey"/>
+                                                    <Binding Path="Tag" RelativeSource="{RelativeSource AncestorType={x:Type dxg:GridControl}}"/>
+                                                </MultiBinding>
+                                            </DataTrigger.Binding>
+                                            <Setter TargetName="ProjectCell" Property="Margin" Value="15,0,4,0"/>
+                                            <Setter TargetName="GroupRail" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </dxg:GridColumn.CellTemplate>
+                        </dxg:GridColumn>
+                        <dxg:GridColumn Header="KONUM" FieldName="DisplayPath" Width="420" MinWidth="115"/>
+                        <dxg:GridColumn Header="GİT DURUMU" FieldName="Git.Label" Width="122">
+                            <dxg:GridColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border DataContext="{Binding RowData.Row}" Style="{StaticResource StatusBadge}"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center" Margin="3,0">
+                                        <TextBlock Text="{Binding Git.Label}" Style="{StaticResource StatusLabel}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </dxg:GridColumn.CellTemplate>
+                        </dxg:GridColumn>
+                        <dxg:GridColumn Header="DAL" FieldName="Branch" Width="103"/>
+                        <dxg:GridColumn x:Name="RemoteColumn" Header="UZAK DEPO" FieldName="Git.RemoteSummary" Width="135"/>
+                        <dxg:GridColumn Header="DEĞ." FieldName="ChangedFiles" Width="60"/>
+                        <dxg:GridColumn x:Name="VersionColumn" Header="Grup" FieldName="ProjectGroupKey"
+                                        Visible="False" ShowInColumnChooser="False"/>
+                    </dxg:GridControl.Columns>
+                    <dxg:GridControl.GroupSummary>
+                        <dxg:GridSummaryItem FieldName="Name" SummaryType="Count" DisplayFormat="{}{0} proje"/>
+                    </dxg:GridControl.GroupSummary>
+                    <dxg:GridControl.View>
+                        <dxg:TableView x:Name="ProjectTableView" AutoWidth="False" HorizontalScrollbarVisibility="Auto"
+                                       NavigationStyle="Row" AllowEditing="False"
+                                       ShowGroupPanel="False" ShowIndicator="False" ShowGroupedColumns="False" AllowPartialGrouping="True"
+                                       AllowColumnFiltering="False" ShowHorizontalLines="True" ShowVerticalLines="False">
+                            <dxg:TableView.ColumnHeaderStyle>
+                                <Style TargetType="dxg:GridColumnHeader">
+                                    <Setter Property="Background" Value="{DynamicResource PanelSoft}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+                                    <Setter Property="FontSize" Value="11"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </dxg:TableView.ColumnHeaderStyle>
+                            <dxg:TableView.GroupRowStyle>
+                                <Style TargetType="dxg:GroupRowControl">
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="MinHeight" Value="34"/>
+                                </Style>
+                            </dxg:TableView.GroupRowStyle>
+                        </dxg:TableView>
+                    </dxg:GridControl.View>
+                </dxg:GridControl>
+
+                <Border x:Name="EmptyPanel" Grid.Row="1" Background="{DynamicResource Canvas}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="290">
+                        <TextBlock Text="&#xE8B7;" Style="{StaticResource Icon}" FontSize="22" Foreground="{DynamicResource Ink}" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="EmptyTitle" Text="Çalışma alanı seçin" FontSize="17" FontWeight="SemiBold" TextAlignment="Center" Margin="0,10,0,4"/>
+                        <TextBlock x:Name="EmptyHint" Text="Projelerinizi görmek için bir klasör açın." TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource Muted}"/>
+                        <Button x:Name="EmptyOpenButton" Content="Çalışma alanı aç" Style="{StaticResource Primary}" Click="ChooseWorkspaceClick" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                
+            </Grid>
+
+            </Border>
+                <ScrollViewer x:Name="DashboardPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto"
+                              Background="{DynamicResource Shell}" HorizontalScrollBarVisibility="Disabled"
+                              AutomationProperties.Name="Genel Bakış" SizeChanged="DashboardSizeChanged">
+                    <StackPanel Margin="20,17,20,20" MaxWidth="1170">
+                        <DockPanel Margin="0,0,0,13">
+                            <Border DockPanel.Dock="Left" Width="38" Height="38" CornerRadius="9" Margin="0,0,10,0"
+                                    Background="{DynamicResource BadgeAccentSurface}" VerticalAlignment="Center">
+                                <TextBlock Text="&#xE80A;" Style="{StaticResource Icon}" Foreground="{DynamicResource BadgeAccentText}"
+                                           FontSize="16" HorizontalAlignment="Center"/>
+                            </Border>
+                            <StackPanel>
+                                <TextBlock Text="Genel Bakış" FontSize="27" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="DashboardSubtitle" Style="{StaticResource DashboardSecondary}" Margin="0,1,0,0"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <ItemsControl x:Name="DashboardMetrics" ItemTemplate="{StaticResource DashboardMetric}" Margin="0,0,-7,8" Tag="4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="13,12" Margin="0,0,0,12">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,10">
+                                    <dx:SimpleButton x:Name="DashboardScanButton" DockPanel.Dock="Right" Content="Tara"
+                                                     Click="DashboardScanClick" Style="{StaticResource DashboardAction}"
+                                                     Background="{DynamicResource BadgeAccentSurface}" Foreground="{DynamicResource BadgeAccentText}"
+                                                     Margin="8,0,0,0"
+                                                     ToolTip="Eksik paket bilgileri varsa paketler geri yüklenip tarama tekrarlanır."/>
+                                    <StackPanel>
+                                        <TextBlock Text="Bağımlılık güvenliği" Style="{StaticResource DashboardSectionTitle}"/>
+                                        <TextBlock x:Name="DashboardNuGetSummary" Style="{StaticResource DashboardSecondary}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </DockPanel>
+                                <ItemsControl x:Name="DashboardSeverityMetrics" ItemTemplate="{StaticResource DashboardSeverityMetric}" Margin="0,0,-7,5" Tag="4">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <Border Style="{StaticResource DashboardSurface}" CornerRadius="7">
+                                    <StackPanel>
+                                        <DockPanel Margin="8,6">
+                                            <dx:SimpleButton x:Name="DashboardAllSeverities" DockPanel.Dock="Left" Content="Tümü"
+                                                             Click="DashboardSeverityClick" Style="{StaticResource DashboardAction}" Margin="0,0,6,0"/>
+                                            <dxe:TextEdit x:Name="DashboardFindingQuery" NullText="Paket, proje veya duyuru ara"
+                                                          ShowNullTextForEmptyValue="True" EditValueChanged="DashboardFindingQueryChanged"
+                                                          AutomationProperties.Name="NuGet bulgularında ara"/>
+                                        </DockPanel>
+                                        <Border Background="{DynamicResource SurfaceRaised}" Padding="12,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="75"/><ColumnDefinition Width="1.25*"/>
+                                                    <ColumnDefinition Width="68"/><ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="ÖNEM" Style="{StaticResource DashboardColumnHeader}"/>
+                                                <TextBlock Grid.Column="1" Text="PAKET" Style="{StaticResource DashboardColumnHeader}"/>
+                                                <TextBlock Grid.Column="2" Text="SÜRÜM" Style="{StaticResource DashboardColumnHeader}"/>
+                                                <TextBlock Grid.Column="3" Text="PROJE / ÇÖZÜM" Style="{StaticResource DashboardColumnHeader}"/>
+                                            </Grid>
+                                        </Border>
+                                        <ItemsControl x:Name="DashboardNuGet" ItemTemplate="{StaticResource DashboardFindingRow}"/>
+                                        <TextBlock x:Name="DashboardFindingEmpty" Style="{StaticResource DashboardSecondary}" Margin="12,10"/>
+                                        <DockPanel x:Name="DashboardFindingFooter" Margin="10,4,8,6">
+                                            <StackPanel x:Name="DashboardFindingPager" DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <dx:SimpleButton x:Name="DashboardPreviousFindings" Content="‹" Click="DashboardPreviousFindingsClick"
+                                                                 Style="{StaticResource DashboardAction}" AutomationProperties.Name="Önceki bulgular"/>
+                                                <dx:SimpleButton x:Name="DashboardNextFindings" Content="›" Click="DashboardNextFindingsClick"
+                                                                 Style="{StaticResource DashboardAction}" Margin="4,0,0,0" AutomationProperties.Name="Sonraki bulgular"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="DashboardFindingCount" Style="{StaticResource DashboardSecondary}" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </Border>
+                                <ItemsControl x:Name="DashboardNuGetWarnings" ItemTemplate="{StaticResource DashboardLink}" Margin="0,5,0,0"/>
+                            </StackPanel>
+                        </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="1.12*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <Border x:Name="DashboardPriorityPanel" Style="{StaticResource DashboardSurface}" Padding="12" Margin="0,0,6,0">
+                                <StackPanel>
+                                    <TextBlock Text="Öncelikli işler" Style="{StaticResource DashboardSectionTitle}"/>
+                                    <TextBlock x:Name="DashboardTaskHint" Style="{StaticResource DashboardSecondary}" Margin="0,2,0,5"/>
+                                    <ItemsControl x:Name="DashboardTasks" ItemTemplate="{StaticResource DashboardLink}"/>
+                                    <Separator Margin="0,8"/>
+                                    <DockPanel>
+                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="changed" Click="DashboardListClick" Style="{StaticResource DashboardAction}"/>
+                                        <TextBlock Text="Değişiklikli depolar" Style="{StaticResource DashboardSectionTitle}"/>
+                                    </DockPanel>
+                                    <TextBlock x:Name="DashboardDirtyHint" Style="{StaticResource DashboardSecondary}"/>
+                                    <ItemsControl x:Name="DashboardDirty" ItemTemplate="{StaticResource DashboardLink}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border x:Name="DashboardRecentPanel" Grid.Column="1" Style="{StaticResource DashboardSurface}" Padding="12" Margin="6,0,0,0">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <dx:SimpleButton DockPanel.Dock="Right" Content="Tümünü gör" Tag="recent" Click="DashboardListClick" Style="{StaticResource DashboardAction}"/>
+                                        <TextBlock Text="Son açılanlar" Style="{StaticResource DashboardSectionTitle}"/>
+                                    </DockPanel>
+                                    <TextBlock x:Name="DashboardRecentHint" Style="{StaticResource DashboardSecondary}"/>
+                                    <ItemsControl x:Name="DashboardRecent" ItemTemplate="{StaticResource DashboardLink}"/>
+                                    <Separator Margin="0,8"/>
+                                    <TextBlock Text="Kayıtlı filtreler" Style="{StaticResource DashboardSectionTitle}"/>
+                                    <TextBlock x:Name="DashboardFiltersHint" Style="{StaticResource DashboardSecondary}"/>
+                                    <ItemsControl x:Name="DashboardFilters" ItemTemplate="{StaticResource DashboardLink}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+                <Border x:Name="GitDiffPanel" Visibility="Collapsed"
+                        AutomationProperties.Name="Dosya farkı">
+                    <DockPanel Margin="12">
+                        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                            <Button x:Name="CloseGitDiffButton" DockPanel.Dock="Right" Content="Farkı kapat"
+                                    Click="CloseGitDiffClick" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            <StackPanel>
+                                <TextBlock x:Name="GitDiffTitle" Text="Dosya farkı" FontSize="18" FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                                <TextBlock x:Name="GitDiffSubtitle" Foreground="{DynamicResource Muted}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <local:GitDiffView x:Name="GitDiff"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
+                    </dxdo:LayoutPanel>
+                </dxdo:LayoutGroup>
+                <dxdo:TabbedGroup x:Name="RightTools" ItemWidth="345" DestroyOnClosingChildren="False">
+                    <dxdo:LayoutPanel x:Name="ProjectPane" Caption="Proje bilgileri" MinWidth="295">
+                        <Border x:Name="ProjectDrawer" Background="{DynamicResource PanelSoft}" AutomationProperties.Name="Proje bilgileri">
+                            <Border.Resources>
+                                <Style x:Key="DrawerCard" TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource Canvas}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                    <Setter Property="Padding" Value="11"/>
+                                    <Setter Property="Margin" Value="0,0,0,9"/>
+                                </Style>
+                                <Style x:Key="DrawerHeading" TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Margin" Value="0,0,0,6"/>
+                                </Style>
+                                <Style x:Key="DrawerAction" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Padding" Value="8,3"/>
+                                    <Setter Property="MinHeight" Value="28"/>
+                                    <Setter Property="Margin" Value="0,0,5,4"/>
+                                </Style>
+                                <Style x:Key="DrawerPrimary" TargetType="Button" BasedOn="{StaticResource DrawerAction}">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Background" Value="{DynamicResource BadgeAccentSurface}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource BadgeAccentText}"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+                                </Style>
+                            </Border.Resources>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="13,13,13,5">
+                                    <TextBlock Text="{Binding Name}" FontSize="21" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                    <WrapPanel Margin="0,5,0,9">
+                                        <Border Style="{StaticResource StatusBadge}" Margin="0,0,7,3">
+                                            <TextBlock Text="{Binding Git.Label}" Style="{StaticResource StatusLabel}"/>
+                                        </Border>
+                                        <TextBlock x:Name="DrawerBranch" Text="{Binding Git.Branch}" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource Muted}" FontSize="11" Margin="0,0,0,3"/>
+                                    </WrapPanel>
+                                    <WrapPanel Margin="0,0,0,8">
+                                        <Button x:Name="DrawerOpenButton" Content="Projeyi aç" Click="DrawerOpenProjectClick"
+                                                Style="{StaticResource DrawerPrimary}"/>
+                                        <Button x:Name="DrawerOpenFolderButton" Content="Klasörü aç" Click="DrawerOpenFolderClick"/>
+                                        <Button x:Name="DrawerGitButton" Content="Git işlemleri" Click="DrawerGitClick"
+                                                Style="{StaticResource DrawerAction}"/>
+                                        <Button x:Name="DrawerGitInitButton" Content="Git deposu oluştur…" Click="DrawerGitInitClick"
+                                                Style="{StaticResource DrawerAction}"/>
+                                    </WrapPanel>
+                                    <Border x:Name="DrawerNuGetCard" Style="{StaticResource DrawerCard}" Visibility="Collapsed">
+                                        <Border.Resources>
+                                            <Style x:Key="NuGetCaption" TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+                                                <Setter Property="TextWrapping" Value="Wrap"/>
+                                                <Setter Property="FontSize" Value="11"/>
+                                                <Setter Property="Margin" Value="0,4,0,0"/>
+                                                <Style.Triggers>
+                                                    <Trigger Property="Text" Value="">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Resources>
+                                        <StackPanel>
+                                            <TextBlock Text="NuGet güvenliği" Style="{StaticResource DrawerHeading}"/>
+                                            <Border HorizontalAlignment="Left" CornerRadius="6" Padding="7,3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource BadgeNeutralSurface}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeNeutralText}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Tone}" Value="Success">
+                                                                <Setter Property="Background" Value="{DynamicResource BadgeSuccessSurface}"/>
+                                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeSuccessText}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tone}" Value="Warning">
+                                                                <Setter Property="Background" Value="{DynamicResource BadgeWarningSurface}"/>
+                                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeWarningText}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tone}" Value="Error">
+                                                                <Setter Property="Background" Value="{DynamicResource BadgeErrorSurface}"/>
+                                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeErrorText}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding Status}" FontWeight="SemiBold" FontSize="11" TextWrapping="Wrap"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Breakdown}" Style="{StaticResource NuGetCaption}"/>
+                                            <TextBlock Text="{Binding LastScan}" Style="{StaticResource NuGetCaption}"/>
+                                            <TextBlock Text="{Binding Notice}" ToolTip="{Binding Details}" Style="{StaticResource NuGetCaption}"/>
+                                            <WrapPanel Margin="0,8,0,0">
+                                                <Button x:Name="DrawerNuGetScanButton" Content="Taramayı başlat" Click="DrawerNuGetScanClick"
+                                                        Style="{StaticResource DrawerAction}" IsEnabled="{Binding CanScan, FallbackValue=False}"/>
+                                                <Button x:Name="DrawerNuGetButton" Content="Ayrıntılar" Tag="NuGet" Click="DrawerToolClick"
+                                                        Style="{StaticResource DrawerAction}" AutomationProperties.Name="NuGet tarama ayrıntıları"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border x:Name="DrawerToolsCard" Style="{StaticResource DrawerCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="Proje araçları" Style="{StaticResource DrawerHeading}"/>
+                                            <WrapPanel>
+                                                <Button x:Name="DrawerActionsButton" Content="GitHub Actions" Style="{StaticResource DrawerAction}"
+                                                        Tag="Actions" Click="DrawerToolClick"/>
+                                                <Button x:Name="DrawerComposeButton" Content="Docker Compose" Style="{StaticResource DrawerAction}"
+                                                        Tag="Compose" Click="DrawerToolClick"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource DrawerCard}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Click="DrawerCopyPathClick"
+                                                        ToolTip="Proje yolunu kopyala" AutomationProperties.Name="Proje yolunu kopyala">
+                                                    <TextBlock Text="&#xE8C8;" Style="{StaticResource Icon}"/>
+                                                </Button>
+                                                <TextBlock Text="Konum" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                            <TextBlock x:Name="DrawerEntryName" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,3,0,2"/>
+                                            <TextBlock Text="{Binding Kind}" Foreground="{DynamicResource Muted}" FontSize="11"/>
+                                            <TextBlock Text="{Binding Folder}" ToolTip="{Binding Folder}" TextWrapping="Wrap"
+                                                       FontFamily="Consolas" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,5,0,0"/>
+                                            <TextBlock x:Name="DrawerGitDetail" Text="{Binding Git.Detail}" TextWrapping="Wrap"
+                                                       Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource DrawerCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="Notlar ve belgeler" Style="{StaticResource DrawerHeading}"/>
+                                            <TextBlock x:Name="DrawerPurposeText" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,0,0,7"/>
+                                            <WrapPanel>
+                                                <Button Content="Amaç notu" Click="DrawerPurposeClick" Style="{StaticResource DrawerAction}"/>
+                                                <Button Content="Belgeler" Click="DrawerDocumentsClick" Style="{StaticResource DrawerAction}"/>
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </dxdo:LayoutPanel>
+                    <dxdo:LayoutPanel x:Name="GitPane" Caption="Git işlemleri" MinWidth="295"/>
+                </dxdo:TabbedGroup>
+            </dxdo:LayoutGroup>
+        </dxdo:DockLayoutManager>
+
+        <Border Grid.Row="2">
+            <DockPanel Margin="14,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource Muted}" Margin="0,0,6,0"/>
+                    <TextBlock Text="Yerel çalışma alanı" Foreground="{DynamicResource Muted}" FontSize="11"/>
+                </StackPanel>
+                <ProgressBar x:Name="BusyBar" DockPanel.Dock="Right" Width="76" Height="4" IsIndeterminate="True" Visibility="Collapsed" Margin="6,0"/>
+                <TextBlock x:Name="StatusText" Text="Bir klasör seçerek başlayın." Foreground="{DynamicResource Muted}" FontSize="11"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

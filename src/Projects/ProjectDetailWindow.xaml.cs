@@ -1,0 +1,260 @@
+using System.IO;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+using DevExpress.Xpf.Core;
+
+namespace DevWorkspace;
+
+internal enum ProjectDetailView { Purpose, Documents, Organization }
+
+public partial class ProjectDetailWindow : ThemedWindow
+{
+    private static readonly string[] Labels = ["", "Aktif", "Deneme", "Arşiv"];
+    private readonly Workspace _workspace;
+    private readonly ProjectEntry _project;
+    private readonly ProjectDetailView _view;
+    private readonly CancellationTokenSource _closing = new();
+    private bool _savingPurpose;
+    private bool _bulkOrganization;
+
+    internal Workspace? UpdatedWorkspace { get; private set; }
+    internal string Group => ProjectGroupBox.Text.Trim();
+    internal string Label => ProjectLabelBox.SelectedItem as string ?? "";
+
+    internal ProjectDetailWindow(Workspace workspace, ProjectEntry project, ProjectDetailView view, IReadOnlyList<ProjectEntry> projects)
+    {
+        _workspace = workspace;
+        _project = project;
+        _view = view;
+        InitializeComponent();
+        DataContext = project;
+        ProjectTitle.Text = project.Name;
+        Title = view switch
+        {
+            ProjectDetailView.Purpose => "Proje amacı ve konumu",
+            ProjectDetailView.Documents => "README ve belgeler",
+            _ => "Grup ve etiket"
+        };
+
+        switch (view)
+        {
+            case ProjectDetailView.Purpose:
+                Width = 610;
+                Height = 315;
+                MinHeight = 270;
+                PurposeView.Visibility = Visibility.Visible;
+                UpdatePurpose();
+                break;
+            case ProjectDetailView.Documents:
+                SetReaderSize();
+                DocumentsView.Visibility = Visibility.Visible;
+                break;
+            case ProjectDetailView.Organization:
+                Width = 480;
+                Height = 290;
+                MinHeight = 270;
+                OrganizationEditor.Visibility = Visibility.Visible;
+                CloseButton.Visibility = Visibility.Collapsed;
+                ProjectGroupBox.ItemsSource = projects.Select(entry => entry.Preference.Group)
+                    .Where(group => !string.IsNullOrWhiteSpace(group)).Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(group => group, StringComparer.CurrentCultureIgnoreCase).ToArray();
+                ProjectGroupBox.Text = project.Preference.Group ?? "";
+                ProjectLabelBox.ItemsSource = Labels;
+                ProjectLabelBox.SelectedItem = Labels.Contains(project.Label) ? project.Label : "";
+                break;
+        }
+    }
+
+    private void SetReaderSize()
+    {
+        Width = 820;
+        Height = 600;
+        MinHeight = 360;
+    }
+
+    internal void ConfigureBulkOrganization(IReadOnlyList<ProjectEntry> selection)
+    {
+        _bulkOrganization = true;
+        Title = "Seçili projeleri grupla";
+        ProjectTitle.Text = $"{selection.Count} proje seçildi";
+        Width = 525;
+        Height = 335;
+        MinHeight = 320;
+        BulkGroupProjects.Visibility = Visibility.Visible;
+        BulkGroupProjectList.ItemsSource = selection;
+        ProjectLabelTitle.Visibility = ProjectLabelBox.Visibility = Visibility.Collapsed;
+        string group = selection[0].Preference.Group ?? "";
+        ProjectGroupBox.Text = selection.All(project => string.Equals(project.Preference.Group, group, StringComparison.OrdinalIgnoreCase))
+            ? group : "";
+        RemoveGroupButton.Visibility = selection.Any(project => !string.IsNullOrWhiteSpace(project.Preference.Group))
+            ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void DetailLoaded(object sender, RoutedEventArgs e)
+    {
+        if (_view == ProjectDetailView.Documents)
+            await LoadDocumentsAsync();
+        else if (_view == ProjectDetailView.Organization)
+            ProjectGroupBox.Focus();
+    }
+
+    private void DetailClosing(object? sender, System.ComponentModel.CancelEventArgs e) => e.Cancel = _savingPurpose;
+    private void DetailClosed(object? sender, EventArgs e)
+    {
+        _closing.Cancel();
+        _closing.Dispose();
+    }
+
+    private void SaveOrganizationClick(object sender, RoutedEventArgs e)
+    {
+        if (_bulkOrganization && Group.Length == 0)
+        {
+            DetailMessage.Text = "Bir grup adı yazın veya listeden bir grup seçin.";
+            return;
+        }
+        if (Group.Length > 80 || Group.Any(char.IsControl))
+        {
+            DetailMessage.Text = "Grup adı en fazla 80 karakter olmalı ve tek satırda yazılmalı.";
+            return;
+        }
+        DialogResult = true;
+    }
+
+    private void RemoveGroupClick(object sender, RoutedEventArgs e)
+    {
+        ProjectGroupBox.SelectedIndex = -1;
+        ProjectGroupBox.Text = "";
+        DialogResult = true;
+    }
+
+    private void UpdatePurpose()
+    {
+        string description = (UpdatedWorkspace ?? _workspace).DescriptionFor(_project.RelativePath);
+        PurposeText.Text = description.Length == 0 ? "Henüz bir amaç notu eklenmedi." : description;
+        PurposeEditor.Visibility = Visibility.Collapsed;
+        PurposeText.Visibility = Visibility.Visible;
+        EditPurposeButton.Visibility = Visibility.Visible;
+    }
+
+    private void EditPurposeClick(object sender, RoutedEventArgs e)
+    {
+        DetailMessage.Text = "";
+        PurposeInput.Text = (UpdatedWorkspace ?? _workspace).DescriptionFor(_project.RelativePath);
+        PurposeEditor.Visibility = Visibility.Visible;
+        PurposeText.Visibility = Visibility.Collapsed;
+        EditPurposeButton.Visibility = Visibility.Collapsed;
+        PurposeInput.Focus();
+    }
+
+    private void CancelPurposeClick(object sender, RoutedEventArgs e) => UpdatePurpose();
+
+    private async void SavePurposeClick(object sender, RoutedEventArgs e)
+    {
+        if (_savingPurpose)
+            return;
+
+        string description = PurposeInput.Text.Trim();
+        _savingPurpose = true;
+        PurposeEditor.IsEnabled = CloseButton.IsEnabled = false;
+        try
+        {
+            Workspace workspace = UpdatedWorkspace ?? _workspace;
+            UpdatedWorkspace = await Task.Run(() => workspace.SaveDescriptions(
+                new Dictionary<string, string> { [_project.RelativePath] = description }));
+            UpdatePurpose();
+            DetailMessage.Text = "Proje amacı çalışma alanına kaydedildi.";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            DetailMessage.Text = $"Proje amacı kaydedilemedi. {ex.Message}";
+        }
+        finally
+        {
+            _savingPurpose = false;
+            PurposeEditor.IsEnabled = CloseButton.IsEnabled = true;
+        }
+    }
+
+    private void CopyPathClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Clipboard.SetText(_project.Folder);
+            DetailMessage.Text = "Proje yolu kopyalandı.";
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            DetailMessage.Text = "Proje yolu panoya kopyalanamadı.";
+        }
+    }
+
+    private void OpenDocumentClick(object sender, RoutedEventArgs e)
+    {
+        if (DocumentPicker.SelectedItem is not ProjectDocument document)
+            return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(document.Path) { UseShellExecute = true });
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            DetailMessage.Text = "Dosya açılamadı. " + ex.Message;
+        }
+    }
+
+    private async Task LoadDocumentsAsync()
+    {
+        DocumentPicker.ItemsSource = null;
+        OpenDocumentButton.IsEnabled = false;
+        SetDocumentMessage("Belgeler aranıyor…");
+        var documents = await Task.Run(() => ProjectDocuments.Find(_project));
+        if (_closing.IsCancellationRequested)
+            return;
+
+        DocumentPicker.ItemsSource = documents;
+        if (documents.Count == 0)
+            SetDocumentMessage("Bu proje klasöründe README veya desteklenen bir belge bulunamadı.");
+        else
+            DocumentPicker.SelectedIndex = 0;
+    }
+
+    private async void DocumentChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DocumentPicker.SelectedItem is not ProjectDocument document)
+            return;
+
+        OpenDocumentButton.IsEnabled = true;
+        if (!document.CanPreview)
+        {
+            SetDocumentMessage("Bu belgeyi varsayılan uygulamasında görüntülemek için Dosyayı aç seçeneğini kullanın.");
+            return;
+        }
+
+        SetDocumentMessage("Belge okunuyor…");
+        try
+        {
+            string content = await Task.Run(() => ProjectDocuments.Read(document));
+            if (_closing.IsCancellationRequested || !ReferenceEquals(DocumentPicker.SelectedItem, document))
+                return;
+
+            DocumentReader.Document = DocumentPreview.Create(content, document.IsMarkdown);
+            DocumentReader.Visibility = Visibility.Visible;
+            DocumentMessage.Visibility = Visibility.Collapsed;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (ReferenceEquals(DocumentPicker.SelectedItem, document))
+                SetDocumentMessage(ex.Message);
+        }
+    }
+
+    private void SetDocumentMessage(string message)
+    {
+        DocumentReader.Document = null;
+        DocumentReader.Visibility = Visibility.Collapsed;
+        DocumentMessage.Text = message;
+        DocumentMessage.Visibility = Visibility.Visible;
+    }
+}

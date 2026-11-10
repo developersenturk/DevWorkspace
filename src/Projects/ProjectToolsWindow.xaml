@@ -1,0 +1,181 @@
+<Window x:Class="DevWorkspace.ProjectToolsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Proje işlemleri" Width="850" Height="565"
+        MinWidth="620" MinHeight="405" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="WindowLoaded" Closed="WindowClosed">
+    <Window.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <StackPanel Margin="3,0,0,11">
+            <TextBlock x:Name="ProjectNameText" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock x:Name="ProjectFolderText" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <TabControl x:Name="ToolTabs" Grid.Row="1" SelectionChanged="ToolTabChanged" Background="{DynamicResource Canvas}" BorderBrush="{DynamicResource Line}">
+            <TabItem Header="Komutlar">
+                <Grid Margin="11">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel>
+                        <Button x:Name="TerminalButton" DockPanel.Dock="Right" Content="Terminali aç" Click="TerminalClick" Margin="6,0,0,0"/>
+                        <Button x:Name="StopButton" DockPanel.Dock="Right" Content="Durdur" Click="StopClick" IsEnabled="False" Margin="6,0,0,0"/>
+                        <Button x:Name="RunButton" DockPanel.Dock="Right" Content="Çalıştır" Click="RunClick" Style="{StaticResource Primary}"
+                                IsEnabled="False" Margin="6,0,0,0"/>
+                        <ComboBox x:Name="CommandPicker" DisplayMemberPath="Label" MinHeight="32" VerticalContentAlignment="Center"
+                                  SelectionChanged="CommandChanged" AutomationProperties.Name="Proje komutu"/>
+                    </DockPanel>
+                    <TextBlock x:Name="CommandPreview" Grid.Row="1" Foreground="{DynamicResource Muted}" FontFamily="Consolas"
+                               FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="1,7,0,7"/>
+                    <Expander Header="Özel komut ekle veya düzenle" Grid.Row="2" Margin="0,0,0,8">
+                        <Grid Margin="0,7,0,0">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.3*"/><ColumnDefinition Width="1.9*"/>
+                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,6,0"><TextBlock Text="Ad" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandName" MaxLength="80" Height="30"/></StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,6,0"><TextBlock Text="Çalıştırılabilir dosya" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandExecutable" Height="30"/></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="Bağımsız değişkenler" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandArguments" Height="30"/></StackPanel>
+                            <Button Grid.Column="3" Content="Kaydet" Click="SaveCommandClick" VerticalAlignment="Bottom" Margin="6,0,0,0"/>
+                            <Button x:Name="RemoveCommandButton" Grid.Column="4" Content="Kaldır" Click="RemoveCommandClick" IsEnabled="False"
+                                    VerticalAlignment="Bottom" Margin="6,0,0,0"/>
+                        </Grid>
+                    </Expander>
+                    <TextBox x:Name="CommandOutput" Grid.Row="3" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
+                             Background="{DynamicResource PanelSoft}" TextWrapping="NoWrap"
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Komut çıktısı"/>
+                    <TextBlock x:Name="CommandStatus" Grid.Row="4" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="1,7,0,0"
+                               Text="Bir komut seçin veya kendi komutunuzu kaydedin."/>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="HealthTab" Header="Sağlık kontrolü">
+                <Grid Margin="11">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button x:Name="HealthRefresh" DockPanel.Dock="Right" Content="Yeniden kontrol et" Click="HealthRefreshClick" Margin="7,0,0,0"/>
+                        <TextBlock x:Name="HealthSummary" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <DataGrid x:Name="HealthGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              SelectionChanged="HealthSelectionChanged" MouseDoubleClick="OpenHealthFileClick" RowHeight="31" GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{DynamicResource Divider}" AutomationProperties.Name="Sağlık kontrolü bulguları">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="DURUM" Binding="{Binding Severity}" Width="100" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="BULGU" Binding="{Binding Description}" Width="2*" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="KAYNAK DOSYA" Binding="{Binding File}" Width="*" ElementStyle="{StaticResource CellText}"/>
+                        </DataGrid.Columns>
+                        <DataGrid.RowStyle><Style TargetType="DataGridRow"><Setter Property="ToolTip" Value="{Binding Description}"/></Style></DataGrid.RowStyle>
+                    </DataGrid>
+                    <DockPanel Grid.Row="2" Margin="0,8,0,0">
+                        <Button x:Name="OpenHealthFileButton" DockPanel.Dock="Right" Content="Kaynak dosyayı aç" Click="OpenHealthFileClick"
+                                IsEnabled="False" Margin="8,0,0,0"/>
+                        <Button x:Name="HealthNuGetButton" DockPanel.Dock="Right" Content="NuGet güvenliği"
+                                Click="HealthNuGetClick" Margin="8,0,0,0"/>
+                        <TextBlock Text="Diskteki dosyalar ve çözümlenebilen başvurular kontrol edilir." VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="NuGetTab" Header="NuGet güvenliği">
+                <Grid Margin="11">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,8">
+                        <Button x:Name="NuGetScanButton" DockPanel.Dock="Right" Content="Güvenlik açıklarını kontrol et"
+                                Style="{StaticResource Primary}" Click="NuGetScanClick" Margin="7,0,0,0"
+                                IsEnabled="{Binding CanScan, FallbackValue=False}"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="NuGetStatus" Text="{Binding Status}"
+                                       Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding LastScan}" Foreground="{DynamicResource Muted}" FontSize="11"
+                                       Visibility="{Binding HasResult, Converter={StaticResource VisibleWhenTrue}, FallbackValue=Collapsed}"/>
+                        </StackPanel>
+                    </DockPanel>
+                    <DataGrid x:Name="NuGetGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              SelectionMode="Single" SelectionChanged="NuGetSelectionChanged" ItemsSource="{Binding Report.Findings}"
+                              AutomationProperties.Name="NuGet güvenlik bulguları">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Paket" Binding="{Binding Package}" Width="2*" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Sürüm" Binding="{Binding Version}" Width="74" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Önem" Binding="{Binding Severity}" Width="82" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Bağımlılık" Binding="{Binding Scope}" Width="88" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Proje" Binding="{Binding Project}" Width="*" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Hedef" Binding="{Binding Framework}" Width="*" ElementStyle="{StaticResource CellText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <DockPanel Grid.Row="2" Margin="0,8,0,0">
+                        <Button x:Name="NuGetAdvisoryButton" DockPanel.Dock="Right" Content="Açık kaydını aç" IsEnabled="False"
+                                Click="NuGetAdvisoryClick" VerticalAlignment="Center" Margin="7,0,0,0"/>
+                        <TextBlock x:Name="NuGetDetails" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Text="{Binding ShortDetails}" ToolTip="{Binding Details}"/>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="ActionsTab" Header="GitHub Actions">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="13">
+                    <DockPanel Margin="0,0,0,14">
+                        <Button x:Name="ActionsRefreshButton" DockPanel.Dock="Right" Content="Yenile" Click="ActionsRefreshClick" Margin="7,0,0,0"/>
+                        <TextBlock Text="Son iş akışı çalışması" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <TextBlock x:Name="ActionsStatus" TextWrapping="Wrap" Foreground="{DynamicResource Muted}"/>
+                    <WrapPanel Margin="0,8,0,0">
+                        <Button x:Name="ActionsInstallButton" Content="GitHub CLI’ı kur" Click="ActionsInstallClick"
+                                Visibility="Collapsed" Style="{StaticResource Primary}" Margin="0,0,7,5"/>
+                        <Button x:Name="ActionsGuideButton" Content="Kurulum kılavuzu" Click="ActionsGuideClick"
+                                Visibility="Collapsed" Margin="0,0,7,5"/>
+                        <Button x:Name="ActionsLoginButton" Content="GitHub’a giriş yap" Click="ActionsLoginClick"
+                                Visibility="Collapsed" Style="{StaticResource Primary}" Margin="0,0,7,5"/>
+                        <Button x:Name="ActionsCancelLoginButton" Content="Girişi iptal et" Click="ActionsCancelLoginClick"
+                                Visibility="Collapsed" Margin="0,0,7,5"/>
+                    </WrapPanel>
+                    <StackPanel x:Name="ActionsDevicePanel" Visibility="Collapsed" Margin="0,5,0,0">
+                        <TextBlock Text="GitHub sayfasına aşağıdaki tek kullanımlık kodu girin ve erişimi onaylayın."
+                                   TextWrapping="Wrap" Foreground="{DynamicResource Muted}"/>
+                        <WrapPanel Margin="0,7,0,0">
+                            <TextBox x:Name="ActionsDeviceCode" IsReadOnly="True" FontFamily="Consolas" FontWeight="SemiBold"
+                                     MinWidth="115" VerticalContentAlignment="Center" Margin="0,0,7,0"
+                                     AutomationProperties.Name="Tek kullanımlık GitHub giriş kodu"/>
+                            <Button Content="GitHub giriş sayfasını aç" Click="ActionsDevicePageClick"/>
+                        </WrapPanel>
+                    </StackPanel>
+                    <Border x:Name="ActionsResult" Visibility="Collapsed" BorderBrush="{DynamicResource Divider}"
+                            BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="ActionsHeadline" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="ActionsTitle" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                            <TextBlock x:Name="ActionsMetadata" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,4,0,9"/>
+                            <TextBlock x:Name="ActionsFailures" TextWrapping="Wrap" Margin="0,0,0,9" Visibility="Collapsed"/>
+                            <Button x:Name="ActionsOpenButton" Content="Çalışmayı ve logları GitHub’da aç" HorizontalAlignment="Left"
+                                    Click="ActionsOpenClick"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem x:Name="ComposeTab" Header="Docker Compose">
+                <Grid Margin="11">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <WrapPanel Margin="0,0,0,7">
+                        <Button x:Name="ComposeRefreshButton" Content="Yenile" Click="ComposeRefreshClick" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeStartButton" Content="Başlat" Click="ComposeStartClick" IsEnabled="False" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeStopButton" Content="Durdur" Click="ComposeStopClick" IsEnabled="False" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeLogsButton" Content="Logları göster" Click="ComposeLogsClick" IsEnabled="False"/>
+                    </WrapPanel>
+                    <DataGrid x:Name="ComposeGrid" Grid.Row="1" MaxHeight="160" AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" SelectionMode="Single" SelectionChanged="ComposeSelectionChanged"
+                              AutomationProperties.Name="Docker Compose servisleri">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Servis" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource CellText}"/>
+                            <DataGridTextColumn Header="Durum" Binding="{Binding Status}" Width="*" ElementStyle="{StaticResource CellText}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBox x:Name="ComposeOutput" Grid.Row="2" Margin="0,8,0,0" IsReadOnly="True" FontFamily="Consolas"
+                             FontSize="12" Background="{DynamicResource PanelSoft}" TextWrapping="NoWrap"
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Seçili servisin logları"/>
+                    <TextBlock x:Name="ComposeStatus" Grid.Row="3" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,7,0,0"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
