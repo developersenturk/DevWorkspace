@@ -183,7 +183,7 @@ public partial class GitWorkbenchView : UserControl
 
     private void UpdateActions()
     {
-        if (CommitButton is null || PushButton is null || FetchRemote is null || FileAction is null)
+        if (CommitButton is null || PublishButton is null || FetchRemote is null || FileAction is null)
             return;
 
         ChangeControls.IsEnabled = RefreshButton.IsEnabled = HistoryButton.IsEnabled = !_busy;
@@ -200,6 +200,10 @@ public partial class GitWorkbenchView : UserControl
         PushButton.IsEnabled = !_busy && _state?.Status.CommitId is not null && target is not null
             && _state.Remotes.Contains(target.Remote, StringComparer.Ordinal);
         PushButton.ToolTip = target is null ? "Push için uzak depo ve hedef dal gerekli." : $"Hedef {target.Label}";
+        PublishButton.Visibility = _state is { Remotes.Length: 0 } ? Visibility.Visible : Visibility.Collapsed;
+        PublishButton.IsEnabled = !_busy && _state is { Remotes.Length: 0, InProgress: null, Status: { HeadRef: not null, CommitId: not null } };
+        PublishButton.ToolTip = PublishButton.IsEnabled ? "Yeni bir GitHub deposu oluştur ve etkin dalı gönder."
+            : "Yayımlamak için commit içeren bir dal ve tamamlanmış Git işlemleri gerekli.";
         DiffButton.IsEnabled = !_busy && SelectedFile is not null;
         int selectedCount = WorkingFiles.SelectedItems.Count;
         bool hasConflict = _state?.Status.Files?.Any(file => file.IsConflict) == true;
@@ -327,6 +331,22 @@ public partial class GitWorkbenchView : UserControl
             await _git.CommitAsync(state, message, token);
             CommitMessage.EditValue = null;
         }, "Commit yerel depoya kaydedildi.");
+    }
+
+    private async void PublishClick(object sender, RoutedEventArgs e)
+    {
+        if (!PublishButton.IsEnabled || _state is not GitWorkbenchState state)
+            return;
+
+        var dialog = new GitHubPublishWindow(_git, state.Status, Path.GetFileName(_repository)) { Owner = _owner };
+        dialog.ShowDialog();
+        if (dialog.RepositoryCreated)
+        {
+            await RefreshAsync();
+            StatusMessage.Text = dialog.Published ? $"GitHub’a gönderildi. {dialog.RepositoryUrl}"
+                : $"GitHub deposu oluşturuldu. {dialog.RepositoryUrl} · İlk push tamamlanmadı.";
+            _owner.GitRepositoryChanged();
+        }
     }
 
     private async void PushClick(object sender, RoutedEventArgs e) => await PushAsync();

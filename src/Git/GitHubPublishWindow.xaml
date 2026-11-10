@@ -1,0 +1,30 @@
+<dx:ThemedWindow x:Class="DevWorkspace.GitHubPublishWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 Title="GitHub’da yayımla" Width="520" SizeToContent="Height" ResizeMode="NoResize"
+                 ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Loaded="WindowLoaded" Closing="WindowClosing">
+    <StackPanel Margin="20">
+        <TextBlock x:Name="BranchDescription" TextWrapping="Wrap" Margin="0,0,0,12"/>
+        <Label Content="Depo sahibi" Target="{Binding ElementName=RepositoryOwner}" Padding="0,0,0,4"/>
+        <ComboBox x:Name="RepositoryOwner" DisplayMemberPath="Label" SelectionChanged="OwnerChanged"
+                  AutomationProperties.Name="GitHub depo sahibi"/>
+        <Label Content="Depo adı" Target="{Binding ElementName=RepositoryName}" Padding="0,10,0,4"/>
+        <TextBox x:Name="RepositoryName" MaxLength="100" TextChanged="NameChanged" AutomationProperties.Name="GitHub depo adı"/>
+        <TextBlock x:Name="RepositoryTarget" Margin="0,5,0,0" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
+        <CheckBox x:Name="PrivateRepository" Content="Özel depo (Private)" IsChecked="True" Margin="0,10,0,0"/>
+        <TextBlock x:Name="Status" TextWrapping="Wrap" Margin="0,12,0,0"/>
+        <StackPanel x:Name="DevicePanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,8,0,0">
+            <TextBox x:Name="DeviceCode" IsReadOnly="True" Width="125" AutomationProperties.Name="GitHub giriş kodu"/>
+            <Button Content="Giriş sayfasını aç" Margin="6,0,0,0" Click="OpenDevicePageClick"/>
+        </StackPanel>
+        <WrapPanel HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="InstallButton" Content="GitHub CLI’ı kur" Click="InstallClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="LoginButton" Content="GitHub’a giriş yap" Click="LoginClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="RetryButton" Content="Tekrar dene" Click="RetryClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="Publish" Content="Oluştur ve push et" Click="PublishClick" IsEnabled="False" MinWidth="130" Margin="6,4,0,0"/>
+            <Button x:Name="OpenRepository" Content="GitHub’da aç" Click="OpenRepositoryClick" Visibility="Collapsed" Margin="6,4,0,0"/>
+            <Button x:Name="CloseButton" Content="Kapat" Click="CloseClick" MinWidth="70" Margin="6,4,0,0"/>
+        </WrapPanel>
+    </StackPanel>
+</dx:ThemedWindow>

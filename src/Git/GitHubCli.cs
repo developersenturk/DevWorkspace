@@ -5,9 +5,16 @@ using System.Text.RegularExpressions;
 
 namespace DevWorkspace;
 
-internal sealed class GitHubCliMissingException() : IOException("GitHub Actions için GitHub CLI kurulumu gerekli.");
+internal sealed class GitHubCliMissingException() : IOException("Bu işlem için GitHub CLI kurulumu gerekli.");
 
-internal sealed class GitHubLoginRequiredException() : IOException("Actions sonuçlarını görmek için GitHub’a giriş yapın.");
+internal sealed class GitHubLoginRequiredException() : IOException("Bu işlem için GitHub’a giriş yapın.");
+
+internal sealed record GitHubRepositoryOwner(string Login, bool IsOrganization)
+{
+    public string Label => IsOrganization ? $"{Login} (organizasyon)" : $"{Login} (kişisel hesap)";
+    public string CreateEndpoint => IsOrganization ? $"orgs/{Login}/repos" : "user/repos";
+    public Uri RepositoryUrl(string name) => new($"https://github.com/{Login}/{name}");
+}
 
 internal static class GitHubCli
 {
@@ -63,6 +70,45 @@ internal static class GitHubCli
             throw new IOException($"{Label} tamamlanamadı. {CommandError(code, output, error)}");
         }
         return output;
+    }
+
+    public static async Task<string> ReadAccountAsync(CancellationToken token) =>
+        (await RunAsync(["api", "--hostname", "github.com", "user", "--jq", ".login"], token)).Trim();
+
+    public static async Task<string[]> ReadOrganizationsAsync(CancellationToken token)
+    {
+        string output = await RunAsync(["api", "--hostname", "github.com", "--paginate",
+            "user/memberships/orgs?state=active&per_page=100", "--jq", ".[].organization.login"], token);
+        return output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(login => Regex.IsMatch(login, @"\A[A-Za-z0-9][A-Za-z0-9-]{0,38}\z"))
+            .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    public static async Task CreateRepositoryAsync(string account, GitHubRepositoryOwner owner, string name,
+        bool isPrivate, CancellationToken token)
+    {
+        if (!string.Equals(account, await ReadAccountAsync(token), StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+
+        string url;
+        try
+        {
+            url = (await RunAsync(["api", "--hostname", "github.com", "--method", "POST", owner.CreateEndpoint,
+                "-f", $"name={name}", "-F", isPrivate ? "private=true" : "private=false", "--jq", ".html_url"], token)).Trim();
+        }
+        catch (IOException ex) when (owner.IsOrganization && ex is not (GitHubCliMissingException or GitHubLoginRequiredException))
+        {
+            throw new IOException($"{owner.Login} organizasyonunda depo oluşturulamadı. {ex.Message}", ex);
+        }
+        if (!string.Equals(url, owner.RepositoryUrl(name).AbsoluteUri, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("GitHub beklenen depo adresini döndürmedi.");
+    }
+
+    internal static string CredentialHelper()
+    {
+        string executable = FindGitHubCli() ?? throw new GitHubCliMissingException();
+        string shellPath = executable.Replace('\\', '/').Replace("'", "'\\''", StringComparison.Ordinal);
+        return $"!'{shellPath}' auth git-credential";
     }
 
     private static ProcessStartInfo CreateInfo(string[] arguments)

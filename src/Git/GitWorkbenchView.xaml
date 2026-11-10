@@ -54,6 +54,8 @@
                 <dx:SimpleButton x:Name="PushButton" Content="Push" Click="PushClick" IsEnabled="False" Margin="4,0,0,0"
                                  ToolTipService.ShowOnDisabled="True"/>
             </UniformGrid>
+            <dx:SimpleButton x:Name="PublishButton" Content="GitHub’da yayımla…" Click="PublishClick"
+                             IsEnabled="False" Visibility="Collapsed" Margin="0,6,0,0" ToolTipService.ShowOnDisabled="True"/>
             <dxe:ComboBoxEdit x:Name="PushRemote" Margin="0,6,0,0" Visibility="Collapsed" DisplayMember="Label"
                               IsTextEditable="False" NullText="İlk push için hedef seçin" EditValueChanged="PushRemoteChanged"
                               AutomationProperties.Name="İlk push için hedef depo"/>

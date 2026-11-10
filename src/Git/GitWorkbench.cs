@@ -151,6 +151,45 @@ internal sealed class GitWorkbench(string repository)
         await RunAsync(["commit", "-m", message], token, 120);
     }
 
+    internal async Task VerifyNewPublishAsync(GitStatus expected, CancellationToken token)
+    {
+        await VerifyHeadAsync(expected, token);
+        if (expected.HeadRef is null || expected.CommitId is null || (await ReadRemoteNamesAsync(token)).Length != 0)
+            throw new IOException("Yayımlamak için commit içeren bir dal ve uzak bağlantısı olmayan bir yerel depo gerekli.");
+        if (await ReadOperationAsync(token) is string operation)
+            throw new IOException(operation);
+    }
+
+    internal async Task PublishToGitHubAsync(GitStatus expected, Uri repositoryUrl, CancellationToken token)
+    {
+        await VerifyHeadAsync(expected, token);
+        string url = repositoryUrl.AbsoluteUri + ".git";
+        string[] remotes = await ReadRemoteNamesAsync(token);
+        if (remotes.Length > 0 && (remotes.Length != 1 || remotes[0] != "origin"))
+            throw new IOException("Uzak depo değişti. Git panelindeki hedefi kontrol edin.");
+
+        if (remotes.Length == 0)
+            await RunAsync(["remote", "add", "--", "origin", url], token);
+        string pushUrl = (await RunAsync(["remote", "get-url", "--push", "--all", "origin"], token)).Trim();
+        if (!string.Equals(pushUrl, url, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Uzak depo adresi değişti. Git panelindeki hedefi kontrol edin.");
+
+        string helper = GitHubCli.CredentialHelper();
+        string key = $"credential.{url}.helper";
+        await RunAsync(["config", "--local", "--replace-all", key, ""], token);
+        await RunAsync(["config", "--local", "--add", key, helper], token);
+
+        GitWorkbenchState current = await ReadAsync(token);
+        var target = new GitDestination("origin", expected.HeadRef!, true);
+        if (current.Upstream is { } upstream)
+        {
+            if (upstream.Remote != target.Remote || upstream.Ref != target.Ref)
+                throw new IOException("Takip edilen uzak dal değişti.");
+            target = upstream;
+        }
+        await PushAsync(current with { Status = expected }, target, token);
+    }
+
     public async Task PushAsync(GitWorkbenchState expected, GitDestination destination, CancellationToken token)
     {
         if (expected.Status.HeadRef is not string head || expected.Status.CommitId is not string commit)
