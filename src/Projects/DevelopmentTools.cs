@@ -81,6 +81,11 @@ internal static class DevelopmentTools
         .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps"))
         .Select(directory => Path.Combine(directory, "winget.exe")).FirstOrDefault(File.Exists);
 
+    internal static string? FindPnpm() => Volatile.Read(ref _environment).Paths
+        .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm"))
+        .SelectMany(directory => new[] { Path.Combine(directory, "pnpm.exe"), Path.Combine(directory, "pnpm.cmd") })
+        .FirstOrDefault(File.Exists);
+
     internal static string Require(DevelopmentTool tool) => Find(tool) ?? throw new ToolMissingException(Get(tool));
 
     internal static DevelopmentTool? ForCommand(string command) =>

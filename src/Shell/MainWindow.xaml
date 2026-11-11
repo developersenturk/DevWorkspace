@@ -545,6 +545,14 @@
                                 <DockPanel>
                                     <dx:SimpleButton x:Name="DashboardPackagesButton" DockPanel.Dock="Right" Content="Paketleri tara"
                                                      Click="DashboardPackagesClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"/>
+                                    <dx:SimpleButton x:Name="DashboardPackageRepairButton" DockPanel.Dock="Right" Content="Açıkları düzelt"
+                                                     Click="DashboardPackageRepairClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"
+                                                     ToolTip="Tarama sonucundaki npm, pnpm ve Flutter açıkları için uyumlu güncellemeleri dene."
+                                                     ToolTipService.ShowOnDisabled="True"/>
+                                    <dx:SimpleButton x:Name="DashboardPackageVersionsButton" DockPanel.Dock="Right" Content="Sürüm değişikliklerini incele"
+                                                     Click="DashboardPackageVersionsClick" Style="{StaticResource DashboardAction}" Margin="8,0,0,0"
+                                                     ToolTip="Sabit sürümlü paketler ve dolaylı açıkları getiren ana paketler için sürüm önerilerini göster."
+                                                     ToolTipService.ShowOnDisabled="True"/>
                                     <StackPanel>
                                         <TextBlock Text="JavaScript ve Flutter paket güvenliği" Style="{StaticResource DashboardSectionTitle}" TextWrapping="Wrap"/>
                                         <TextBlock x:Name="DashboardPackagesSummary" Style="{StaticResource DashboardSecondary}" TextWrapping="Wrap"/>

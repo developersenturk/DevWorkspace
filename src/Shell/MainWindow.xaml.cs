@@ -63,6 +63,12 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (PackageUpdateRunning)
+        {
+            e.Cancel = true;
+            StatusText.Text = "Kapatmadan önce paket güncellemesinin bitmesini bekleyin veya Durdur’u seçin.";
+            return;
+        }
         e.Cancel = _gitView?.IsBusy == true || _savingExplorerFolder;
         if (!e.Cancel && _startupLayoutRestored && _startupReady.Task.IsCompleted)
         {

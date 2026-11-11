@@ -5,7 +5,11 @@ using System.Text.Json;
 namespace DevWorkspace;
 
 internal sealed record PackageSecurityFinding(string Name, string Version, string Severity, string Advisory);
-internal sealed record PackageSecurityResult(PackageSecurityFinding[] Findings, bool HasPackages);
+internal sealed record PackageSecurityResult(PackageSecurityFinding[] Findings, bool HasPackages)
+{
+    internal HashSet<(string Name, string Version)> Packages { get; } = [];
+    internal Dictionary<string, HashSet<string>> FixedVersions { get; } = new(StringComparer.Ordinal);
+}
 
 internal static class PackageSecurity
 {
@@ -57,20 +61,39 @@ internal static class PackageSecurity
             return new([], false);
 
         var findings = new List<PackageSecurityFinding>();
-        bool hasPackages = false;
+        var result = new PackageSecurityResult([], false);
         foreach (var source in results.EnumerateArray())
         foreach (var item in Items(source, "packages"))
         {
             var package = item.GetProperty("package");
             string name = Value(package, "name");
             string version = Value(package, "version");
-            hasPackages |= name.Length > 0;
+            if (name.Length > 0)
+                result.Packages.Add((name, version));
             var groups = Items(item, "groups").ToArray();
             var reported = new HashSet<string>(StringComparer.Ordinal);
             foreach (var vulnerability in Items(item, "vulnerabilities"))
             {
                 string id = Value(vulnerability, "id");
-                if (name.Length == 0 || id.Length == 0 || reported.Contains(id))
+                if (name.Length == 0 || id.Length == 0)
+                    continue;
+                foreach (var affected in Items(vulnerability, "affected"))
+                {
+                    if (!affected.TryGetProperty("package", out var affectedPackage) ||
+                        Value(affectedPackage, "name") != name || Value(affectedPackage, "ecosystem") != Value(package, "ecosystem"))
+                        continue;
+                    foreach (var range in Items(affected, "ranges").Where(range => Value(range, "type") is "SEMVER" or "ECOSYSTEM"))
+                    foreach (var change in Items(range, "events"))
+                    {
+                        string fixedVersion = Value(change, "fixed");
+                        if (fixedVersion.Length == 0)
+                            continue;
+                        if (!result.FixedVersions.TryGetValue(name, out var versions))
+                            result.FixedVersions[name] = versions = new(StringComparer.Ordinal);
+                        versions.Add(fixedVersion);
+                    }
+                }
+                if (reported.Contains(id))
                     continue;
                 var group = groups.FirstOrDefault(candidate => Items(candidate, "ids").Any(alias => alias.GetString() == id));
                 foreach (var alias in Items(group, "ids"))
@@ -80,7 +103,7 @@ internal static class PackageSecurity
                 findings.Add(new(name, version, Severity(group, vulnerability), id));
             }
         }
-        return new(findings.Distinct().ToArray(), hasPackages);
+        return result with { Findings = findings.Distinct().ToArray(), HasPackages = result.Packages.Count > 0 };
     }
 
     private static string Severity(JsonElement group, JsonElement vulnerability)
