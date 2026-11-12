@@ -222,22 +222,29 @@ public partial class MainWindow
             if (paths.Length == 0)
                 return null;
 
-            string[] newLinks = paths.Where(path => !_projects.Any(project => project.LinkPath is null &&
+            string[] newLinks = paths.Where(path => !_projects.Concat(_archivedProjects).Any(project => project.LinkPath is null &&
                 (path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) || path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase))))
                 .ToArray();
             if (newLinks.Length > 0)
                 _workspace = workspace.AddLinks(newLinks);
 
             await RefreshAsync();
+            var archived = _archivedProjects.FirstOrDefault(project => paths.Any(path =>
+                path.Equals(project.LinkPath, StringComparison.OrdinalIgnoreCase) ||
+                path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) ||
+                path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase)));
             var linked = _projects.FirstOrDefault(project => paths.Any(path => path.Equals(project.LinkPath, StringComparison.OrdinalIgnoreCase)));
             var existing = linked ?? _projects.FirstOrDefault(project => paths.Any(path =>
                 path.Equals(project.Folder, StringComparison.OrdinalIgnoreCase) || path.Equals(project.EntryFile, StringComparison.OrdinalIgnoreCase))) ??
                 _projects.FirstOrDefault(project => clonedRepository?.Equals(project.Repository, StringComparison.OrdinalIgnoreCase) == true);
             SearchBox.Text = "";
-            BuildNavigation(linked is not null ? "linked" : "all");
+            BuildNavigation(linked is not null ? "linked" : existing is null && archived is not null ? ArchivedProjectsKey : "all");
             if (existing is not null)
                 FocusProject(existing);
-            StatusText.Text = linked is not null ? "Proje kendi konumunda çalışma alanına bağlandı." : "Proje çalışma alanında görünüyor.";
+            else if (archived is not null)
+                FocusProject(archived);
+            StatusText.Text = linked is not null ? "Proje kendi konumunda çalışma alanına bağlandı." :
+                existing is null && archived is not null ? "Proje arşivde." : "Proje çalışma alanında görünüyor.";
             return existing;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)

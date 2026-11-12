@@ -17,7 +17,8 @@ internal sealed record SavedProjectFilter(Guid Id, string Name, string Navigatio
 }
 
 internal sealed record WorkspaceFolder(string Name, string Label, bool IsVisible, bool IsNew = false);
-internal sealed record ProjectPreference(bool Favorite = false, string Group = "", string Label = "", ProjectCommand[]? Commands = null)
+internal sealed record ProjectPreference(bool Favorite = false, string Group = "", string Label = "", ProjectCommand[]? Commands = null,
+    bool Archived = false)
 {
     public static readonly ProjectPreference Empty = new();
 }

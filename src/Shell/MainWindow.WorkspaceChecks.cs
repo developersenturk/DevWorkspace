@@ -21,6 +21,15 @@ public partial class MainWindow
     private static bool IsPackageUpdate(WorkspaceCheck check) =>
         check is WorkspaceCheck.PackageRepair or WorkspaceCheck.PackageVersions;
 
+    private void InvalidateWorkspaceChecks()
+    {
+        _workspaceCheck?.Cancel();
+        _dashboardScan?.Cancel();
+        _healthReports.Clear();
+        _checkReports.Clear();
+        _packageRepairTargets.Clear();
+    }
+
     private void UpdateWorkspaceChecks(ProjectEntry[] ahead, List<DashboardLink> tasks)
     {
         if (DashboardActionRows is null)

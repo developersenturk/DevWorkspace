@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly TaskCompletionSource _startupReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private Workspace? _workspace;
     private IReadOnlyList<ProjectEntry> _projects = [];
+    private IReadOnlyList<ProjectEntry> _archivedProjects = [];
     private IReadOnlyList<WorkspaceFolder> _folders = [];
     private bool _buildingNavigation;
     private bool _busy;
@@ -175,7 +176,7 @@ public partial class MainWindow : Window
     private async Task OpenWorkspaceAsync(string root, bool background = false)
     {
         Workspace? requestedWorkspace = _workspace;
-        if (_busy || _savingExplorerFolder || (background && (_backgroundWorkspaceScan || requestedWorkspace is null)))
+        if (_busy || _savingPreference || _savingExplorerFolder || (background && (_backgroundWorkspaceScan || requestedWorkspace is null)))
             return;
 
         if (_gitView?.IsBusy == true && !string.Equals(root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
@@ -212,7 +213,7 @@ public partial class MainWindow : Window
                 try
                 {
                     if (recovery is not null)
-                        await recovery.RememberAsync(scan.Projects, token);
+                        await recovery.RememberAsync(scan.Projects.Where(project => !project.Preference.Archived), token);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
@@ -221,7 +222,7 @@ public partial class MainWindow : Window
                 return (opened, scan, warning);
             }, token);
             token.ThrowIfCancellationRequested();
-            if (background && (_busy || !ReferenceEquals(_workspace, requestedWorkspace)))
+            if (background && (_busy || _savingPreference || !ReferenceEquals(_workspace, requestedWorkspace)))
                 return;
             if (background && _explorerEdit is not null)
             {
@@ -249,12 +250,18 @@ public partial class MainWindow : Window
             bool filtersChanged = !(_workspace?.Config.SavedFilters ?? []).SequenceEqual(workspace.Config.SavedFilters ?? []);
             _workspace = workspace;
             WorkspaceSession saved = _session.For(workspace.Root);
-            var projects = result.Projects.Select(project => project with { SavedPreference = workspace.PreferenceFor(project.RelativePath) }).ToArray();
-            bool projectsChanged = !sameWorkspace || _projects.Count != projects.Length ||
-                !_projects.Zip(projects, (previous, current) => previous.HasSameSnapshot(current)).All(equal => equal);
+            var projects = result.Projects.Where(project => !project.Preference.Archived).ToArray();
+            var archived = result.Projects.Where(project => project.Preference.Archived).ToArray();
+            bool archiveChanged = !SameProjects(_archivedProjects, archived);
+            bool projectsChanged = !sameWorkspace || archiveChanged || !SameProjects(_projects, projects);
             bool foldersChanged = !sameWorkspace || !_folders.SequenceEqual(result.Folders);
             if (projectsChanged)
+            {
                 _projects = projects;
+                _archivedProjects = archived;
+            }
+            if (sameWorkspace && archiveChanged)
+                InvalidateWorkspaceChecks();
             if (foldersChanged)
                 _folders = result.Folders;
             WorkspacePath.Text = workspace.Root;
@@ -331,6 +338,9 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool SameProjects(IReadOnlyList<ProjectEntry> previous, IReadOnlyList<ProjectEntry> current) =>
+        previous.Count == current.Count && previous.Zip(current, (left, right) => left.HasSameSnapshot(right)).All(equal => equal);
+
     private int CountRepositories(Func<ProjectEntry, bool> filter) =>
         _projects.Where(filter).Select(p => p.Repository).Distinct(StringComparer.OrdinalIgnoreCase).Count();
 
@@ -379,7 +389,8 @@ public partial class MainWindow : Window
 
         string[] recent = CurrentRecent();
         var recentSet = recent.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var filtered = _projects.Where(project => MatchesNavigation(project, key, recentSet) && MatchesSearch(project, query));
+        var candidates = key == ArchivedProjectsKey ? _archivedProjects : _projects;
+        var filtered = candidates.Where(project => MatchesNavigation(project, key, recentSet) && MatchesSearch(project, query));
         if (key == "recent")
         {
             var ranks = recent.Select((path, index) => (path, index))
@@ -408,7 +419,7 @@ public partial class MainWindow : Window
             UpdateScanToolNotice();
         }
         EmptyPanel.Visibility = count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyOpenButton.Visibility = !_busy && _projects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyOpenButton.Visibility = !_busy && _projects.Count == 0 && _archivedProjects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyToolsButton.Visibility = !_busy && _workspace is null ? Visibility.Visible : Visibility.Collapsed;
         EmptyToolsButton.Content = DevelopmentTools.Find(DevelopmentTool.Git) is null
             ? "Git eksik · Geliştirme araçları" : "Geliştirme araçları";
@@ -417,6 +428,8 @@ public partial class MainWindow : Window
             _workspace is null ? "Projelerinizi bulun" : "Proje bulunamadı";
         EmptyHint.Text = _busy ? "Projeler ve Git durumları okunuyor." :
             _workspace is null ? "Bir proje klasörü veya projelerinizi içeren üst klasörü seçin. DevWorkspace projeleri ve Git durumlarını listeler." :
+            key == ArchivedProjectsKey && _archivedProjects.Count == 0 ? "Bir projeyi sağ tıklayarak arşive alabilirsiniz." :
+            _projects.Count == 0 && _archivedProjects.Count > 0 ? "Projeleri Arşivlenen projeler bölümünde bulabilirsiniz." :
             _projects.Count == 0 ? "Bu klasörde desteklenen bir proje veya Git deposu bulunamadı. Başka bir klasör seçin ya da bir proje klasörünü buraya bırakın." :
             "Arama veya sol taraftaki seçimi değiştirin.";
         UpdateCentralView();

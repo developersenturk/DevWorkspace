@@ -65,17 +65,18 @@ public partial class MainWindow
         DrawerOpenFolderButton.IsEnabled = folderExists;
         DrawerOpenFolderButton.Style = (Style)ProjectDrawer.FindResource(project.EntryFile is null ? "DrawerPrimary" : "DrawerAction");
         DrawerGitButton.Visibility = project.Repository is null ? Visibility.Collapsed : Visibility.Visible;
-        DrawerGitInitButton.Visibility = project.Repository is null && folderExists
+        bool active = !project.Preference.Archived;
+        DrawerGitInitButton.Visibility = active && project.Repository is null && folderExists
             ? Visibility.Visible : Visibility.Collapsed;
         bool hasActions = project.Repository is not null && folderExists;
-        bool hasCompose = ProjectIntegrations.HasCompose(project);
-        var nuGet = GetNuGetState(project);
+        bool hasCompose = active && ProjectIntegrations.HasCompose(project);
+        var nuGet = active ? GetNuGetState(project) : null;
         DrawerNuGetCard.DataContext = nuGet;
         DrawerNuGetCard.Visibility = nuGet is null ? Visibility.Collapsed : Visibility.Visible;
         DrawerActionsButton.Visibility = hasActions ? Visibility.Visible : Visibility.Collapsed;
         DrawerComposeButton.Visibility = hasCompose ? Visibility.Visible : Visibility.Collapsed;
         DrawerCommandsButton.Visibility = folderExists ? Visibility.Visible : Visibility.Collapsed;
-        DrawerToolsCard.Visibility = folderExists ? Visibility.Visible : Visibility.Collapsed;
+        DrawerToolsCard.Visibility = active && folderExists ? Visibility.Visible : Visibility.Collapsed;
         if (ProjectPane.IsClosed)
             WorkbenchDock.DockController.Restore(ProjectPane);
         if (activate)

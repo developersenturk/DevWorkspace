@@ -339,16 +339,17 @@ public partial class MainWindow
 
     private void GroupingChanged(object sender, RoutedEventArgs e) => ApplyFilter();
 
-    private ProjectEntry[] ComparisonSelection() => ProjectGrid.SelectedItems?.OfType<ProjectEntry>().Take(3).ToArray() ?? [];
+    private ProjectEntry[] ComparisonSelection() => SelectedProjects().Take(3).ToArray();
 
-    private ProjectEntry[] SelectedProjects() => ProjectGrid.SelectedItems?.OfType<ProjectEntry>().ToArray() ?? [];
+    private ProjectEntry[] SelectedProjects() =>
+        ProjectGrid?.SelectedItems?.OfType<ProjectEntry>().Where(project => !project.Preference.Archived).ToArray() ?? [];
 
     private void UpdateGroupSelection()
     {
         if (GroupSelectionButton is null)
             return;
 
-        int count = ProjectGrid?.SelectedItems?.OfType<ProjectEntry>().Count() ?? 0;
+        int count = SelectedProjects().Length;
         GroupSelectionButton.Visibility = count >= 2 ? Visibility.Visible : Visibility.Collapsed;
         GroupSelectionButton.IsEnabled = !_busy && !_savingPreference;
         GroupSelectionButton.Content = $"{count} projeyi grupla";

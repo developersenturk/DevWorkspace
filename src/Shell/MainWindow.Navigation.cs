@@ -7,6 +7,7 @@ namespace DevWorkspace;
 public partial class MainWindow
 {
     private const string GitRepositoriesKey = "repositories";
+    private const string ArchivedProjectsKey = "archived";
 
     private sealed class NavigationItem(string key, string label, string icon, string hint, int? count)
     {
@@ -91,6 +92,8 @@ public partial class MainWindow
             overview.Children.Add(Node(new("all", "Tüm projeler", "\uE80A", "Taranan çözümler, projeler ve depolar", _projects.Count)));
             if (_workspace is not null)
             {
+                overview.Children.Add(Node(new(ArchivedProjectsKey, "Arşivlenen projeler", "\uE7B8",
+                    "Arşivden çıkarmak için projeyi sağ tıklayın", _archivedProjects.Count)));
                 var recent = CurrentRecent().ToHashSet(StringComparer.OrdinalIgnoreCase);
                 overview.Children.Add(Node(new("favorites", "Favoriler", "\uE734", "Sabitlenen projeler",
                     _projects.Count(project => project.Preference.Favorite))));
@@ -137,7 +140,8 @@ public partial class MainWindow
                     string scope = _navigationNodes.GetValueOrDefault(filter.Navigation)?.Label ?? filter.Navigation;
                     string hint = filter.Query.Length == 0 ? scope : $"{scope} · {filter.Query}";
                     section.Children.Add(Node(new(filter.Key, filter.Name, "\uE71C", hint,
-                        _projects.Count(project => MatchesNavigation(project, filter.Navigation, recent) && MatchesSearch(project, filter.Query)))));
+                        (filter.Navigation == ArchivedProjectsKey ? _archivedProjects : _projects)
+                            .Count(project => MatchesNavigation(project, filter.Navigation, recent) && MatchesSearch(project, filter.Query)))));
                 }
             }
 

@@ -82,7 +82,7 @@ public partial class MainWindow
 
     private void PopulateProjectMenu(ItemsControl menu, Workspace workspace, ProjectEntry project, ProjectEntry[] pair)
     {
-        if (pair.Length > 1 && pair.Contains(project))
+        if (!project.Preference.Archived && pair.Length > 1 && pair.Contains(project))
         {
             var group = new MenuItem
             {
@@ -119,6 +119,17 @@ public partial class MainWindow
             };
             menu.Items.Add(item);
         }
+
+        bool archived = project.Preference.Archived;
+        Add(archived ? "Arşivden çıkar" : "Arşive al", "\uE7B8",
+            () => ChangeProjectArchive(project, !archived), CanChangeProjectArchive);
+        if (archived)
+        {
+            Add("Klasörü aç", "\uE838", () => ExplorerClick(this, new()), Directory.Exists(project.Folder));
+            Add("Yolu kopyala", "\uE8C8", () => CopyPathClick(this, new()));
+            return;
+        }
+        menu.Items.Add(new Separator());
 
         bool folderExists = Directory.Exists(project.Folder);
         Add(project.Kind == "Visual Studio" ? "Çözümü aç" : "Projeyi aç", "\uE8A7",

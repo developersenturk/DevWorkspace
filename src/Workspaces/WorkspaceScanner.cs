@@ -176,12 +176,15 @@ internal static class WorkspaceScanner
         projects = projects.OrderBy(project => project.LinkPath is not null)
             .DistinctBy(project => project.EntryFile ?? project.Folder, StringComparer.OrdinalIgnoreCase).ToList();
 
-        string[] repos = projects.Select(project => project.Repository).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        projects = projects.Select(project => project with { SavedPreference = workspace.PreferenceFor(project.RelativePath) }).ToList();
+        string[] repos = projects.Where(project => !project.Preference.Archived).Select(project => project.Repository)
+            .OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var statuses = new ConcurrentDictionary<string, GitStatus>(StringComparer.OrdinalIgnoreCase);
         await Parallel.ForEachAsync(repos, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken },
             async (repo, token) => statuses[repo] = await GitStatus.ReadAsync(repo, token));
 
-        var result = projects.Select(project => project.Repository is null ? project : project with { Git = statuses[project.Repository] })
+        var result = projects.Select(project => project.Preference.Archived ? project with { Repository = null } :
+                project.Repository is null ? project : project with { Git = statuses[project.Repository] })
             .OrderBy(project => Array.IndexOf(folders, project.Category))
             .ThenBy(project => project.Name, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(project => project.RelativePath, StringComparer.OrdinalIgnoreCase)

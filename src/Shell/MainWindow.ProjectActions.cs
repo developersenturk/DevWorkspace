@@ -61,7 +61,8 @@ public partial class MainWindow
 
         var session = _session.For(workspace.Root);
         if (session.LastSolution is { } saved)
-            return IsSolution(saved) && File.Exists(saved) ? saved : null;
+            return IsSolution(saved) && File.Exists(saved) && !_archivedProjects.Any(project =>
+                string.Equals(project.EntryFile, saved, StringComparison.OrdinalIgnoreCase)) ? saved : null;
 
         foreach (string relativePath in session.RecentProjects ?? [])
         {
@@ -98,6 +99,15 @@ public partial class MainWindow
     private Task SavePreferenceAsync(Func<ProjectPreference, ProjectPreference> change) =>
         ProjectGrid.SelectedItem is ProjectEntry project ? SavePreferencesAsync([project], change) : Task.CompletedTask;
 
+    private bool CanChangeProjectArchive => !_busy && !_savingPreference && _workspaceCheck is null &&
+        _dashboardScan is null && _gitView?.IsBusy != true;
+
+    private async void ChangeProjectArchive(ProjectEntry project, bool archived)
+    {
+        if (CanChangeProjectArchive)
+            await SavePreferencesAsync([project], current => current with { Archived = archived }, archiveChange: true);
+    }
+
     private void GroupSelectionClick(object sender, RoutedEventArgs e) => OpenBulkGroupEditor(SelectedProjects());
 
     private async void OpenBulkGroupEditor(ProjectEntry[] selection)
@@ -115,12 +125,14 @@ public partial class MainWindow
     }
 
     private async Task SavePreferencesAsync(ProjectEntry[] selection, Func<ProjectPreference, ProjectPreference> change,
-        string? bulkGroup = null)
+        string? bulkGroup = null, bool archiveChange = false)
     {
         if (_savingPreference || _busy || _workspace is not Workspace workspace)
             return;
 
         _savingPreference = true;
+        if (archiveChange)
+            SetBusy(true);
         UpdateGroupSelection();
         try
         {
@@ -130,6 +142,23 @@ public partial class MainWindow
                 return;
 
             _workspace = updated;
+            if (archiveChange)
+            {
+                InvalidateWorkspaceChecks();
+                if (updated.PreferenceFor(paths[0]).Archived)
+                {
+                    _projects = _projects.Where(project => !project.RelativePath.Equals(paths[0], StringComparison.OrdinalIgnoreCase)).ToArray();
+                    _archivedProjects = [.. _archivedProjects, selection[0] with
+                    {
+                        SavedPreference = updated.PreferenceFor(paths[0]), Repository = null, Git = new(GitState.None)
+                    }];
+                    BuildNavigation(SelectedNavigationKey);
+                }
+                _savingPreference = false;
+                SetBusy(false);
+                await RefreshAsync();
+                return;
+            }
             string? selected = (ProjectGrid.SelectedItem as ProjectEntry)?.RelativePath;
             string key = SelectedNavigationKey;
             _projects = _projects.Select(entry => entry with { SavedPreference = updated.PreferenceFor(entry.RelativePath) }).ToArray();
@@ -161,6 +190,8 @@ public partial class MainWindow
         finally
         {
             _savingPreference = false;
+            if (archiveChange && _busy && !_closing.IsCancellationRequested)
+                SetBusy(false);
             UpdateGroupSelection();
         }
     }
@@ -188,7 +219,7 @@ public partial class MainWindow
     private void ShowProjectTools(ProjectToolView view, ProjectEntry? project = null, HealthResult? healthReport = null)
     {
         project ??= ProjectGrid.SelectedItem as ProjectEntry;
-        if (_workspace is not Workspace workspace || project is null)
+        if (_workspace is not Workspace workspace || project is null || project.Preference.Archived)
             return;
 
         var window = new ProjectToolsWindow(workspace, project, view, GetNuGetState(project), healthReport) { Owner = this };
