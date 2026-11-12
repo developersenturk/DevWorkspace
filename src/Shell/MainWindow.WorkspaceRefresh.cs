@@ -30,8 +30,8 @@ public partial class MainWindow
             }
 
             if (_busy || _backgroundWorkspaceScan || IsMainMenuOpen || _projectContextMenu?.IsOpen == true ||
-                _savingExplorerFolder || _explorerEdit is not null || _explorerContextMenu?.IsOpen == true ||
-                OwnedWindows.OfType<Window>().Any(window => window.IsVisible))
+                _savingPreference || _savingExplorerFolder || _explorerEdit is not null || _explorerContextMenu?.IsOpen == true ||
+                OwnedWindows.OfType<Window>().Any(window => window.IsVisible && window is not OperationCenterWindow))
                 return;
 
             _workspaceRefresh.Stop();
@@ -56,13 +56,22 @@ public partial class MainWindow
     private void StartWorkspaceWatch(Workspace workspace)
     {
         string[] links = workspace.Config.LinkedProjects ?? [];
-        string key = workspace.Root + "\n" + string.Join('\n', workspace.Config.ScanExclusions) + "\n" + string.Join('\n', links);
+        string[] repositories = _projects.Concat(_archivedProjects).Select(project => project.Repository)
+            .OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        string key = workspace.Root + "\n" + string.Join('\n', workspace.Config.ScanExclusions) + "\n" +
+            string.Join('\n', links) + "\n" + string.Join('\n', repositories);
         if (_watchKey == key)
             return;
 
         StopWorkspaceRefresh();
         _watchKey = key;
         int generation = _watchGeneration;
+        void QueueRefresh() => Dispatcher.BeginInvoke(() =>
+        {
+            if (generation == _watchGeneration)
+                ScheduleWorkspaceRefresh();
+        });
+
         var exclusions = workspace.Config.ScanExclusions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         exclusions.Add(".git");
         var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { workspace.Root };
@@ -95,14 +104,6 @@ public partial class MainWindow
                         (root.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase) ||
                          links.Any(link => !string.IsNullOrWhiteSpace(link) && (IsInside(path, link) || IsInside(link, path))));
                 }
-                void QueueRefresh()
-                {
-                    Dispatcher.BeginInvoke(() =>
-                    {
-                        if (generation == _watchGeneration)
-                            ScheduleWorkspaceRefresh();
-                    });
-                }
                 void Changed(object sender, FileSystemEventArgs e)
                 {
                     if (IsRelevant(e.FullPath))
@@ -119,6 +120,71 @@ public partial class MainWindow
             {
                 watcher?.Dispose();
             }
+        }
+
+        foreach (string directory in repositories.SelectMany(GitMetadataDirectories).Distinct(StringComparer.OrdinalIgnoreCase))
+            WatchGitMetadata(directory, QueueRefresh);
+    }
+
+    private static IReadOnlyList<string> GitMetadataDirectories(string repository)
+    {
+        try
+        {
+            string git = Path.Combine(repository, ".git");
+            if (File.Exists(git))
+            {
+                string pointer = File.ReadAllText(git).Trim();
+                if (!pointer.StartsWith("gitdir:", StringComparison.Ordinal))
+                    return [];
+                git = Path.GetFullPath(pointer["gitdir:".Length..].Trim(), repository);
+            }
+            if (!Directory.Exists(git))
+                return [];
+
+            string common = Path.Combine(git, "commondir");
+            return File.Exists(common)
+                ? [git, Path.GetFullPath(File.ReadAllText(common).Trim(), git)]
+                : [git];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return [];
+        }
+    }
+
+    private void WatchGitMetadata(string directory, Action refresh)
+    {
+        FileSystemWatcher? watcher = null;
+        try
+        {
+            watcher = new(directory)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite
+            };
+            bool IsStatusFile(string path)
+            {
+                string relative = Path.GetRelativePath(directory, path);
+                return !relative.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) &&
+                    (relative is "HEAD" or "index" or "packed-refs" or "config" or "config.worktree" ||
+                     IsInside(path, Path.Combine(directory, "refs")));
+            }
+            void Changed(object sender, FileSystemEventArgs e)
+            {
+                if (IsStatusFile(e.FullPath))
+                    refresh();
+            }
+            watcher.Changed += Changed;
+            watcher.Created += Changed;
+            watcher.Deleted += Changed;
+            watcher.Renamed += (_, e) => { if (IsStatusFile(e.FullPath) || IsStatusFile(e.OldFullPath)) refresh(); };
+            watcher.Error += (_, _) => refresh();
+            watcher.EnableRaisingEvents = true;
+            _workspaceWatchers.Add(watcher);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            watcher?.Dispose();
         }
     }
 

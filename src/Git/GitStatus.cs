@@ -51,7 +51,7 @@ internal sealed record GitStatus(
         try
         {
             var (code, output, error) = await GitProjectOperations.RunAsync(root,
-                ["-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
+                ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false",
                  "status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"], cancellationToken);
             if (code == 0)
             {

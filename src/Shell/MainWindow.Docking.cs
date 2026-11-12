@@ -5,6 +5,42 @@ namespace DevWorkspace;
 
 public partial class MainWindow
 {
+    private readonly Dictionary<string, WorkspaceSession> _resumeSessions = new(StringComparer.OrdinalIgnoreCase);
+
+    private async void ResumeWorkspaceClick(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _gitView?.IsBusy == true || _workspace is not { } workspace)
+            return;
+
+        if (!_resumeSessions.TryGetValue(workspace.Root, out var saved) || saved.View is not { } view)
+        {
+            StatusText.Text = "Bu çalışma alanı için önceki oturum bulunamadı.";
+            return;
+        }
+
+        SetBusy(true);
+        try
+        {
+            ResetGitPane();
+            SearchBox.Text = view.Search;
+            _expandedFolders.Clear();
+            _expandedFolders.UnionWith(saved.ExpandedFolders ?? []);
+            _expandedProjectGroups.Clear();
+            _expandedProjectGroups.UnionWith(view.ExpandedProjectGroups ?? []);
+            BuildNavigation(view.GitTab && view.Navigation == "all" ? GitRepositoriesKey : view.Navigation);
+            if (_visibleProjects.FirstOrDefault(project =>
+                    project.RelativePath.Equals(saved.SelectedProject, StringComparison.OrdinalIgnoreCase)) is { } project)
+                FocusProject(project);
+            await RestoreWorkspacePanelsAsync(view);
+            StatusText.Text = "Önceki çalışma görünümü açıldı.";
+        }
+        finally
+        {
+            if (!_closing.IsCancellationRequested)
+                SetBusy(false);
+        }
+    }
+
     private GitWorkbenchView? _gitView;
 
     private void WindowsMenuOpened(object sender, RoutedEventArgs e)
@@ -111,12 +147,12 @@ public partial class MainWindow
         if (_busy || _gitView?.IsBusy == true)
             return;
 
-        string[] repositories = SelectedProjects().Select(project => project.Repository).OfType<string>()
-            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var repositories = SelectedProjects().Where(project => project.Repository is not null)
+            .DistinctBy(project => project.Repository, StringComparer.OrdinalIgnoreCase).ToArray();
         if (repositories.Length == 0 || !EnsureTool(DevelopmentTool.Git))
             return;
 
-        new BatchFetchWindow(repositories) { Owner = this }.ShowDialog();
+        new BatchFetchWindow(repositories, _closing.Token) { Owner = this }.ShowDialog();
         await RefreshRepositoryViewsAsync();
     }
 
@@ -202,6 +238,14 @@ public partial class MainWindow
     }
 
     internal void GitRepositoryChanged() => ScheduleWorkspaceRefresh();
+
+    internal void GitStatusObserved(string repository, GitStatus status)
+    {
+        if (_projects.Concat(_archivedProjects).Any(project =>
+            repository.Equals(project.Repository, StringComparison.OrdinalIgnoreCase) &&
+            !project.Git.HasSameSnapshot(status)))
+            ScheduleWorkspaceRefresh();
+    }
 
     internal string[] KnownGitRepositories() => _projects.Select(project => project.Repository).OfType<string>()
         .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();

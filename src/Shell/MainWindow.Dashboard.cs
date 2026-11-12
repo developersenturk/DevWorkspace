@@ -10,7 +10,7 @@ public partial class MainWindow
     private const int DashboardFindingPageSize = 5;
     private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null, Uri? Link = null);
     private sealed record DashboardFinding(string Severity, string Package, string Version, string Target,
-        string Detail, ProjectEntry Project);
+        string Detail, ProjectEntry Project, string Identity);
     private sealed record DashboardSeverityTile(string Severity, int Count);
     private DashboardFinding[] _dashboardFindings = [];
     private string? _dashboardSeverity;
@@ -108,7 +108,7 @@ public partial class MainWindow
         _dashboardFindings = affected.SelectMany(item => item.Findings.Select(finding => new DashboardFinding(
                 finding.Severity, finding.Package, finding.Version, item.Project.Name,
                 $"{finding.Severity} · {finding.Package} {finding.Version} · {finding.Project} · {finding.Advisory}",
-                item.Project)))
+                item.Project, FindingIdentity(finding))))
             .OrderByDescending(row => SeverityRank(row.Severity)).ThenBy(row => row.Package, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
         DashboardSeverityMetrics.ItemsSource = new[] { "Kritik", "Yüksek", "Orta", "Düşük" }
@@ -132,6 +132,8 @@ public partial class MainWindow
             tasks.Add(new("NuGet taramasını tamamla veya yenile",
                 $"{unscanned:N0} taranmamış · {stale:N0} eski · {incomplete:N0} uyarılı", "nuget-section"));
         UpdateWorkspaceChecks(ahead, tasks);
+        UpdateWorkspaceActivity();
+        UpdateTrackedFindings();
         DashboardTasks.ItemsSource = tasks;
         DashboardTaskHint.Text = tasks.Count == 0 ? "Mevcut verilerde takip edilecek iş görünmüyor." :
             "Çalışma alanının güncel durumundan oluşturuldu.";
@@ -240,6 +242,9 @@ public partial class MainWindow
                 break;
             case "project":
                 NavigateFromDashboard("all", project);
+                break;
+            case "tracked-findings":
+                ShowTrackedFindings();
                 break;
             case "external" when link.Link is not null:
                 OpenCheckLink(link.Link);

@@ -4,7 +4,13 @@ using System.Text.Json;
 namespace DevWorkspace;
 
 internal sealed record WorkspaceSession(string? SelectedProject, string[] RecentProjects, string[]? ExpandedFolders = null,
-    DateTime? LastUsedUtc = null, string? LastSolution = null, WorkspaceViewSession? View = null);
+    DateTime? LastUsedUtc = null, string? LastSolution = null, WorkspaceViewSession? View = null,
+    WorkspaceActivity? Activity = null, LaunchProfile[]? Profiles = null, TrackedFinding[]? TrackedFindings = null);
+internal sealed record LaunchProfile(string Name, LaunchStep[] Steps);
+internal sealed record LaunchStep(string Project, ProjectCommand? Command);
+internal sealed record TrackedFinding(string Id, string Project, string Title, string Detail, string Target, DateTimeOffset Due);
+internal sealed record WorkspaceActivity(Dictionary<string, string> Git, Dictionary<string, string[]> NuGet,
+    Dictionary<string, string> FailedActions);
 internal sealed record WorkspaceViewSession(string Navigation, string Search, bool GitTab, string? DetailsProject,
     GitViewSession? Git, string? ActivePanel, string[]? ExpandedProjectGroups = null);
 internal sealed record GitViewSession(string Project, string? File, bool Staged, bool DiffOpen, string? FetchRemote, string Draft);
@@ -66,6 +72,15 @@ internal sealed class SessionState
 
     public void RememberSolution(string root, string path) =>
         Workspaces[root] = For(root) with { LastSolution = path };
+
+    public void RememberActivity(string root, WorkspaceActivity activity) =>
+        Workspaces[root] = For(root) with { Activity = activity };
+
+    public void RememberProfiles(string root, LaunchProfile[] profiles) =>
+        Workspaces[root] = For(root) with { Profiles = profiles };
+
+    public void RememberFindings(string root, TrackedFinding[] findings) =>
+        Workspaces[root] = For(root) with { TrackedFindings = findings };
 
     public void Save()
     {

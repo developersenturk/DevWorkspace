@@ -187,8 +187,9 @@ public partial class MainWindow
             state = new(_session.NuGetScans.GetValueOrDefault(path), result =>
             {
                 _session.NuGetScans[path] = result;
+                RememberWorkspaceActivity();
                 _session.Save();
-            });
+            }, _closing.Token);
             state.PropertyChanged += (_, _) =>
             {
                 if (state.CanScan)

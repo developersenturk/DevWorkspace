@@ -7,7 +7,8 @@ namespace DevWorkspace;
 
 internal sealed record NuGetScanSnapshot(DateTimeOffset FinishedAt, NuGetReport Report);
 
-internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetScanSnapshot> save) : INotifyPropertyChanged
+internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetScanSnapshot> save,
+    CancellationToken workspaceToken = default) : INotifyPropertyChanged
 {
     private NuGetScanSnapshot? _latest = initial;
     private string? _progress;
@@ -57,6 +58,7 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
             return;
         _error = null;
         _progress = "NuGet paketleri taranıyor…";
+        var operation = OperationCenter.Start("NuGet taraması", project.Name, () => _ = ScanAsync(project, workspaceToken));
         NotifyChanged();
         try
         {
@@ -65,6 +67,7 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
                 if (_progress is not null && !token.IsCancellationRequested)
                 {
                     _progress = status;
+                    operation.Append(status + Environment.NewLine);
                     NotifyChanged();
                 }
             });
@@ -73,15 +76,20 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
             {
                 _latest = new(DateTimeOffset.UtcNow, report);
                 save(_latest);
+                operation.Finish("Tamamlandı", $"{report.Findings.Count:N0} bulgu" +
+                    (report.Diagnostics.Count > 0 ? Environment.NewLine + string.Join(Environment.NewLine, report.Diagnostics) : ""));
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException or JsonException or InvalidOperationException)
         {
             _error = ex is JsonException or InvalidOperationException ? "NuGet taramasının sonucu okunamadı." : ex.Message;
+            operation.Finish("Başarısız", _error);
         }
         finally
         {
+            if (operation.Status == "Çalışıyor")
+                operation.Finish("Durduruldu");
             _progress = null;
             NotifyChanged();
         }

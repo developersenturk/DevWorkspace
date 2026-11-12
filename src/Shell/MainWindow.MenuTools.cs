@@ -157,7 +157,7 @@ public partial class MainWindow
 
     private void KeyboardShortcutsClick(object sender, RoutedEventArgs e) =>
         MessageBox.Show(this,
-            "Ctrl+O   Çalışma alanı aç veya kur\nCtrl+K   Hızlı proje aç\nCtrl+F   Projelerde ara\n" +
+            "Ctrl+O   Çalışma alanı aç veya kur\nCtrl+K   Komut paleti\nCtrl+F   Projelerde ara\n" +
             "F5   Yeniden tara\nF2   Seçili gezgin klasörünü yeniden adlandır\n" +
             "Shift+F10   Seçili öğenin sağ tık menüsünü aç\nAlt+F4   DevWorkspace’i kapat",
             "Klavye kısayolları", MessageBoxButton.OK, MessageBoxImage.Information);

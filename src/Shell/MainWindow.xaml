@@ -79,7 +79,9 @@
             <DataTemplate x:Key="DashboardFindingRow">
                 <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0">
                     <dx:SimpleButton Style="{StaticResource DashboardRowButton}"
-                                     AutomationProperties.Name="{Binding Package}" ToolTip="{Binding Detail}">
+                                     AutomationProperties.Name="{Binding Package}" ToolTip="{Binding Detail}"
+                                     Click="DashboardFindingClick" ContextMenuOpening="FindingContextOpening">
+                        <dx:SimpleButton.ContextMenu><ContextMenu/></dx:SimpleButton.ContextMenu>
                         <Grid Margin="4,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="75"/><ColumnDefinition Width="1.25*"/>
@@ -158,7 +160,12 @@
                 <MenuItem x:Name="FileMenu" Header="_Dosya" Tag="&#xE8A5;" Style="{StaticResource MainMenuItem}" SubmenuOpened="FileMenuOpened">
                     <MenuItem Icon="{local:MenuGlyph &#xE838;}" x:Name="OpenWorkspaceMenu" Header="Çalışma alanı aç veya kur…" InputGestureText="Ctrl+O" Click="ChooseWorkspaceClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE81C;}" x:Name="RecentWorkspacesMenu" Header="Son çalışma alanları"/>
-                    <MenuItem Icon="{local:MenuGlyph &#xE721;}" x:Name="QuickOpenMenu" Header="Hızlı proje aç…" InputGestureText="Ctrl+K" Click="QuickOpenClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE721;}" x:Name="QuickOpenMenu" Header="Komut paleti…" InputGestureText="Ctrl+K" Click="QuickOpenClick" IsEnabled="False"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE81C;}" Header="Kaldığın yerden devam et" Click="ResumeWorkspaceClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE768;}" x:Name="LaunchProfilesMenu" Header="Çalışma profilleri"
+                              SubmenuOpened="LaunchProfilesMenuOpened">
+                        <MenuItem Header="Profilleri yönet…" Click="LaunchProfilesClick"/>
+                    </MenuItem>
                     <Separator/>
                     <MenuItem Icon="{local:MenuGlyph &#xE71B;}" x:Name="LinkSolutionMenu" Header="Çözüm bağla…" Click="LinkSolutionClick" IsEnabled="False"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE71B;}" x:Name="LinkFolderMenu" Header="Klasör bağla…" Click="LinkFolderClick" IsEnabled="False"/>
@@ -214,6 +221,8 @@
                     <MenuItem x:Name="RemoveFilterMenu" Icon="{local:MenuGlyph &#xE74D;}" Header="Seçili kayıtlı filtreyi sil" Click="RemoveFilterClick" IsEnabled="False"/>
                 </MenuItem>
                 <MenuItem x:Name="WindowsMenu" Header="P_encereler" Tag="&#xE78B;" Style="{StaticResource MainMenuItem}" SubmenuOpened="WindowsMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE9D9;}" Header="İşlem merkezi" Click="OperationCenterClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE7BA;}" Header="Takip edilen bulgular…" Click="TrackedFindingsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE8B7;}" Header="Gezgin" Click="ShowExplorerClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE80A;}" Header="Proje listesi" Click="ShowProjectListClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE946;}" x:Name="ShowProjectInfoMenu" Header="Proje bilgileri" Click="ShowProjectInfoClick" IsEnabled="False"/>
@@ -478,6 +487,28 @@
                                 <ItemsPanelTemplate><UniformGrid Columns="{Binding Tag, RelativeSource={RelativeSource AncestorType=ItemsControl}}"/></ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
+                        <Border Style="{StaticResource DashboardSurface}" Padding="12" Margin="0,0,0,10">
+                            <StackPanel>
+                                <DockPanel>
+                                    <dx:SimpleButton DockPanel.Dock="Right" Content="Kaldığın yerden devam et"
+                                                     Click="ResumeWorkspaceClick" Style="{StaticResource DashboardAction}"/>
+                                    <TextBlock Text="Son açılıştan bu yana" Style="{StaticResource DashboardSectionTitle}"/>
+                                </DockPanel>
+                                <TextBlock x:Name="DashboardActivityHint" Style="{StaticResource DashboardSecondary}"/>
+                                <ItemsControl x:Name="DashboardActivityRows" ItemTemplate="{StaticResource DashboardLink}"/>
+                            </StackPanel>
+                        </Border>
+                        <Border x:Name="DashboardFollowUp" Style="{StaticResource DashboardSurface}" Padding="12"
+                                Margin="0,0,0,10" Visibility="Collapsed">
+                            <StackPanel>
+                                <DockPanel>
+                                    <dx:SimpleButton DockPanel.Dock="Right" Content="Takibi yönet"
+                                                     Click="TrackedFindingsClick" Style="{StaticResource DashboardAction}"/>
+                                    <TextBlock Text="Zamanı gelen bulgular" Style="{StaticResource DashboardSectionTitle}"/>
+                                </DockPanel>
+                                <ItemsControl x:Name="DashboardFollowUpRows" ItemTemplate="{StaticResource DashboardLink}"/>
+                            </StackPanel>
+                        </Border>
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="1.12*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

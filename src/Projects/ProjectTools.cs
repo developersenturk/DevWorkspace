@@ -22,6 +22,7 @@ internal static class ProjectTools
             actions.Add(new("Testleri çalıştır", "dotnet.exe", $"test {Quote(entry)}"));
             foreach (string runnable in FindRunnableProjects(entry).Take(8))
                 actions.Add(new($"Çalıştır · {Path.GetFileNameWithoutExtension(runnable)}", "dotnet.exe", $"run --project {Quote(runnable)}"));
+            actions.Add(new("Derle", "dotnet.exe", $"build {Quote(entry)}"));
         }
 
         string package = Path.Combine(project.Folder, "package.json");

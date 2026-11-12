@@ -5,17 +5,33 @@ using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
+internal sealed record ProjectPickerAction(string Label, string Keywords, Func<ProjectEntry, bool> Supports,
+    Action<ProjectEntry> Execute);
+
+internal sealed record ProjectPickerResult(ProjectEntry Project, ProjectPickerAction? Action)
+{
+    public string Name => Action is null ? Project.Name : $"{Project.Name} · {Action.Label}";
+}
+
 public partial class ProjectPickerWindow : ThemedWindow
 {
     private readonly ProjectEntry[] _ordered;
+    private readonly IReadOnlyList<ProjectPickerAction> _actions;
     internal ProjectEntry? Chosen { get; private set; }
+    internal ProjectPickerAction? ChosenAction { get; private set; }
 
     internal ProjectPickerWindow(IEnumerable<ProjectEntry> projects, IReadOnlyList<string> recent, string title, string action,
-        ProjectEntry? baseline = null)
+        ProjectEntry? baseline = null, IReadOnlyList<ProjectPickerAction>? actions = null)
     {
         InitializeComponent();
         Title = title;
         ChooseButton.Content = action;
+        _actions = actions ?? [];
+        if (_actions.Count > 0)
+        {
+            QueryBox.ToolTip = "Proje veya işlem ara · Örnek: Billing diff";
+            System.Windows.Automation.AutomationProperties.SetName(QueryBox, "Proje veya işlem ara");
+        }
         var recentOrder = recent.Select((path, index) => (path, index)).DistinctBy(item => item.path, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(item => item.path, item => item.index, StringComparer.OrdinalIgnoreCase);
         _ordered = projects.OrderByDescending(project => baseline is not null && (
@@ -39,16 +55,31 @@ public partial class ProjectPickerWindow : ThemedWindow
     private void Filter()
     {
         string query = QueryBox.Text.Trim();
-        var matches = _ordered.Where(project => query.Length == 0 ||
-            project.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-            project.DisplayPath.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-            (project.Preference.Group ?? "").Contains(query, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(project => query.Length > 0 && project.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase))
+        string[] terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var projects = _ordered.Select(project => new ProjectPickerResult(project, null));
+        IEnumerable<ProjectPickerResult> commands = query.Length == 0 ? [] : _ordered.SelectMany(project =>
+            _actions.Where(action => action.Supports(project)).Select(action => new ProjectPickerResult(project, action)));
+        var matches = projects.Concat(commands).Where(result => Matches(result, query, terms))
+            .OrderByDescending(result => query.Length > 0 && result.Name.StartsWith(query, StringComparison.OrdinalIgnoreCase))
             .Take(80).ToArray();
         Results.ItemsSource = matches;
         Results.SelectedIndex = matches.Length > 0 ? 0 : -1;
         ChooseButton.IsEnabled = matches.Length > 0;
-        PickerHint.Text = matches.Length == 0 ? "Eşleşen proje yok." : "↑ ↓ seç · Enter onayla · Esc kapat";
+        PickerHint.Text = matches.Length == 0 ? "Eşleşme yok." : "↑ ↓ seç · Enter onayla · Esc kapat";
+    }
+
+    private static bool Matches(ProjectPickerResult result, string query, string[] terms)
+    {
+        var project = result.Project;
+        bool Contains(string value, string term) => value.Contains(term, StringComparison.OrdinalIgnoreCase);
+        bool MatchesProject(string term) => Contains(project.Name, term) || Contains(project.DisplayPath, term) ||
+            Contains(project.Preference.Group ?? "", term);
+        if (result.Action is not { } action)
+            return MatchesProject(query);
+
+        string command = $"{action.Label} {action.Keywords}";
+        return terms.Any(term => Contains(command, term)) &&
+            terms.All(term => MatchesProject(term) || Contains(command, term));
     }
 
     private void PickerKeyDown(object sender, KeyEventArgs e)
@@ -65,7 +96,7 @@ public partial class ProjectPickerWindow : ThemedWindow
                 break;
             case Key.Up:
             case Key.Down:
-                if (Results.ItemsSource is not ProjectEntry[] { Length: > 0 } matches)
+                if (Results.ItemsSource is not ProjectPickerResult[] { Length: > 0 } matches)
                     return;
                 e.Handled = true;
                 Results.SelectedIndex = Math.Clamp(Results.SelectedIndex + (e.Key == Key.Down ? 1 : -1), 0, matches.Length - 1);
@@ -77,19 +108,20 @@ public partial class ProjectPickerWindow : ThemedWindow
     private void ChooseClick(object sender, RoutedEventArgs e) => Choose();
     private void ResultClick(object sender, MouseButtonEventArgs e)
     {
-        if (e.ClickCount == 2 && sender is FrameworkElement { DataContext: ProjectEntry project })
+        if (e.ClickCount == 2 && sender is FrameworkElement { DataContext: ProjectPickerResult result })
         {
             e.Handled = true;
-            Results.SelectedItem = project;
+            Results.SelectedItem = result;
             Choose();
         }
     }
 
     private void Choose()
     {
-        if (Results.SelectedItem is ProjectEntry project)
+        if (Results.SelectedItem is ProjectPickerResult result)
         {
-            Chosen = project;
+            Chosen = result.Project;
+            ChosenAction = result.Action;
             DialogResult = true;
         }
     }

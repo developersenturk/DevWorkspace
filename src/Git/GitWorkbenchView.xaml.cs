@@ -45,6 +45,16 @@ public partial class GitWorkbenchView : UserControl
     private async void RefreshClick(object sender, RoutedEventArgs e) => await RefreshAsync();
     internal Task RefreshAsync() => RunOperationAsync("Depo okunuyor…");
 
+    internal void OpenFirstChange()
+    {
+        if (SelectedFile is not null)
+            _owner.ShowGitDiff();
+        else if (WorkingFiles.ItemsSource is IEnumerable<GitFileChange> working && working.FirstOrDefault() is { } changed)
+            WorkingFiles.SelectedItem = changed;
+        else if (StagedFiles.ItemsSource is IEnumerable<GitFileChange> staged && staged.FirstOrDefault() is { } prepared)
+            StagedFiles.SelectedItem = prepared;
+    }
+
     internal GitViewSession CaptureSession(bool diffOpen) => new(
         Project.RelativePath, SelectedFile?.Path, StagedFiles.SelectedItem is not null, diffOpen,
         (FetchRemote.SelectedItem as GitRemote)?.Name, CommitMessage.Text);
@@ -78,6 +88,7 @@ public partial class GitWorkbenchView : UserControl
         StatusMessage.Text = progress;
         UpdateActions();
         string result = "";
+        var operation = action is null ? null : OperationCenter.Start(progress, Project.Name);
         try
         {
             if (action is not null)
@@ -86,14 +97,17 @@ public partial class GitWorkbenchView : UserControl
                 {
                     await action(_closing.Token);
                     result = success;
+                    operation?.Finish("Tamamlandı", success);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
                 {
                     result = ex.Message;
+                    operation?.Finish("Başarısız", result);
                 }
             }
 
             GitWorkbenchState state = await _git.ReadAsync(_closing.Token);
+            _owner.GitStatusObserved(_repository, state.Status);
             GitRemote[] remotes = await Task.WhenAll(state.Remotes.Select(remote => _git.ReadRemoteAsync(remote, _closing.Token)));
             await LoadStashListAsync();
             LoadState(state, remotes);
@@ -103,7 +117,11 @@ public partial class GitWorkbenchView : UserControl
             if (string.IsNullOrWhiteSpace(StatusMessage.Text))
                 StatusMessage.Text = "Dosyayı seçerek farkı inceleyebilir veya sağ tıklayarak işlem yapabilirsin.";
         }
-        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested)
+        {
+            if (operation is { Status: "Çalışıyor" })
+                operation.Finish("Durduruldu");
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
         {
             _state = null;

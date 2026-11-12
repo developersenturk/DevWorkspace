@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -192,7 +193,30 @@ public partial class ProjectToolsWindow : ThemedWindow
                     return;
                 CommandStatus.Text = "Komut çalışıyor…";
             }
-            int exitCode = await ProjectTools.RunAsync(option.Command, _project.Folder, QueueOutput, running.Token);
+            var operation = OperationCenter.Start(option.Command.Name, _project.Name,
+                () => _ = OperationCenter.RunCommandAsync(option.Command, _project.Name, _project.Folder,
+                    (Owner as MainWindow)?.WorkbenchCancellation ?? CancellationToken.None));
+            operation.Append("> " + option.Command.Display + Environment.NewLine);
+            int exitCode;
+            try
+            {
+                exitCode = await ProjectTools.RunAsync(option.Command, _project.Folder, text =>
+                {
+                    QueueOutput(text);
+                    operation.Append(text);
+                }, running.Token);
+                operation.Finish(exitCode == 0 ? "Tamamlandı" : "Başarısız", $"Çıkış kodu {exitCode}");
+            }
+            catch (OperationCanceledException)
+            {
+                operation.Finish("Durduruldu");
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or Win32Exception)
+            {
+                operation.Finish("Başarısız", ex.Message);
+                throw;
+            }
             if (!_closing.IsCancellationRequested)
                 CommandStatus.Text = exitCode == 0 ? "Komut tamamlandı." : $"Komut hata koduyla tamamlandı. Kod {exitCode}";
         }

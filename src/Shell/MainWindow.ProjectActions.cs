@@ -1,4 +1,6 @@
 using System.IO;
+using System.Diagnostics;
+using System.ComponentModel;
 using System.Text.Json;
 using System.Windows;
 
@@ -18,15 +20,52 @@ public partial class MainWindow
         if (_busy || _projects.Count == 0)
             return;
 
-        var picker = new ProjectPickerWindow(_projects, CurrentRecent(), "Hızlı proje aç", "Aç") { Owner = this };
+        ProjectPickerAction[] actions =
+        [
+            new("Klasörü aç", "folder explorer", project => Directory.Exists(project.Folder),
+                project => OpenPath(project.Folder)),
+            new("Terminal aç", "terminal powershell shell", project => Directory.Exists(project.Folder), OpenProjectTerminal),
+            new("Git değişiklikleri", "git diff değişiklik", project => project.Repository is not null, OpenProjectDiff),
+            new("NuGet bulguları", "nuget paket güvenlik", ProjectIntegrations.HasNuGet,
+                project => ShowProjectTools(ProjectToolView.NuGet, project)),
+            new("Proje işlemleri", "build test run derle çalıştır", project => Directory.Exists(project.Folder),
+                project => ShowProjectTools(ProjectToolView.Commands, project)),
+            new("Proje ortamı", "ortam environment sdk", project => Directory.Exists(project.Folder), OpenProjectEnvironment)
+        ];
+        var picker = new ProjectPickerWindow(_projects, CurrentRecent(), "Komut paleti", "Uygula", actions: actions) { Owner = this };
         if (picker.ShowDialog() == true && picker.Chosen is { } project)
         {
             SearchBox.Text = "";
             BuildNavigation("all");
             ProjectGrid.SelectedItem = project;
             FocusProject(project);
-            OpenProject(project);
+            if (picker.ChosenAction is { } action)
+                action.Execute(project);
+            else
+                OpenProject(project);
         }
+    }
+
+    private void OpenProjectTerminal(ProjectEntry project)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("powershell.exe", "-NoLogo")
+            {
+                UseShellExecute = true,
+                WorkingDirectory = project.Folder
+            });
+        }
+        catch (Win32Exception ex)
+        {
+            StatusText.Text = ex.Message;
+        }
+    }
+
+    private async void OpenProjectDiff(ProjectEntry project)
+    {
+        if (EnsureTool(DevelopmentTool.Git) && await OpenGitWorkbenchAsync(project) is { } view)
+            view.OpenFirstChange();
     }
 
     private void OpenProject(ProjectEntry project)

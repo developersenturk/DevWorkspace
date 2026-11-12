@@ -144,6 +144,13 @@ public partial class MainWindow
         {
             Add("Git geçmişi", MenuGlyphExtension.GitHistory, () => new GitHistoryWindow(project) { Owner = this }.ShowDialog());
             Add("Git işlemleri", MenuGlyphExtension.GitOperations, () => OpenGitWorkbench(project));
+            Add("Dallar ve worktree’ler…", "\uE8F1", () =>
+            {
+                if (EnsureTool(DevelopmentTool.Git))
+                    new GitWorktreeWindow(project.Repository, path => OpenPath(path)) { Owner = this }.ShowDialog();
+            });
+            if (HasGitWarning(project) || project.Git.State == GitState.Changed)
+                Add("Git bulgusunu takip et…", "\uE7BA", () => TrackGitFinding(project));
         }
         else
             Add("Git deposu oluştur…", "\uE710", () => InitializeProjectGitAsync(project), folderExists && !_initializingGit);
@@ -153,6 +160,11 @@ public partial class MainWindow
         menu.Items.Add(new Separator());
         Add("Proje işlemleri", "\uE713", () => ProjectCommandsClick(this, new()), folderExists);
         Add("Sağlık kontrolü", "\uE9D9", () => ProjectHealthClick(this, new()));
+        Add("Proje ilişkileri…", "\uE71B", () =>
+            new ProjectInspectionWindow($"Proje ilişkileri · {project.Name}",
+                token => Task.FromResult(ProjectInspection.Relationships(project, _projects, token))) { Owner = this }.ShowDialog(),
+            project.EntryFile is { } entry && ProjectTools.IsDotNetEntry(entry));
+        Add("Proje ortamı…", "\uE713", () => OpenProjectEnvironment(project), folderExists);
         Add("Grup ve etiket", "\uE8EC", () => OpenProjectDetail(ProjectDetailView.Organization));
         if (pair.Length == 2 && pair.Contains(project) && !pair[0].Folder.Equals(pair[1].Folder, StringComparison.OrdinalIgnoreCase))
             Add("Seçili iki sürümü karşılaştır", "\uE8AB", () => new ComparisonWindow(workspace, pair[0], pair[1]) { Owner = this }.ShowDialog());
@@ -161,6 +173,13 @@ public partial class MainWindow
         Add("Taşıma planı", "\uE8DE", () => PreviewMoveClick(this, new()), folderExists && project.LinkPath is null && !project.IsWorkspaceRoot);
         if (project.LinkPath is not null)
             Add("Bağlantıyı kaldır", "\uE738", () => UnlinkProjectClick(this, new()));
+    }
+
+    private void OpenProjectEnvironment(ProjectEntry project)
+    {
+        if (_workspace is { } workspace)
+            new ProjectInspectionWindow($"Proje ortamı · {project.Name}",
+                token => ProjectInspection.EnvironmentAsync(workspace, project, token)) { Owner = this }.ShowDialog();
     }
 
     private async void OpenProjectDetail(ProjectDetailView view, ProjectEntry? project = null)

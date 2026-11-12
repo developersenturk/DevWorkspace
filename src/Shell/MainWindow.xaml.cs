@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         _defaultProjectColumnWidths = ProjectColumns.Select(column => column.Width).ToArray();
         InitializeWorkspaceRefresh();
+        InitializeFindingReminders();
         RestoreLayout();
         WatchProjectColumnWidths();
         BuildNavigation("all");
@@ -75,6 +76,7 @@ public partial class MainWindow : Window
         {
             CaptureLayout();
             CaptureWorkspaceView();
+            RememberWorkspaceActivity();
             _session.Save();
         }
     }
@@ -87,6 +89,7 @@ public partial class MainWindow : Window
             app.Activated -= WorkspaceActivated;
         _gitView?.Release();
         _closing.Cancel();
+        _findingTimer.Stop();
         StopWorkspaceRefresh();
     }
 
@@ -244,12 +247,15 @@ public partial class MainWindow : Window
                 _dashboardScan?.Cancel();
                 _workspaceCheck?.Cancel();
                 CaptureWorkspaceView();
+                RememberWorkspaceActivity();
+                _resumeSessions[_workspace.Root] = _session.For(_workspace.Root);
                 ResetGitPane();
                 CloseProjectDrawer();
             }
             bool filtersChanged = !(_workspace?.Config.SavedFilters ?? []).SequenceEqual(workspace.Config.SavedFilters ?? []);
             _workspace = workspace;
             WorkspaceSession saved = _session.For(workspace.Root);
+            _resumeSessions.TryAdd(workspace.Root, saved);
             var projects = result.Projects.Where(project => !project.Preference.Archived).ToArray();
             var archived = result.Projects.Where(project => project.Preference.Archived).ToArray();
             bool archiveChanged = !SameProjects(_archivedProjects, archived);
@@ -296,10 +302,7 @@ public partial class MainWindow : Window
                 RefreshProjectDrawer();
             }
             if (!sameWorkspace)
-            {
                 _session.Remember(workspace.Root, (ProjectGrid.SelectedItem as ProjectEntry)?.RelativePath);
-                _session.Save();
-            }
 
             int changed = CountRepositories(p => p.Git.State == GitState.Changed);
             int warnings = CountRepositories(HasGitWarning);
@@ -312,6 +315,10 @@ public partial class MainWindow : Window
                 details.Add(recoveryWarning);
             StatusText.Text = string.Join("   ·   ", details);
             StartWorkspaceWatch(workspace);
+            if (projectsChanged)
+                RememberWorkspaceActivity();
+            if (!background)
+                _session.Save();
             if (!sameWorkspace)
                 await RestoreWorkspacePanelsAsync(saved.View);
         }

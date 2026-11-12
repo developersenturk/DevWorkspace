@@ -18,11 +18,11 @@
                 <DataTemplate>
                     <DockPanel Margin="0,2" Background="Transparent" PreviewMouseLeftButtonDown="ResultClick">
                         <Border DockPanel.Dock="Right" Style="{StaticResource StatusBadge}" VerticalAlignment="Center" Margin="8,0,0,0">
-                            <TextBlock Text="{Binding Git.Label}" Style="{StaticResource StatusLabel}"/>
+                            <TextBlock Text="{Binding Project.Git.Label}" Style="{StaticResource StatusLabel}"/>
                         </Border>
                         <StackPanel>
                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding DisplayPath}" Foreground="{DynamicResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding Project.DisplayPath}" Foreground="{DynamicResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                     </DockPanel>
                 </DataTemplate>

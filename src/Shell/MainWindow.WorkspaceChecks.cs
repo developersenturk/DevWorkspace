@@ -211,13 +211,31 @@ public partial class MainWindow
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_closing.Token);
         _workspaceCheck = cancellation;
         _activeCheck = check;
+        string name = check switch
+        {
+            WorkspaceCheck.Health => "Proje sağlığı",
+            WorkspaceCheck.Packages => "Paket güvenliği taraması",
+            WorkspaceCheck.PackageRepair => "Paket açıklarını düzelt",
+            WorkspaceCheck.PackageVersions => "Paket sürümlerini incele",
+            _ => "GitHub Actions kontrolü"
+        };
+        var operation = OperationCenter.Start(name, workspace.Config.Name,
+            IsPackageUpdate(check) ? null : () =>
+            {
+                if (_workspaceCheck is null && _workspace?.Root == workspace.Root)
+                    _ = RunWorkspaceCheckAsync(check, scan);
+            });
+        operation.Cancel = cancellation.Cancel;
         SetCheckProgress("Kontrol hazırlanıyor…");
         try
         {
             await scan(workspace, _projects.ToArray(), cancellation.Token);
+            var report = _checkReports.GetValueOrDefault(IsPackageUpdate(check) ? WorkspaceCheck.Packages : check);
+            operation.Finish(cancellation.IsCancellationRequested ? "Durduruldu" : "Tamamlandı", report.Summary);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
+            operation.Finish("Durduruldu");
             var report = IsPackageUpdate(check) ? WorkspaceCheck.Packages : check;
             if (!_checkReports.ContainsKey(report) && string.Equals(workspace.Root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
                 _checkReports[report] = (IsPackageUpdate(check)
@@ -225,6 +243,7 @@ public partial class MainWindow
         }
         catch (Exception ex) when (IsCheckError(ex))
         {
+            operation.Finish("Başarısız", ex.Message);
             if (string.Equals(workspace.Root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
                 _checkReports[IsPackageUpdate(check) ? WorkspaceCheck.Packages : check] =
                     ($"Kontrol tamamlanamadı. {ex.Message}", []);
@@ -463,6 +482,8 @@ public partial class MainWindow
             (errors > 0 ? $" · {errors:N0} sorgu tamamlanamadı" : "");
         _checkReports[WorkspaceCheck.Actions] = ($"{summary} · {DateTime.Now:g}",
             rows.OrderByDescending(row => row.Failed).Select(row => row.Link).ToArray());
+        RememberWorkspaceActivity();
+        _session.Save();
     }
 
     private static bool IsCheckError(Exception ex) =>
