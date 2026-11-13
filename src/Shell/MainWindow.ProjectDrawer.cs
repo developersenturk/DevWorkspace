@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -87,8 +88,7 @@ public partial class MainWindow
             {
                 Component = component,
                 Detail = $"{component.Role} · {component.Kind} · {Path.GetRelativePath(project.Folder, component.Folder)}",
-                Action = _projects.Any(row => row.Folder.Equals(component.Folder, StringComparison.OrdinalIgnoreCase))
-                    ? "Satıra git" : "Ayrı satır olarak aç"
+                Action = IsComponentLinked(component) ? "Ayrı satırı gizle" : "Ayrı satır olarak aç"
             }).ToArray();
         DrawerComponents.ItemsSource = components;
         DrawerComponentsCard.Visibility = components.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -98,12 +98,32 @@ public partial class MainWindow
             WorkbenchDock.DockController.Activate(ProjectPane, false);
     }
 
-    private async void DrawerShowComponentClick(object sender, RoutedEventArgs e)
+    private bool IsComponentLinked(ProjectComponent component) =>
+        _workspace?.Config.LinkedProjects?.Contains(component.Folder, StringComparer.OrdinalIgnoreCase) == true;
+
+    private async void DrawerToggleComponentClick(object sender, RoutedEventArgs e)
     {
-        if (_busy || sender is not Button { Tag: ProjectComponent component })
+        if (_busy || _workspace is not { } workspace || _drawerProject is not { } owner ||
+            sender is not Button { Tag: ProjectComponent component })
             return;
-        if (await AttachProjectsAsync([component.Folder]) is { } project)
-            ShowProjectDrawer(project);
+
+        try
+        {
+            bool hide = IsComponentLinked(component);
+            _workspace = hide ? workspace.RemoveLink(component.Folder) : workspace.AddLinks([component.Folder]);
+            await RefreshAsync();
+            if (_workspace?.Root == workspace.Root &&
+                _projects.Concat(_archivedProjects).FirstOrDefault(project =>
+                    project.RelativePath.Equals(owner.RelativePath, StringComparison.OrdinalIgnoreCase)) is { } current)
+            {
+                ShowProjectDrawer(current, activate: false);
+                StatusText.Text = hide ? "Bileşenin ayrı satırı gizlendi." : "Bileşen ayrı satır olarak açıldı.";
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)
+        {
+            StatusText.Text = ex.Message;
+        }
     }
 
     private void RefreshProjectDrawer()

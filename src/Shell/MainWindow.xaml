@@ -816,7 +816,7 @@
                                                         <StackPanel Margin="0,4,0,6">
                                                             <TextBlock Text="{Binding Component.Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
                                                             <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,2,0,4"/>
-                                                            <Button Content="{Binding Action}" Tag="{Binding Component}" Click="DrawerShowComponentClick"
+                                                            <Button Content="{Binding Action}" Tag="{Binding Component}" Click="DrawerToggleComponentClick"
                                                                     Style="{StaticResource DrawerAction}" HorizontalAlignment="Left"/>
                                                         </StackPanel>
                                                     </DataTemplate>
