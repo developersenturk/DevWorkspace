@@ -33,7 +33,7 @@ internal sealed record ScanResult(
 internal static class WorkspaceScanner
 {
     private sealed record FolderScan(string Path, string? Repository, bool InDotNetProject,
-        FileInfo? ParentSolution = null, string? ParentKind = null);
+        FileInfo? ParentSolution = null, string? ParentKind = null, bool InProjectScripts = false);
     private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
         "^Project\\(\"(?<type>[^\"]+)\"\\)\\s*=\\s*\"[^\"]*\",\\s*\"(?<path>[^\"]+)\"",
@@ -84,7 +84,9 @@ internal static class WorkspaceScanner
             int initialCount = projects.Count;
             var pending = new Stack<FolderScan>();
             pending.Push(new(scope.Folder, scope.Link is null ? workspaceRepo : FindGitRoot(scope.Folder), false,
-                ParentKind: scope.Link is null && !scope.RootOnly ? rootKind : null));
+                ParentKind: scope.Link is null && !scope.RootOnly ? rootKind : null,
+                InProjectScripts: scope.Link is null && !scope.RootOnly && rootKind == "Capacitor" &&
+                    Path.GetFileName(scope.Folder).Equals("scripts", StringComparison.OrdinalIgnoreCase)));
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -114,6 +116,7 @@ internal static class WorkspaceScanner
                 bool isRepoRoot = entries.Any(entry => entry.Name.Equals(".git", StringComparison.OrdinalIgnoreCase));
                 string? repo = isRepoRoot ? current.Path : current.Repository;
                 bool inDotNetProject = !isRepoRoot && current.InDotNetProject;
+                bool inProjectScripts = !isRepoRoot && current.InProjectScripts;
                 string? parentKind = isRepoRoot ? null : current.ParentKind;
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
@@ -130,7 +133,7 @@ internal static class WorkspaceScanner
                 if (ProjectDetection.DetectSpecial(current.Path, files, directories, parentKind) is { } special)
                     (entry, kind) = special;
 
-                if (entry is null && !inDotNetProject)
+                if (entry is null && !inDotNetProject && !inProjectScripts)
                 {
                     entry = files
                         .Where(file => IsExtension(file, ".csproj", ".vbproj", ".fsproj", ".vcxproj"))
@@ -174,7 +177,8 @@ internal static class WorkspaceScanner
                         (scope.Link is not null || !hiddenSubfolders.Contains(Path.GetRelativePath(workspace.Root, child.FullName))))
                         pending.Push(new(child.FullName, repo,
                             inDotNetProject || entry is not null && ProjectTools.IsDotNetEntry(entry.FullName) ||
-                            kind is ".NET / MSBuild" or "Unity" or "Unreal Engine" or "Godot", parentSolution, effectiveKind));
+                            kind is ".NET / MSBuild" or "Unity" or "Unreal Engine" or "Godot", parentSolution, effectiveKind,
+                            inProjectScripts || kind == "Capacitor" && child.Name.Equals("scripts", StringComparison.OrdinalIgnoreCase)));
                 }
             }
             if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))

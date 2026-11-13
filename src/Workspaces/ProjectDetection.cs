@@ -75,9 +75,13 @@ internal static class ProjectDetection
         if (Find("wp-load.php") is { } wordpress && Directory.Exists(Path.Combine(folder, "wp-includes")))
             return (wordpress, "WordPress");
         if (Find("package.json") is { } package)
+        {
+            if (HasCapacitorConfig(folder))
+                return (package, "Capacitor");
             return (package, JavaScriptKind(package.FullName, Find("ionic.config.json") is not null,
                 Find("angular.json") is not null || Find("ng-package.json") is not null,
                 Find("nx.json") is not null, Find("pnpm-workspace.yaml") is not null));
+        }
 
         foreach (var (name, kind) in Markers)
         {
@@ -182,7 +186,8 @@ internal static class ProjectDetection
     {
         string folder = Path.GetDirectoryName(path)!;
         if (IsJavaScript(path))
-            return HasTauriConfig(folder) ? "Tauri" : JavaScriptKind(path, File.Exists(Path.Combine(folder, "ionic.config.json")),
+            return HasTauriConfig(folder) ? "Tauri" : HasCapacitorConfig(folder) ? "Capacitor" :
+                JavaScriptKind(path, File.Exists(Path.Combine(folder, "ionic.config.json")),
                 File.Exists(Path.Combine(folder, "angular.json")) || File.Exists(Path.Combine(folder, "ng-package.json")),
                 File.Exists(Path.Combine(folder, "nx.json")), File.Exists(Path.Combine(folder, "pnpm-workspace.yaml")));
         string name = Path.GetFileName(path);
@@ -194,6 +199,12 @@ internal static class ProjectDetection
     private static bool HasTauriConfig(string folder) =>
         new[] { "tauri.conf.json", "tauri.conf.json5", "Tauri.toml" }
             .Any(name => File.Exists(Path.Combine(folder, "src-tauri", name)));
+
+    private static bool HasCapacitorConfig(string folder) =>
+        !File.Exists(Path.Combine(folder, "ionic.config.json")) &&
+        (File.Exists(Path.Combine(folder, "capacitor.config.json")) ||
+         File.Exists(Path.Combine(folder, "capacitor.config.ts")) ||
+         File.Exists(Path.Combine(folder, "capacitor.config.js")));
 
     internal static bool IsProjectMetadataFolder(DirectoryInfo directory, string? parentKind) =>
         directory.Extension.Equals(".xcodeproj", StringComparison.OrdinalIgnoreCase) ||
@@ -207,7 +218,8 @@ internal static class ProjectDetection
         File.Exists(Path.Combine(folder, "src", "main", AndroidManifest));
 
     internal static bool IsMobileHost(string folder, string? parentKind) =>
-        Path.GetFileName(folder).Equals("android", StringComparison.OrdinalIgnoreCase) &&
+        (Path.GetFileName(folder).Equals("android", StringComparison.OrdinalIgnoreCase) ||
+         Path.GetFileName(folder).Equals("ios", StringComparison.OrdinalIgnoreCase)) &&
         (parentKind is "Flutter / Dart" or "Expo" or "React Native" or "Capacitor" ||
          parentKind?.StartsWith("Ionic", StringComparison.Ordinal) == true);
 
