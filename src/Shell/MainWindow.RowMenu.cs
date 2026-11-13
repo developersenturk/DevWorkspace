@@ -211,7 +211,10 @@ public partial class MainWindow
             return;
 
         string? workspace = _workspace?.Root;
-        if (MessageBox.Show(this, $"Bu klasörde yerel Git deposu oluşturulsun mu?\n\n{project.Folder}\n\nVarsa .gitignore korunur, yoksa proje türüne uygun bir dosya hazırlanır. İlk commit veya uzak depo bağlantısı ayrıca yapılır.",
+        string ignoreInfo = project.Kind == WorkspaceScanner.AndroidKind
+            ? "Android derleme çıktıları için .gitignore kuralları eklenir. Mevcut kurallar korunur."
+            : "Varsa .gitignore korunur, yoksa proje türüne uygun bir dosya hazırlanır.";
+        if (MessageBox.Show(this, $"Bu klasörde yerel Git deposu oluşturulsun mu?\n\n{project.Folder}\n\n{ignoreInfo} İlk commit veya uzak depo bağlantısı ayrıca yapılır.",
             "Git deposu oluştur", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 

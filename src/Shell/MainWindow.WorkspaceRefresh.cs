@@ -258,7 +258,7 @@ public partial class MainWindow
         var picker = new OpenFileDialog
         {
             Title = "Bağlanacak çözüm veya projeyi seçin", Multiselect = true,
-            Filter = "Çözüm ve proje dosyaları|*.sln;*.slnx;*.csproj;*.vbproj;*.fsproj;*.vcxproj"
+            Filter = "Çözüm ve proje dosyaları|*.sln;*.slnx;*.csproj;*.vbproj;*.fsproj;*.vcxproj;AndroidManifest.xml"
         };
         if (picker.ShowDialog(this) == true)
             await AttachProjectsAsync(picker.FileNames);

@@ -32,6 +32,8 @@ internal sealed record ScanResult(
 
 internal static class WorkspaceScanner
 {
+    private const string AndroidManifest = "AndroidManifest.xml";
+    internal const string AndroidKind = "Android";
     private sealed record FolderScan(string Path, string? Repository, bool InProject, FileInfo? ParentSolution = null);
     private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
@@ -63,7 +65,7 @@ internal static class WorkspaceScanner
             {
                 string parent = Path.GetDirectoryName(link)!;
                 string kind = KindForFile(link);
-                string name = kind is "JavaScript" or "Flutter / Dart" ? Path.GetFileName(parent) : Path.GetFileNameWithoutExtension(link);
+                string name = ProjectName(link, Path.GetFileName(parent), kind);
                 projects.Add(new(name, "Bağlı projeler", LinkIdentity(link), parent, link,
                     kind, FindGitRoot(parent), new(GitState.None), LinkPath: link));
             }
@@ -136,6 +138,11 @@ internal static class WorkspaceScanner
                         entry = files.FirstOrDefault(file => file.Name.Equals("package.json", StringComparison.OrdinalIgnoreCase));
                         kind = "JavaScript";
                     }
+                    if (entry is null)
+                    {
+                        entry = files.FirstOrDefault(file => file.Name.Equals(AndroidManifest, StringComparison.OrdinalIgnoreCase));
+                        kind = AndroidKind;
+                    }
                 }
 
                 string relativePath = scope.Link is null ? Path.GetRelativePath(workspace.Root, current.Path) : LinkIdentity(current.Path);
@@ -148,7 +155,7 @@ internal static class WorkspaceScanner
                         string.IsNullOrWhiteSpace(workspace.DescriptionFor(relativePath)) && ContainsSolutionProjects(parent, entry);
                     if (!coveredByParent)
                     {
-                        string name = kind is "Flutter / Dart" or "JavaScript" ? folderName : Path.GetFileNameWithoutExtension(entry.Name);
+                        string name = ProjectName(entry.Name, folderName, kind);
                         projects.Add(new(name, scope.Category, relativePath, current.Path, entry.FullName, kind, repo, new(GitState.None), LinkPath: scope.Link));
                     }
                 }
@@ -244,15 +251,20 @@ internal static class WorkspaceScanner
     public static bool IsProjectFile(string path) => Path.GetExtension(path).ToLowerInvariant() is
         ".sln" or ".slnx" or ".csproj" or ".vbproj" or ".fsproj" or ".vcxproj" ||
         Path.GetFileName(path).Equals("package.json", StringComparison.OrdinalIgnoreCase) ||
-        Path.GetFileName(path).Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase);
+        Path.GetFileName(path).Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase) ||
+        Path.GetFileName(path).Equals(AndroidManifest, StringComparison.OrdinalIgnoreCase);
 
     private static string KindForFile(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
         ".sln" or ".slnx" => "Visual Studio",
         ".json" => "JavaScript",
         ".yaml" => "Flutter / Dart",
+        ".xml" => AndroidKind,
         _ => ".NET / MSBuild"
     };
+
+    private static string ProjectName(string file, string folderName, string kind) =>
+        kind is "JavaScript" or "Flutter / Dart" or AndroidKind ? folderName : Path.GetFileNameWithoutExtension(file);
 
     private static string LinkIdentity(string path) =>
         "@linked\\" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(

@@ -53,6 +53,11 @@ internal static class GitProjectOperations
     private static void CreateGitIgnore(string folder, string projectKind)
     {
         string path = Path.Combine(folder, ".gitignore");
+        if (projectKind == WorkspaceScanner.AndroidKind)
+        {
+            CreateAndroidGitIgnore(path);
+            return;
+        }
         if (File.Exists(path))
             return;
 
@@ -73,6 +78,39 @@ internal static class GitProjectOperations
         catch (IOException) when (File.Exists(path))
         {
             // Another process provided the ignore file before the move.
+        }
+        finally
+        {
+            File.Delete(temporary);
+        }
+    }
+
+    private static void CreateAndroidGitIgnore(string path)
+    {
+        const string header = "# DevWorkspace Android";
+        string[] patterns =
+        [
+            header, ".DS_Store", "Thumbs.db", ".gradle/", ".idea/", "*.iml", "local.properties",
+            "build/*", "!/build/zxing.jar", "/check/classes/", "/check/dex/", "/check/classes.jar",
+            "*.apk", "*.apk.idsig", "*.aab", "*.class", "*.dex", "*.jks", "*.keystore"
+        ];
+        bool exists = File.Exists(path);
+        if (exists && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
+            throw new IOException("Bağlantılı .gitignore dosyası otomatik güncellenemedi.");
+        string existing = exists ? File.ReadAllText(path) : "";
+        if (existing.Split('\n').Any(line => line.TrimEnd('\r') == header))
+            return;
+
+        string newline = existing.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
+        string contents = string.Join(newline, patterns) + newline;
+        if (existing.Length > 0)
+            contents += newline + existing;
+
+        string temporary = $"{path}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            File.WriteAllText(temporary, contents);
+            File.Move(temporary, path, overwrite: exists);
         }
         finally
         {
