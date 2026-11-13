@@ -73,6 +73,7 @@ public partial class MainWindow
         });
 
         var exclusions = workspace.Config.ScanExclusions.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        exclusions.UnionWith(ProjectDetection.GeneratedFolders);
         exclusions.Add(".git");
         var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { workspace.Root };
         foreach (string link in links)

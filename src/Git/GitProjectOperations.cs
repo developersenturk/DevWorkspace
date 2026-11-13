@@ -25,7 +25,7 @@ internal static class GitProjectOperations
             .Select(parts => new GitCommit(parts[0], parts[1], parts[2], parts[3])).ToArray();
     }
 
-    public static async Task InitializeAsync(string folder, string projectKind, CancellationToken token)
+    public static async Task InitializeAsync(string folder, string projectKind, CancellationToken token, string? entryFile = null)
     {
         string fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         if (!Directory.Exists(fullPath))
@@ -41,7 +41,7 @@ internal static class GitProjectOperations
         }
 
         token.ThrowIfCancellationRequested();
-        CreateGitIgnore(fullPath, projectKind);
+        CreateGitIgnore(fullPath, projectKind, entryFile);
 
         var (code, _, error) = await RunAsync(fullPath, ["init", "--quiet", "--", fullPath], token);
         if (code != 0)
@@ -50,59 +50,55 @@ internal static class GitProjectOperations
             throw new IOException("Git deposunun oluşturulduğu doğrulanamadı.");
     }
 
-    private static void CreateGitIgnore(string folder, string projectKind)
+    private static void CreateGitIgnore(string folder, string projectKind, string? entryFile)
     {
         string path = Path.Combine(folder, ".gitignore");
-        if (projectKind == WorkspaceScanner.AndroidKind)
-        {
-            CreateAndroidGitIgnore(path);
-            return;
-        }
-        if (File.Exists(path))
-            return;
-
         string[] projectPatterns = projectKind switch
         {
+            ProjectDetection.Android => [".gradle/", ".idea/", "*.iml", "local.properties", "build/*", "!/build/zxing.jar",
+                "/check/classes/", "/check/dex/", "/check/classes.jar", "*.apk", "*.apk.idsig", "*.aab", "*.class", "*.dex", "*.jks", "*.keystore"],
             "Visual Studio" or ".NET / MSBuild" => [".vs/", "[Bb]in/", "[Oo]bj/", "*.user", "*.suo"],
-            "JavaScript" => ["node_modules/", "npm-debug.log*"],
             "Flutter / Dart" => [".dart_tool/", ".flutter-plugins-dependencies", "build/"],
+            "Unity" => ["/Library/", "/Temp/", "/Obj/", "/Logs/", "/UserSettings/", "*.csproj", "*.sln"],
+            "Unreal Engine" => ["/Binaries/", "/Intermediate/", "/Saved/", "/DerivedDataCache/"],
+            "Godot" => ["/.godot/", "/.import/"],
+            "Tauri" => ["target/"],
+            "Xcode" or "Swift" => ["DerivedData/", "xcuserdata/", "*.xcuserstate", ".build/"],
+            "Qt" or "C / C++ (CMake)" => ["build/", "CMakeFiles/", "CMakeCache.txt", "*.pro.user*"],
+            "Delphi" => ["__history/", "__recovery/", "*.dcu", "*.dproj.local", "*.identcache", "*.exe"],
+            "Python" or "Django" or "FastAPI" or "dbt" or "Jupyter" or "Ansible" =>
+                ["__pycache__/", "*.py[cod]", ".venv/", ".pytest_cache/", ".ipynb_checkpoints/", "/target/", "/dbt_packages/", "/logs/", "*.retry"],
+            "Java / Maven" or "Gradle" or "Spring Boot" or "Scala" => ["target/", ".gradle/", "build/", "*.class"],
+            "PHP" or "Laravel" => ["vendor/", ".env", "storage/logs/*.log"],
+            "WordPress" => ["wp-config.php", "/wp-content/uploads/", "/wp-content/cache/"],
+            "Ruby" or "Rails" => ["/.bundle/", "/vendor/bundle/", "/log/*.log", "/tmp/", "/config/master.key"],
+            "Rust" => ["target/"],
+            "Go" => ["*.test", "coverage.out"],
+            "Elixir" => ["/_build/", "/deps/", "/erl_crash.dump"],
+            "Terraform" or "OpenTofu" => [".terraform/", "*.tfstate", "*.tfstate.*", "*.tfplan", "crash.log"],
+            "Helm" => ["/charts/*.tgz"],
+            "Docker Compose" => [".env"],
+            "Arduino" or "PlatformIO" or "ESP-IDF" or "Zephyr" => [".pio/", "build/", ".west/", "managed_components/", "sdkconfig.old"],
+            "KiCad" => ["*-backups/", "*.kicad_prl", "~*.lck", "fp-info-cache"],
+            "FPGA / Vivado" => ["*.cache/", "*.runs/", "*.sim/", "*.hw/", "*.gen/", "*.jou", "vivado*.log"],
+            "FPGA / Quartus" => ["db/", "incremental_db/", "output_files/", "*.qws"],
             _ => []
         };
-        string[] patterns = [".DS_Store", "Thumbs.db", .. projectPatterns];
-        string temporary = Path.Combine(folder, $".gitignore.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            File.WriteAllLines(temporary, patterns);
-            File.Move(temporary, path);
-        }
-        catch (IOException) when (File.Exists(path))
-        {
-            // Another process provided the ignore file before the move.
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
-    }
-
-    private static void CreateAndroidGitIgnore(string path)
-    {
-        const string header = "# DevWorkspace Android";
-        string[] patterns =
-        [
-            header, ".DS_Store", "Thumbs.db", ".gradle/", ".idea/", "*.iml", "local.properties",
-            "build/*", "!/build/zxing.jar", "/check/classes/", "/check/dex/", "/check/classes.jar",
-            "*.apk", "*.apk.idsig", "*.aab", "*.class", "*.dex", "*.jks", "*.keystore"
-        ];
+        string[] javascript = ProjectDetection.IsJavaScript(entryFile) || projectKind == "JavaScript"
+            ? ["node_modules/", "npm-debug.log*", "dist/", ".next/", ".nuxt/", ".svelte-kit/", ".angular/"] : [];
+        const string header = "# DevWorkspace";
+        string[] patterns = [header, ".DS_Store", "Thumbs.db", .. projectPatterns, .. javascript];
         bool exists = File.Exists(path);
         if (exists && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
             throw new IOException("Bağlantılı .gitignore dosyası otomatik güncellenemedi.");
         string existing = exists ? File.ReadAllText(path) : "";
-        if (existing.Split('\n').Any(line => line.TrimEnd('\r') == header))
+        var existingLines = existing.Split('\n').Select(line => line.TrimEnd('\r')).ToHashSet(StringComparer.Ordinal);
+        string[] missing = patterns.Skip(1).Where(pattern => !existingLines.Contains(pattern)).Distinct().ToArray();
+        if (missing.Length == 0)
             return;
 
         string newline = existing.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";
-        string contents = string.Join(newline, patterns) + newline;
+        string contents = string.Join(newline, new[] { header }.Concat(missing)) + newline;
         if (existing.Length > 0)
             contents += newline + existing;
 

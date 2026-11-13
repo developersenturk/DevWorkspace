@@ -211,9 +211,7 @@ public partial class MainWindow
             return;
 
         string? workspace = _workspace?.Root;
-        string ignoreInfo = project.Kind == WorkspaceScanner.AndroidKind
-            ? "Android derleme çıktıları için .gitignore kuralları eklenir. Mevcut kurallar korunur."
-            : "Varsa .gitignore korunur, yoksa proje türüne uygun bir dosya hazırlanır.";
+        const string ignoreInfo = "Proje türüne uygun .gitignore kuralları eklenir. Mevcut kurallar korunur.";
         if (MessageBox.Show(this, $"Bu klasörde yerel Git deposu oluşturulsun mu?\n\n{project.Folder}\n\n{ignoreInfo} İlk commit veya uzak depo bağlantısı ayrıca yapılır.",
             "Git deposu oluştur", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
@@ -221,7 +219,7 @@ public partial class MainWindow
         _initializingGit = true;
         try
         {
-            await GitProjectOperations.InitializeAsync(project.Folder, project.Kind, _closing.Token);
+            await GitProjectOperations.InitializeAsync(project.Folder, project.Kind, _closing.Token, project.EntryFile);
             if (_workspace?.Root == workspace)
                 await RefreshAsync();
             StatusText.Text = "Yerel Git deposu oluşturuldu.";

@@ -32,9 +32,8 @@ internal sealed record ScanResult(
 
 internal static class WorkspaceScanner
 {
-    private const string AndroidManifest = "AndroidManifest.xml";
-    internal const string AndroidKind = "Android";
-    private sealed record FolderScan(string Path, string? Repository, bool InProject, FileInfo? ParentSolution = null);
+    private sealed record FolderScan(string Path, string? Repository, bool InDotNetProject,
+        FileInfo? ParentSolution = null, string? ParentKind = null);
     private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
         "^Project\\(\"(?<type>[^\"]+)\"\\)\\s*=\\s*\"[^\"]*\",\\s*\"(?<path>[^\"]+)\"",
@@ -45,6 +44,7 @@ internal static class WorkspaceScanner
         var projects = new List<ProjectEntry>();
         var repoFallbacks = new Dictionary<string, ProjectEntry>(StringComparer.OrdinalIgnoreCase);
         var exclusions = new HashSet<string>(workspace.Config.ScanExclusions, StringComparer.OrdinalIgnoreCase) { ".git" };
+        exclusions.UnionWith(ProjectDetection.GeneratedFolders);
         string? workspaceRepo = HasGitMarker(workspace.Root) ? workspace.Root : null;
         int skipped = 0;
 
@@ -54,7 +54,8 @@ internal static class WorkspaceScanner
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         string[] folders = layout.Where(folder => folder.IsVisible).Select(folder => folder.Name).ToArray();
         var scopes = new List<ScanScope> { new("Çalışma alanı", workspace.Root, RootOnly: true) };
-        scopes.AddRange(folders.Select(category => new ScanScope(category, Path.Combine(workspace.Root, category))));
+        scopes.AddRange(folders.Where(category => !exclusions.Contains(category))
+            .Select(category => new ScanScope(category, Path.Combine(workspace.Root, category))));
         foreach (string link in (workspace.Config.LinkedProjects ?? []).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             if (!Path.IsPathFullyQualified(link) || link.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase))
@@ -74,11 +75,16 @@ internal static class WorkspaceScanner
                     "Bağlantı eksik", null, new(GitState.None), LinkPath: link));
         }
 
+        string? rootKind = null;
         foreach (ScanScope scope in scopes)
         {
+            if (scope.Link is null && !scope.RootOnly &&
+                (ProjectDetection.IsMobileHost(scope.Folder, rootKind) || ProjectDetection.IsProjectMetadataFolder(new(scope.Folder), rootKind)))
+                continue;
             int initialCount = projects.Count;
             var pending = new Stack<FolderScan>();
-            pending.Push(new(scope.Folder, scope.Link is null ? workspaceRepo : FindGitRoot(scope.Folder), false));
+            pending.Push(new(scope.Folder, scope.Link is null ? workspaceRepo : FindGitRoot(scope.Folder), false,
+                ParentKind: scope.Link is null && !scope.RootOnly ? rootKind : null));
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -107,10 +113,12 @@ internal static class WorkspaceScanner
 
                 bool isRepoRoot = entries.Any(entry => entry.Name.Equals(".git", StringComparison.OrdinalIgnoreCase));
                 string? repo = isRepoRoot ? current.Path : current.Repository;
-                bool inProject = !isRepoRoot && current.InProject;
+                bool inDotNetProject = !isRepoRoot && current.InDotNetProject;
+                string? parentKind = isRepoRoot ? null : current.ParentKind;
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     .ToArray();
+                var directories = entries.OfType<DirectoryInfo>().ToArray();
 
                 FileInfo? entry = files
                     .Where(file => IsExtension(file, ".slnx", ".sln"))
@@ -119,8 +127,10 @@ internal static class WorkspaceScanner
                     .ThenBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
                     .FirstOrDefault();
                 string kind = "Visual Studio";
+                if (ProjectDetection.DetectSpecial(current.Path, files, directories, parentKind) is { } special)
+                    (entry, kind) = special;
 
-                if (entry is null && !inProject)
+                if (entry is null && !inDotNetProject)
                 {
                     entry = files
                         .Where(file => IsExtension(file, ".csproj", ".vbproj", ".fsproj", ".vcxproj"))
@@ -128,22 +138,9 @@ internal static class WorkspaceScanner
                         .ThenBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
                         .FirstOrDefault();
                     kind = ".NET / MSBuild";
-                    if (entry is null)
-                    {
-                        entry = files.FirstOrDefault(file => file.Name.Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase));
-                        kind = "Flutter / Dart";
-                    }
-                    if (entry is null)
-                    {
-                        entry = files.FirstOrDefault(file => file.Name.Equals("package.json", StringComparison.OrdinalIgnoreCase));
-                        kind = "JavaScript";
-                    }
-                    if (entry is null)
-                    {
-                        entry = files.FirstOrDefault(file => file.Name.Equals(AndroidManifest, StringComparison.OrdinalIgnoreCase));
-                        kind = AndroidKind;
-                    }
                 }
+                if (entry is null)
+                    (entry, kind) = ProjectDetection.Detect(current.Path, files, parentKind);
 
                 string relativePath = scope.Link is null ? Path.GetRelativePath(workspace.Root, current.Path) : LinkIdentity(current.Path);
                 if (entry is not null)
@@ -163,14 +160,21 @@ internal static class WorkspaceScanner
                     repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, "Git deposu", repo, new(GitState.None), LinkPath: scope.Link));
 
                 if (scope.RootOnly)
+                {
+                    rootKind = entry is null ? null : kind;
                     continue;
+                }
 
                 FileInfo? parentSolution = entry is not null && IsExtension(entry, ".slnx") ? entry : null;
-                foreach (var child in entries.OfType<DirectoryInfo>())
+                string? effectiveKind = entry is null ? parentKind : kind;
+                foreach (var child in directories)
                 {
-                    if (!exclusions.Contains(child.Name) &&
+                    if (!exclusions.Contains(child.Name) && !ProjectDetection.IsMobileHost(child.FullName, effectiveKind) &&
+                        !ProjectDetection.IsProjectMetadataFolder(child, effectiveKind) &&
                         (scope.Link is not null || !hiddenSubfolders.Contains(Path.GetRelativePath(workspace.Root, child.FullName))))
-                        pending.Push(new(child.FullName, repo, inProject || entry is not null, parentSolution));
+                        pending.Push(new(child.FullName, repo,
+                            inDotNetProject || entry is not null && ProjectTools.IsDotNetEntry(entry.FullName) ||
+                            kind is ".NET / MSBuild" or "Unity" or "Unreal Engine" or "Godot", parentSolution, effectiveKind));
                 }
             }
             if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
@@ -250,21 +254,17 @@ internal static class WorkspaceScanner
 
     public static bool IsProjectFile(string path) => Path.GetExtension(path).ToLowerInvariant() is
         ".sln" or ".slnx" or ".csproj" or ".vbproj" or ".fsproj" or ".vcxproj" ||
-        Path.GetFileName(path).Equals("package.json", StringComparison.OrdinalIgnoreCase) ||
-        Path.GetFileName(path).Equals("pubspec.yaml", StringComparison.OrdinalIgnoreCase) ||
-        Path.GetFileName(path).Equals(AndroidManifest, StringComparison.OrdinalIgnoreCase);
+        ProjectDetection.IsManifest(Path.GetFileName(path));
 
     private static string KindForFile(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
         ".sln" or ".slnx" => "Visual Studio",
-        ".json" => "JavaScript",
-        ".yaml" => "Flutter / Dart",
-        ".xml" => AndroidKind,
+        _ when ProjectDetection.IsManifest(Path.GetFileName(path)) => ProjectDetection.KindForManifest(path),
         _ => ".NET / MSBuild"
     };
 
     private static string ProjectName(string file, string folderName, string kind) =>
-        kind is "JavaScript" or "Flutter / Dart" or AndroidKind ? folderName : Path.GetFileNameWithoutExtension(file);
+        kind is "Visual Studio" or ".NET / MSBuild" ? Path.GetFileNameWithoutExtension(file) : folderName;
 
     private static string LinkIdentity(string path) =>
         "@linked\\" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(

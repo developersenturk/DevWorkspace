@@ -295,7 +295,7 @@ public partial class MainWindow
                 bool needed = tool switch
                 {
                     DevelopmentTool.Git => project.Repository is not null || project.Kind == "Flutter / Dart",
-                    DevelopmentTool.Node => project.Kind == "JavaScript",
+                    DevelopmentTool.Node => ProjectDetection.IsJavaScript(project.EntryFile),
                     DevelopmentTool.DotNet => project.EntryFile is { } file && ProjectTools.IsDotNetEntry(file),
                     DevelopmentTool.Flutter => project.Kind == "Flutter / Dart",
                     DevelopmentTool.Docker => ProjectIntegrations.HasCompose(project),

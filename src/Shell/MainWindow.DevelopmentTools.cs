@@ -14,7 +14,7 @@ public partial class MainWindow
         var missing = new List<string>();
         if (_projects.Any(project => project.Repository is not null) && DevelopmentTools.Find(DevelopmentTool.Git) is null)
             missing.Add("Git");
-        if (_projects.Any(project => project.Kind == "JavaScript") && DevelopmentTools.Find(DevelopmentTool.Node) is null)
+        if (_projects.Any(project => ProjectDetection.IsJavaScript(project.EntryFile)) && DevelopmentTools.Find(DevelopmentTool.Node) is null)
             missing.Add("Node.js");
         if (_projects.Any(project => project.Kind == "Flutter / Dart") && DevelopmentTools.Find(DevelopmentTool.Flutter) is null)
             missing.Add("Flutter");
