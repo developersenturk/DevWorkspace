@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace DevWorkspace;
 
@@ -222,6 +223,37 @@ internal static class ProjectDetection
          Path.GetFileName(folder).Equals("ios", StringComparison.OrdinalIgnoreCase)) &&
         (parentKind is "Flutter / Dart" or "Expo" or "React Native" or "Capacitor" ||
          parentKind?.StartsWith("Ionic", StringComparison.Ordinal) == true);
+
+    internal static bool IsEmbeddedJavaScript(string folder)
+    {
+        var parent = Directory.GetParent(folder);
+        if (parent is null)
+            return false;
+        string name = Path.GetFileName(folder);
+        try
+        {
+            foreach (var project in parent.EnumerateFiles("*.csproj"))
+            {
+                var xml = ProjectTools.ReadXml(project.FullName);
+                foreach (var element in xml.Descendants())
+                {
+                    if (element.Name.LocalName == "SpaRoot" && IsChildPath(element.Value))
+                        return true;
+                    if (element.Name.LocalName == "Exec" &&
+                        ((string?)element.Attribute("Command"))?.TrimStart().StartsWith("npm ", StringComparison.OrdinalIgnoreCase) == true &&
+                        IsChildPath((string?)element.Attribute("WorkingDirectory")))
+                        return true;
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException) { }
+        return false;
+
+        bool IsChildPath(string? value) => value?.Trim().Replace('\\', '/').TrimEnd('/') is { } path &&
+            (path.Equals(name, StringComparison.OrdinalIgnoreCase) ||
+             path.Equals("./" + name, StringComparison.OrdinalIgnoreCase) ||
+             path.Equals("$(MSBuildProjectDirectory)/" + name, StringComparison.OrdinalIgnoreCase));
+    }
 
     private static string JavaScriptKind(string path, bool ionic, bool angular, bool nx, bool workspace)
     {

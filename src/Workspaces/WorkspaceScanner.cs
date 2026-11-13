@@ -33,7 +33,7 @@ internal sealed record ScanResult(
 internal static class WorkspaceScanner
 {
     private sealed record FolderScan(string Path, string? Repository, bool InDotNetProject,
-        FileInfo? ParentSolution = null, string? ParentKind = null, bool InProjectScripts = false);
+        FileInfo? ParentSolution = null, string? ParentKind = null, bool InProjectScripts = false, bool InMobileHost = false);
     private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
         "^Project\\(\"(?<type>[^\"]+)\"\\)\\s*=\\s*\"[^\"]*\",\\s*\"(?<path>[^\"]+)\"",
@@ -79,14 +79,15 @@ internal static class WorkspaceScanner
         foreach (ScanScope scope in scopes)
         {
             if (scope.Link is null && !scope.RootOnly &&
-                (ProjectDetection.IsMobileHost(scope.Folder, rootKind) || ProjectDetection.IsProjectMetadataFolder(new(scope.Folder), rootKind)))
+                ProjectDetection.IsProjectMetadataFolder(new(scope.Folder), rootKind))
                 continue;
             int initialCount = projects.Count;
             var pending = new Stack<FolderScan>();
             pending.Push(new(scope.Folder, scope.Link is null ? workspaceRepo : FindGitRoot(scope.Folder), false,
                 ParentKind: scope.Link is null && !scope.RootOnly ? rootKind : null,
-                InProjectScripts: scope.Link is null && !scope.RootOnly && rootKind == "Capacitor" &&
-                    Path.GetFileName(scope.Folder).Equals("scripts", StringComparison.OrdinalIgnoreCase)));
+                InProjectScripts: scope.Link is null && !scope.RootOnly && rootKind is not null &&
+                    Path.GetFileName(scope.Folder).Equals("scripts", StringComparison.OrdinalIgnoreCase),
+                InMobileHost: scope.Link is null && !scope.RootOnly && ProjectDetection.IsMobileHost(scope.Folder, rootKind)));
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -117,6 +118,7 @@ internal static class WorkspaceScanner
                 string? repo = isRepoRoot ? current.Path : current.Repository;
                 bool inDotNetProject = !isRepoRoot && current.InDotNetProject;
                 bool inProjectScripts = !isRepoRoot && current.InProjectScripts;
+                bool inMobileHost = !isRepoRoot && current.InMobileHost;
                 string? parentKind = isRepoRoot ? null : current.ParentKind;
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
@@ -133,7 +135,7 @@ internal static class WorkspaceScanner
                 if (ProjectDetection.DetectSpecial(current.Path, files, directories, parentKind) is { } special)
                     (entry, kind) = special;
 
-                if (entry is null && !inDotNetProject && !inProjectScripts)
+                if (entry is null && !inDotNetProject)
                 {
                     entry = files
                         .Where(file => IsExtension(file, ".csproj", ".vbproj", ".fsproj", ".vcxproj"))
@@ -148,11 +150,16 @@ internal static class WorkspaceScanner
                 string relativePath = scope.Link is null ? Path.GetRelativePath(workspace.Root, current.Path) : LinkIdentity(current.Path);
                 if (entry is not null)
                 {
-                    bool coveredByParent = scope.Link is null && !isRepoRoot && current.ParentSolution is { } parent &&
+                    bool coveredBySolution = current.ParentSolution is { } parent &&
                         IsExtension(entry, ".sln") && Path.GetFileNameWithoutExtension(entry.Name)
                             .Equals(Path.GetFileNameWithoutExtension(parent.Name), StringComparison.OrdinalIgnoreCase) &&
+                        ContainsSolutionProjects(parent, entry);
+                    bool coveredByParent = scope.Link is null && !isRepoRoot &&
                         workspace.PreferenceFor(relativePath) == ProjectPreference.Empty &&
-                        string.IsNullOrWhiteSpace(workspace.DescriptionFor(relativePath)) && ContainsSolutionProjects(parent, entry);
+                        string.IsNullOrWhiteSpace(workspace.DescriptionFor(relativePath)) &&
+                        (coveredBySolution || inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ||
+                         inProjectScripts && kind == ".NET / MSBuild" ||
+                         ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path));
                     if (!coveredByParent)
                     {
                         string name = ProjectName(entry.Name, folderName, kind);
@@ -172,13 +179,14 @@ internal static class WorkspaceScanner
                 string? effectiveKind = entry is null ? parentKind : kind;
                 foreach (var child in directories)
                 {
-                    if (!exclusions.Contains(child.Name) && !ProjectDetection.IsMobileHost(child.FullName, effectiveKind) &&
+                    if (!exclusions.Contains(child.Name) &&
                         !ProjectDetection.IsProjectMetadataFolder(child, effectiveKind) &&
                         (scope.Link is not null || !hiddenSubfolders.Contains(Path.GetRelativePath(workspace.Root, child.FullName))))
                         pending.Push(new(child.FullName, repo,
                             inDotNetProject || entry is not null && ProjectTools.IsDotNetEntry(entry.FullName) ||
                             kind is ".NET / MSBuild" or "Unity" or "Unreal Engine" or "Godot", parentSolution, effectiveKind,
-                            inProjectScripts || kind == "Capacitor" && child.Name.Equals("scripts", StringComparison.OrdinalIgnoreCase)));
+                            inProjectScripts || entry is not null && child.Name.Equals("scripts", StringComparison.OrdinalIgnoreCase),
+                            inMobileHost || entry is not null && ProjectDetection.IsMobileHost(child.FullName, kind)));
                 }
             }
             if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
