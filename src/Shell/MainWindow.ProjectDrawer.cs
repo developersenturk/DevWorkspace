@@ -107,16 +107,24 @@ public partial class MainWindow
             sender is not Button { Tag: ProjectComponent component })
             return;
 
+        await SetComponentRowAsync(workspace, component.Folder, owner.RelativePath, IsComponentLinked(component), returnToOwner: false);
+    }
+
+    private async Task SetComponentRowAsync(Workspace workspace, string folder, string ownerPath, bool hide, bool returnToOwner)
+    {
         try
         {
-            bool hide = IsComponentLinked(component);
-            _workspace = hide ? workspace.RemoveLink(component.Folder) : workspace.AddLinks([component.Folder]);
+            _workspace = hide ? workspace.RemoveLink(folder) : workspace.AddLinks([folder]);
             await RefreshAsync();
-            if (_workspace?.Root == workspace.Root &&
-                _projects.Concat(_archivedProjects).FirstOrDefault(project =>
-                    project.RelativePath.Equals(owner.RelativePath, StringComparison.OrdinalIgnoreCase)) is { } current)
+            if (_workspace?.Root == workspace.Root)
             {
-                ShowProjectDrawer(current, activate: false);
+                if (FindComponentOwner(ownerPath) is { } owner)
+                {
+                    if (returnToOwner)
+                        NavigateToComponentOwner(owner);
+                    else
+                        ShowProjectDrawer(owner, activate: false);
+                }
                 StatusText.Text = hide ? "Bileşenin ayrı satırı gizlendi." : "Bileşen ayrı satır olarak açıldı.";
             }
         }
@@ -124,6 +132,19 @@ public partial class MainWindow
         {
             StatusText.Text = ex.Message;
         }
+    }
+
+    private ProjectEntry? FindComponentOwner(string relativePath) =>
+        _projects.Concat(_archivedProjects).FirstOrDefault(project =>
+            project.RelativePath.Equals(relativePath, StringComparison.OrdinalIgnoreCase));
+
+    private void NavigateToComponentOwner(ProjectEntry owner)
+    {
+        SearchBox.Text = "";
+        BuildNavigation(owner.Preference.Archived ? ArchivedProjectsKey : "all");
+        ProjectGrid.UnselectAll();
+        FocusProject(owner);
+        ShowProjectDrawer(owner);
     }
 
     private void RefreshProjectDrawer()

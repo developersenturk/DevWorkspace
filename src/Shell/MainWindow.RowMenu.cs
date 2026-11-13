@@ -120,6 +120,18 @@ public partial class MainWindow
             menu.Items.Add(item);
         }
 
+        if (project.OwnerRelativePath is { } ownerPath && project.LinkPath is { } componentLink)
+        {
+            Add("Ana projeye dön", "\uE72B", () =>
+            {
+                if (FindComponentOwner(ownerPath) is { } owner)
+                    NavigateToComponentOwner(owner);
+            }, !_busy && FindComponentOwner(ownerPath) is not null);
+            Add("Ayrı satırı gizle", "\uE711",
+                async () => await SetComponentRowAsync(workspace, componentLink, ownerPath, hide: true, returnToOwner: true), !_busy);
+            menu.Items.Add(new Separator());
+        }
+
         bool archived = project.Preference.Archived;
         Add(archived ? "Arşivden çıkar" : "Arşive al", "\uE7B8",
             () => ChangeProjectArchive(project, !archived), CanChangeProjectArchive);

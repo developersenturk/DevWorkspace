@@ -8,8 +8,10 @@ namespace DevWorkspace;
 
 internal sealed record ProjectEntry(
     string Name, string Category, string RelativePath, string Folder, string? EntryFile,
-    string Kind, string? Repository, GitStatus Git, ProjectPreference? SavedPreference = null, string? LinkPath = null)
+    string Kind, string? Repository, GitStatus Git, ProjectPreference? SavedPreference = null, string? LinkPath = null,
+    string? OwnerName = null, string? OwnerRelativePath = null)
 {
+    public string ListName => OwnerName is null ? Name : $"{Name} · Ana proje: {OwnerName}";
     public string Branch => string.IsNullOrWhiteSpace(Git.Branch) ? "—" : Git.Branch;
     public int? ChangedFiles => Git.Changes;
     public ProjectPreference Preference => SavedPreference ?? ProjectPreference.Empty;
@@ -223,7 +225,17 @@ internal static class WorkspaceScanner
         await Parallel.ForEachAsync(repos, new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = cancellationToken },
             async (repo, token) => statuses[repo] = await GitStatus.ReadAsync(repo, token));
 
-        var result = projects.Select(project => project.Preference.Archived ? project with { Repository = null } :
+        var owners = projects.ToLookup(project => project.Folder, StringComparer.OrdinalIgnoreCase);
+        var componentsByFolder = components.ToLookup(component => component.Folder, StringComparer.OrdinalIgnoreCase);
+        var result = projects.Select(project =>
+            {
+                if (string.Equals(project.LinkPath, project.Folder, StringComparison.OrdinalIgnoreCase) &&
+                    componentsByFolder[project.Folder].FirstOrDefault() is { } component &&
+                    owners[component.OwnerFolder].FirstOrDefault() is { } owner)
+                    return project with { OwnerName = owner.Name, OwnerRelativePath = owner.RelativePath };
+                return project;
+            })
+            .Select(project => project.Preference.Archived ? project with { Repository = null } :
                 project.Repository is null ? project : project with { Git = statuses[project.Repository] })
             .OrderBy(project => Array.IndexOf(folders, project.Category))
             .ThenBy(project => project.Name, StringComparer.CurrentCultureIgnoreCase)
