@@ -110,11 +110,16 @@ public partial class MainWindow
         await SetComponentRowAsync(workspace, component.Folder, owner.RelativePath, IsComponentLinked(component), returnToOwner: false);
     }
 
-    private async Task SetComponentRowAsync(Workspace workspace, string folder, string ownerPath, bool hide, bool returnToOwner)
+    private Task SetComponentRowAsync(Workspace workspace, string folder, string ownerPath, bool hide, bool returnToOwner) =>
+        SetComponentRowsAsync(workspace, [folder], ownerPath, hide, returnToOwner);
+
+    private async Task SetComponentRowsAsync(Workspace workspace, string[] folders, string ownerPath, bool hide, bool returnToOwner)
     {
+        if (_busy)
+            return;
         try
         {
-            _workspace = hide ? workspace.RemoveLink(folder) : workspace.AddLinks([folder]);
+            _workspace = hide ? workspace.RemoveLinks(folders) : workspace.AddLinks(folders);
             await RefreshAsync();
             if (_workspace?.Root == workspace.Root)
             {
@@ -125,7 +130,7 @@ public partial class MainWindow
                     else
                         ShowProjectDrawer(owner, activate: false);
                 }
-                StatusText.Text = hide ? "Bileşenin ayrı satırı gizlendi." : "Bileşen ayrı satır olarak açıldı.";
+                StatusText.Text = hide ? $"Gizlenen bileşen satırı: {folders.Length}" : $"Açılan bileşen satırı: {folders.Length}";
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)

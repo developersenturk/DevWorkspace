@@ -71,8 +71,13 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
     }
 
-    public Workspace RemoveLink(string path) => EditLinks(existing =>
-        existing.Where(item => !item.Equals(path, StringComparison.OrdinalIgnoreCase)).ToArray());
+    public Workspace RemoveLink(string path) => RemoveLinks([path]);
+
+    public Workspace RemoveLinks(IEnumerable<string> paths)
+    {
+        var removed = paths.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return EditLinks(existing => existing.Where(item => !removed.Contains(item)).ToArray());
+    }
 
     private Workspace EditLinks(Func<string[], string[]> update) => EditConfig(document =>
         document["linkedProjects"] = JsonSerializer.SerializeToNode(update(

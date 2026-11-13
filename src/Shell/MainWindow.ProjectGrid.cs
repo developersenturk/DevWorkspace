@@ -38,8 +38,23 @@ public partial class MainWindow
 
     private void ApplyProjectRows(ProjectEntry[] projects, bool groupVersions)
     {
+        var paths = projects.Select(project => project.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        bool HasVisibleOwner(ProjectEntry project) => project.OwnerRelativePath is { } owner && paths.Contains(owner);
+        var children = projects.Where(HasVisibleOwner).ToLookup(project => project.OwnerRelativePath, StringComparer.OrdinalIgnoreCase);
+        bool hierarchy = children.Count > 0;
+        if (hierarchy)
+        {
+            IEnumerable<ProjectEntry> WithChildren(ProjectEntry project)
+            {
+                yield return project;
+                foreach (var child in children[project.RelativePath])
+                    foreach (var row in WithChildren(child))
+                        yield return row;
+            }
+            projects = projects.Where(project => !HasVisibleOwner(project)).SelectMany(WithChildren).ToArray();
+        }
         var groupCounts = projects.GroupBy(project => project.ProjectGroupKey, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(group => group.Key, group => Math.Max(1, group.Count(project => !HasVisibleOwner(project))), StringComparer.OrdinalIgnoreCase);
         bool grouped = groupVersions && groupCounts.Values.Any(count => count > 1);
         bool changed = !RowsBelongToCurrentWorkspace || !_visibleProjects.SequenceEqual(projects);
         bool groupingChanged = (VersionColumn.GroupIndex >= 0) != grouped;
@@ -54,6 +69,12 @@ public partial class MainWindow
             ProjectGrid.BeginDataUpdate();
             try
             {
+                foreach (var column in ProjectGrid.Columns.Where(column => column != VersionColumn))
+                {
+                    column.AllowSorting = hierarchy ? DevExpress.Utils.DefaultBoolean.False : DevExpress.Utils.DefaultBoolean.Default;
+                    if (hierarchy && column.SortIndex >= 0)
+                        column.SortIndex = -1;
+                }
                 if (changed)
                     ProjectGrid.ItemsSource = projects;
                 if (groupingChanged)

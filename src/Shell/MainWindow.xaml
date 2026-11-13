@@ -378,6 +378,9 @@
                                                    TextTrimming="CharacterEllipsis" ToolTip="{Binding RowData.Row.ListName}"/>
                                     </DockPanel>
                                     <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding RowData.Row.OwnerRelativePath}" Value="{x:Null}">
+                                            <Setter TargetName="ProjectCell" Property="Tag" Value="Root"/>
+                                        </DataTrigger>
                                         <DataTrigger Value="True">
                                             <DataTrigger.Binding>
                                                 <MultiBinding Converter="{StaticResource ProjectGroupMembership}" Mode="OneWay">
@@ -388,6 +391,9 @@
                                             <Setter TargetName="ProjectCell" Property="Margin" Value="15,0,4,0"/>
                                             <Setter TargetName="GroupRail" Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
+                                        <Trigger SourceName="ProjectCell" Property="Tag" Value="{x:Null}">
+                                            <Setter TargetName="ProjectCell" Property="Margin" Value="34,0,4,0"/>
+                                        </Trigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>

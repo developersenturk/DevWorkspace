@@ -9,15 +9,15 @@ namespace DevWorkspace;
 internal sealed record ProjectEntry(
     string Name, string Category, string RelativePath, string Folder, string? EntryFile,
     string Kind, string? Repository, GitStatus Git, ProjectPreference? SavedPreference = null, string? LinkPath = null,
-    string? OwnerName = null, string? OwnerRelativePath = null)
+    string? OwnerName = null, string? OwnerRelativePath = null, string? OwnerGroupKey = null)
 {
     public string ListName => OwnerName is null ? Name : $"{Name} · Ana proje: {OwnerName}";
     public string Branch => string.IsNullOrWhiteSpace(Git.Branch) ? "—" : Git.Branch;
     public int? ChangedFiles => Git.Changes;
     public ProjectPreference Preference => SavedPreference ?? ProjectPreference.Empty;
     public string Label => Preference.Label ?? "";
-    public string ProjectGroupKey => string.IsNullOrWhiteSpace(Preference.Group)
-        ? $"project:{RelativePath}" : $"group:{Preference.Group.Trim().ToUpperInvariant()}";
+    public string ProjectGroupKey => OwnerGroupKey ?? (string.IsNullOrWhiteSpace(Preference.Group)
+        ? $"project:{RelativePath}" : $"group:{Preference.Group.Trim().ToUpperInvariant()}");
     public bool IsWorkspaceRoot => LinkPath is null && RelativePath == ".";
     public string DisplayPath => IsWorkspaceRoot ? "Çalışma alanı kökü" : LinkPath is null ? RelativePath : EntryFile ?? Folder;
     public string Summary => string.IsNullOrEmpty(Git.Detail) ? Folder : $"{Folder}\n{Git.Detail}";
@@ -232,7 +232,7 @@ internal static class WorkspaceScanner
                 if (string.Equals(project.LinkPath, project.Folder, StringComparison.OrdinalIgnoreCase) &&
                     componentsByFolder[project.Folder].FirstOrDefault() is { } component &&
                     owners[component.OwnerFolder].FirstOrDefault() is { } owner)
-                    return project with { OwnerName = owner.Name, OwnerRelativePath = owner.RelativePath };
+                    return project with { OwnerName = owner.Name, OwnerRelativePath = owner.RelativePath, OwnerGroupKey = owner.ProjectGroupKey };
                 return project;
             })
             .Select(project => project.Preference.Archived ? project with { Repository = null } :

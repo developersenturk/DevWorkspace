@@ -133,6 +133,22 @@ public partial class MainWindow
         }
 
         bool archived = project.Preference.Archived;
+        var components = _projectComponents.Where(component =>
+            component.OwnerFolder.Equals(project.Folder, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (!archived && components.Length > 0)
+        {
+            string[] opened = components.Where(IsComponentLinked).Select(component => component.Folder)
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            string[] closed = components.Where(component => !IsComponentLinked(component)).Select(component => component.Folder)
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            Add("Tüm bileşenleri aç", "\uE710",
+                async () => await SetComponentRowsAsync(workspace, closed, project.RelativePath, hide: false, returnToOwner: true),
+                !_busy && closed.Length > 0);
+            Add("Tüm bileşenleri gizle", "\uE711",
+                async () => await SetComponentRowsAsync(workspace, opened, project.RelativePath, hide: true, returnToOwner: true),
+                !_busy && opened.Length > 0);
+            menu.Items.Add(new Separator());
+        }
         Add(archived ? "Arşivden çıkar" : "Arşive al", "\uE7B8",
             () => ChangeProjectArchive(project, !archived), CanChangeProjectArchive);
         if (archived)
