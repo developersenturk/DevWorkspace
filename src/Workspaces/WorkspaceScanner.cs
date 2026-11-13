@@ -27,13 +27,17 @@ internal sealed record ProjectEntry(
         (Preference.Commands ?? []).SequenceEqual(other.Preference.Commands ?? []);
 }
 
+internal sealed record ProjectComponent(string OwnerFolder, string Folder, string Name, string Kind, string Role);
+
 internal sealed record ScanResult(
-    IReadOnlyList<ProjectEntry> Projects, int Repositories, int SkippedDirectories, IReadOnlyList<WorkspaceFolder> Folders);
+    IReadOnlyList<ProjectEntry> Projects, int Repositories, int SkippedDirectories, IReadOnlyList<WorkspaceFolder> Folders,
+    IReadOnlyList<ProjectComponent> Components);
 
 internal static class WorkspaceScanner
 {
     private sealed record FolderScan(string Path, string? Repository, bool InDotNetProject,
-        FileInfo? ParentSolution = null, string? ParentKind = null, bool InProjectScripts = false, bool InMobileHost = false);
+        FileInfo? ParentSolution = null, string? ParentKind = null, bool InProjectScripts = false, bool InMobileHost = false,
+        string? OwnerFolder = null);
     private sealed record ScanScope(string Category, string Folder, string? Link = null, bool RootOnly = false);
     private static readonly Regex SolutionProjectLine = new(
         "^Project\\(\"(?<type>[^\"]+)\"\\)\\s*=\\s*\"[^\"]*\",\\s*\"(?<path>[^\"]+)\"",
@@ -42,6 +46,7 @@ internal static class WorkspaceScanner
     public static async Task<ScanResult> ScanAsync(Workspace workspace, CancellationToken cancellationToken)
     {
         var projects = new List<ProjectEntry>();
+        var components = new List<ProjectComponent>();
         var repoFallbacks = new Dictionary<string, ProjectEntry>(StringComparer.OrdinalIgnoreCase);
         var exclusions = new HashSet<string>(workspace.Config.ScanExclusions, StringComparer.OrdinalIgnoreCase) { ".git" };
         exclusions.UnionWith(ProjectDetection.GeneratedFolders);
@@ -87,7 +92,8 @@ internal static class WorkspaceScanner
                 ParentKind: scope.Link is null && !scope.RootOnly ? rootKind : null,
                 InProjectScripts: scope.Link is null && !scope.RootOnly && rootKind is not null &&
                     Path.GetFileName(scope.Folder).Equals("scripts", StringComparison.OrdinalIgnoreCase),
-                InMobileHost: scope.Link is null && !scope.RootOnly && ProjectDetection.IsMobileHost(scope.Folder, rootKind)));
+                InMobileHost: scope.Link is null && !scope.RootOnly && ProjectDetection.IsMobileHost(scope.Folder, rootKind),
+                OwnerFolder: scope.Link is null && !scope.RootOnly && rootKind is not null ? workspace.Root : null));
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -120,6 +126,7 @@ internal static class WorkspaceScanner
                 bool inProjectScripts = !isRepoRoot && current.InProjectScripts;
                 bool inMobileHost = !isRepoRoot && current.InMobileHost;
                 string? parentKind = isRepoRoot ? null : current.ParentKind;
+                string? ownerFolder = isRepoRoot ? null : current.OwnerFolder;
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     .ToArray();
@@ -132,7 +139,7 @@ internal static class WorkspaceScanner
                     .ThenBy(file => file.Name, StringComparer.OrdinalIgnoreCase)
                     .FirstOrDefault();
                 string kind = "Visual Studio";
-                if (ProjectDetection.DetectSpecial(current.Path, files, directories, parentKind) is { } special)
+                if (ProjectDetection.DetectSpecial(current.Path, files, directories, inMobileHost ? null : parentKind) is { } special)
                     (entry, kind) = special;
 
                 if (entry is null && !inDotNetProject)
@@ -145,7 +152,7 @@ internal static class WorkspaceScanner
                     kind = ".NET / MSBuild";
                 }
                 if (entry is null)
-                    (entry, kind) = ProjectDetection.Detect(current.Path, files, parentKind);
+                    (entry, kind) = ProjectDetection.Detect(current.Path, files, inMobileHost ? null : parentKind);
 
                 string relativePath = scope.Link is null ? Path.GetRelativePath(workspace.Root, current.Path) : LinkIdentity(current.Path);
                 if (entry is not null)
@@ -154,20 +161,30 @@ internal static class WorkspaceScanner
                         IsExtension(entry, ".sln") && Path.GetFileNameWithoutExtension(entry.Name)
                             .Equals(Path.GetFileNameWithoutExtension(parent.Name), StringComparison.OrdinalIgnoreCase) &&
                         ContainsSolutionProjects(parent, entry);
-                    bool coveredByParent = scope.Link is null && !isRepoRoot &&
+                    string? role = coveredBySolution ? "Çözüm bileşeni" :
+                        inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ? "Platform" :
+                        inProjectScripts && kind == ".NET / MSBuild" ? "Yardımcı araç" :
+                        ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path)
+                            ? "Gömülü istemci" : null;
+                    bool coveredByParent = role is not null && ownerFolder is not null &&
+                        !current.Path.Equals(scope.Link, StringComparison.OrdinalIgnoreCase) &&
                         workspace.PreferenceFor(relativePath) == ProjectPreference.Empty &&
-                        string.IsNullOrWhiteSpace(workspace.DescriptionFor(relativePath)) &&
-                        (coveredBySolution || inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ||
-                         inProjectScripts && kind == ".NET / MSBuild" ||
-                         ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path));
+                        string.IsNullOrWhiteSpace(workspace.DescriptionFor(relativePath));
+                    string name = ProjectName(entry.Name, folderName, kind);
                     if (!coveredByParent)
                     {
-                        string name = ProjectName(entry.Name, folderName, kind);
                         projects.Add(new(name, scope.Category, relativePath, current.Path, entry.FullName, kind, repo, new(GitState.None), LinkPath: scope.Link));
+                        ownerFolder = current.Path;
                     }
+                    else
+                        components.Add(new(ownerFolder!, current.Path, name, kind, role!));
                 }
                 else if (isRepoRoot)
                     repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, "Git deposu", repo, new(GitState.None), LinkPath: scope.Link));
+
+                if (kind == "Tauri" && entry is not null && directories.FirstOrDefault(child =>
+                        child.Name.Equals("src-tauri", StringComparison.OrdinalIgnoreCase)) is { } tauri)
+                    components.Add(new(current.Path, tauri.FullName, tauri.Name, "Tauri", "Platform"));
 
                 if (scope.RootOnly)
                 {
@@ -186,7 +203,7 @@ internal static class WorkspaceScanner
                             inDotNetProject || entry is not null && ProjectTools.IsDotNetEntry(entry.FullName) ||
                             kind is ".NET / MSBuild" or "Unity" or "Unreal Engine" or "Godot", parentSolution, effectiveKind,
                             inProjectScripts || entry is not null && child.Name.Equals("scripts", StringComparison.OrdinalIgnoreCase),
-                            inMobileHost || entry is not null && ProjectDetection.IsMobileHost(child.FullName, kind)));
+                            inMobileHost || entry is not null && ProjectDetection.IsMobileHost(child.FullName, kind), ownerFolder));
                 }
             }
             if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
@@ -212,7 +229,7 @@ internal static class WorkspaceScanner
             .ThenBy(project => project.Name, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(project => project.RelativePath, StringComparer.OrdinalIgnoreCase)
             .ToArray();
-        return new(result, repos.Length, skipped, [.. layout, .. subfolders]);
+        return new(result, repos.Length, skipped, [.. layout, .. subfolders], components);
     }
 
     private static bool HasGitMarker(string directory)

@@ -807,6 +807,23 @@
                                             </WrapPanel>
                                         </StackPanel>
                                     </Border>
+                                    <Border x:Name="DrawerComponentsCard" Style="{StaticResource DrawerCard}" Visibility="Collapsed">
+                                        <StackPanel>
+                                            <TextBlock Text="Proje bileşenleri" Style="{StaticResource DrawerHeading}"/>
+                                            <ItemsControl x:Name="DrawerComponents">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Margin="0,4,0,6">
+                                                            <TextBlock Text="{Binding Component.Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                            <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,2,0,4"/>
+                                                            <Button Content="{Binding Action}" Tag="{Binding Component}" Click="DrawerShowComponentClick"
+                                                                    Style="{StaticResource DrawerAction}" HorizontalAlignment="Left"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>

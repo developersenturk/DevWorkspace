@@ -258,6 +258,7 @@ public partial class MainWindow : Window
             _resumeSessions.TryAdd(workspace.Root, saved);
             var projects = result.Projects.Where(project => !project.Preference.Archived).ToArray();
             var archived = result.Projects.Where(project => project.Preference.Archived).ToArray();
+            _projectComponents = result.Components;
             bool archiveChanged = !SameProjects(_archivedProjects, archived);
             bool projectsChanged = !sameWorkspace || archiveChanged || !SameProjects(_projects, projects);
             bool foldersChanged = !sameWorkspace || !_folders.SequenceEqual(result.Folders);

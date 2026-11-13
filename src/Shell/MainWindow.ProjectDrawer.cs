@@ -8,6 +8,8 @@ namespace DevWorkspace;
 
 public partial class MainWindow
 {
+    private IReadOnlyList<ProjectComponent> _projectComponents = [];
+
     private ProjectEntry? _drawerProject;
     private ProjectEntry? _firstProjectClick;
     private readonly Dictionary<string, NuGetScanState> _nuGetStates = new(StringComparer.OrdinalIgnoreCase);
@@ -77,10 +79,31 @@ public partial class MainWindow
         DrawerComposeButton.Visibility = hasCompose ? Visibility.Visible : Visibility.Collapsed;
         DrawerCommandsButton.Visibility = folderExists ? Visibility.Visible : Visibility.Collapsed;
         DrawerToolsCard.Visibility = active && folderExists ? Visibility.Visible : Visibility.Collapsed;
+        var components = _projectComponents
+            .Where(component => component.OwnerFolder.Equals(project.Folder, StringComparison.OrdinalIgnoreCase))
+            .DistinctBy(component => component.Folder, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(component => component.Folder, StringComparer.OrdinalIgnoreCase)
+            .Select(component => new
+            {
+                Component = component,
+                Detail = $"{component.Role} · {component.Kind} · {Path.GetRelativePath(project.Folder, component.Folder)}",
+                Action = _projects.Any(row => row.Folder.Equals(component.Folder, StringComparison.OrdinalIgnoreCase))
+                    ? "Satıra git" : "Ayrı satır olarak aç"
+            }).ToArray();
+        DrawerComponents.ItemsSource = components;
+        DrawerComponentsCard.Visibility = components.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (ProjectPane.IsClosed)
             WorkbenchDock.DockController.Restore(ProjectPane);
         if (activate)
             WorkbenchDock.DockController.Activate(ProjectPane, false);
+    }
+
+    private async void DrawerShowComponentClick(object sender, RoutedEventArgs e)
+    {
+        if (_busy || sender is not Button { Tag: ProjectComponent component })
+            return;
+        if (await AttachProjectsAsync([component.Folder]) is { } project)
+            ShowProjectDrawer(project);
     }
 
     private void RefreshProjectDrawer()
