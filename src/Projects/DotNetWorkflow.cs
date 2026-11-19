@@ -29,12 +29,12 @@ internal static class DotNetWorkflow
     internal static DotNetWorkflowPlan Prepare(ProjectEntry project, CancellationToken token)
     {
         if (!Supports(project) || project.EntryFile is not { } entry || !File.Exists(entry))
-            throw new IOException("İş akışı için Git deposunda bulunan bir .NET projesi veya çözümü seçin.");
+            throw new IOException(Loc.Text("L4412A78D371E"));
         string repo = project.Repository!;
         if (!Directory.Exists(Path.Combine(repo, ".git")) && !File.Exists(Path.Combine(repo, ".git")))
-            throw new IOException("Projenin Git deposu bulunamadı.");
+            throw new IOException(Loc.Text("L0F1A95FD3699"));
         if (ExistingWorkflow(project) is not null)
-            throw new IOException("Bu depoda zaten yerel bir GitHub Actions tanımı var.");
+            throw new IOException(Loc.Text("L135D3E4C9A80"));
 
         string target = RelativePath(repo, entry);
         string workingDirectory = Path.GetDirectoryName(entry)!;
@@ -98,7 +98,7 @@ internal static class DotNetWorkflow
     internal static void Create(ProjectEntry project, DotNetWorkflowPlan plan, CancellationToken token)
     {
         if (Prepare(project, token) != plan)
-            throw new IOException("Proje ayarları değişti. İş akışını yeniden önizleyin.");
+            throw new IOException(Loc.Text("L4344DEB9EB90"));
 
         string folder = WorkflowDirectory(project.Repository!);
         Directory.CreateDirectory(folder);
@@ -108,7 +108,7 @@ internal static class DotNetWorkflow
             File.WriteAllText(temporary, plan.Content);
             token.ThrowIfCancellationRequested();
             if (ExistingWorkflow(project) is not null)
-                throw new IOException("Bu depoda zaten yerel bir GitHub Actions tanımı var.");
+                throw new IOException(Loc.Text("L135D3E4C9A80"));
             File.Move(temporary, plan.Path);
         }
         finally
@@ -131,7 +131,7 @@ internal static class DotNetWorkflow
             var (references, properties) = ProjectMovePlanner.ReadReferences(new(path));
             if (properties.GetValueOrDefault("TargetFrameworkVersion") is { Length: > 0 } &&
                 !properties.ContainsKey("TargetFramework") && !properties.ContainsKey("TargetFrameworks"))
-                throw new IOException($"Bu şablon .NET SDK biçimli projeler için hazırlanır. {RelativePath(repo, path)} eski .NET Framework biçiminde.");
+                throw new IOException(Loc.Format("L701EA8751EF1", RelativePath(repo, path)));
             foreach (string property in new[] { "TargetFramework", "TargetFrameworks" })
                 foreach (string target in (properties.GetValueOrDefault(property) ?? "").Split(';', StringSplitOptions.TrimEntries))
                     if (FrameworkVersion.Match(target) is { Success: true } match)
@@ -143,7 +143,7 @@ internal static class DotNetWorkflow
                     continue;
                 RelativePath(repo, resolved);
                 if (!File.Exists(resolved))
-                    throw new IOException($"İş akışı için gereken proje başvurusu bulunamadı. {reference}");
+                    throw new IOException(Loc.Format("L2781A1240CE7", reference));
                 pending.Push(resolved);
             }
         }
@@ -165,13 +165,13 @@ internal static class DotNetWorkflow
                 });
                 var root = json.RootElement;
                 bool mtp = root.TryGetProperty("test", out var test) && test.ValueKind == JsonValueKind.Object &&
-                    test.TryGetProperty("runner", out var runner) && runner.GetString() == "Microsoft.Testing.Platform";
+                    test.TryGetProperty("runner", out var runner) && runner.GetString() == Loc.Text("L5AEFE3A033AA");
                 if (!root.TryGetProperty("sdk", out var sdk) || sdk.ValueKind != JsonValueKind.Object ||
                     !sdk.TryGetProperty("version", out var version))
                     return (null, null, mtp);
                 var match = SdkVersion.Match(version.GetString() ?? "");
                 if (!match.Success)
-                    throw new IOException("global.json dosyasındaki .NET SDK sürümü geçerli değil.");
+                    throw new IOException(Loc.Text("LC622808B31FA"));
                 return (RelativePath(repo, path), match.Groups["channel"].Value, mtp);
             }
             if (current.Equals(repo, StringComparison.OrdinalIgnoreCase))
@@ -187,7 +187,7 @@ internal static class DotNetWorkflow
         foreach (string path in new[] { repo, github, workflows })
         {
             if (Directory.Exists(path) && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
-                throw new IOException("İş akışı klasörü bir bağlantı üzerinden açılıyor. Depo içindeki gerçek klasörü kullanın.");
+                throw new IOException(Loc.Text("L2A4B21F1C62A"));
         }
         return workflows;
     }
@@ -196,14 +196,14 @@ internal static class DotNetWorkflow
     {
         string relative = Path.GetRelativePath(repo, path).Replace('\\', '/');
         if (Path.IsPathRooted(relative) || relative == ".." || relative.StartsWith("../", StringComparison.Ordinal))
-            throw new IOException($"GitHub’da derleme için proje ve başvuruları aynı depoda olmalı. {path}");
+            throw new IOException(Loc.Format("L84D3F1A9EDA4", path));
         return relative;
     }
 
     private static string Quote(string value)
     {
         if (value.Any(char.IsControl) || value.Contains("${{", StringComparison.Ordinal))
-            throw new IOException("Proje yolu GitHub Actions dosyası için desteklenmeyen karakterler içeriyor.");
+            throw new IOException(Loc.Text("L62CFBFE5E19A"));
         return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
     }
 }

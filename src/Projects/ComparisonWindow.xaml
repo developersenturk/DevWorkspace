@@ -4,7 +4,7 @@
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-                 Title="Proje karşılaştırması" Width="1110" Height="630"
+                 Title="{DynamicResource L05291A2B2B22}" Width="1110" Height="630"
                  MinWidth="735" MinHeight="420" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" Loaded="WindowLoaded" Closed="WindowClosed">
     <dx:ThemedWindow.Resources>
@@ -47,9 +47,9 @@
             <Grid.ColumnDefinitions><ColumnDefinition Width="250" MinWidth="165"/><ColumnDefinition Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
             <DockPanel Background="{DynamicResource Canvas}">
                 <TextBox x:Name="FileQuery" DockPanel.Dock="Top" Height="30" Padding="6,4" TextChanged="FileQueryChanged"
-                         ToolTip="Değişen dosyalarda ara" AutomationProperties.Name="Değişen dosyalarda ara"/>
+                         ToolTip="{DynamicResource LCD9A48E05B22}" AutomationProperties.Name="{DynamicResource LCD9A48E05B22}"/>
                 <dxe:ListBoxEdit x:Name="DifferenceList" SelectedIndexChanged="DifferenceChanged" ItemContainerStyle="{StaticResource NavRow}"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Dosya farkları">
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="{DynamicResource L49A1AC5285CA}">
                     <dxe:ListBoxEdit.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
@@ -64,9 +64,9 @@
             <DockPanel Grid.Column="2" Background="{DynamicResource Canvas}">
                 <TextBlock x:Name="PreviewCaption" DockPanel.Dock="Top" Padding="9,7" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
                 <dxg:GridControl x:Name="LinesGrid" AutoGenerateColumns="None" FontFamily="Consolas" FontSize="12"
-                                 AutomationProperties.Name="Yan yana dosya farkları">
+                                 AutomationProperties.Name="{DynamicResource L523457A22423}">
                     <dxg:GridControl.Columns>
-                        <dxg:GridColumn FieldName="Left" Header="SOL DOSYA" Width="350">
+                        <dxg:GridColumn FieldName="Left" Header="{DynamicResource L46D88C6CFFF0}" Width="350">
                             <dxg:GridColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border Style="{StaticResource RemovedDiff}">
@@ -79,7 +79,7 @@
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
-                        <dxg:GridColumn FieldName="Right" Header="SAĞ DOSYA" Width="350">
+                        <dxg:GridColumn FieldName="Right" Header="{DynamicResource LBDFDAB7C601A}" Width="350">
                             <dxg:GridColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border Style="{StaticResource AddedDiff}">
@@ -101,8 +101,8 @@
             </DockPanel>
         </Grid>
         <DockPanel Grid.Row="2" Margin="0,8,0,0">
-            <Button DockPanel.Dock="Right" IsCancel="True" Content="Kapat" Margin="8,0,0,0"/>
-            <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Text="Dosyalar karşılaştırılıyor…" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
+            <Button DockPanel.Dock="Right" IsCancel="True" Content="{DynamicResource L7B31A9FC4816}" Margin="8,0,0,0"/>
+            <TextBlock x:Name="SummaryText" VerticalAlignment="Center" Text="{DynamicResource L16B8AA0D1CDD}" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
         </DockPanel>
     </Grid>
 </dx:ThemedWindow>

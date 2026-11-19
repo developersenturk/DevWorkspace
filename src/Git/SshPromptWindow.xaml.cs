@@ -10,12 +10,12 @@ public partial class SshPromptWindow : Window
     {
         InitializeComponent();
         PromptText.Text = prompt;
-        Heading.Text = hostKey ? "SSH sunucu kimliğini doğrula" : confirmation || noticeOnly ? "SSH bağlantı isteği" : "SSH kimlik doğrulaması";
+        Heading.Text = hostKey ? Loc.Text("L2AF18CE4826E") : confirmation || noticeOnly ? Loc.Text("LCEA4F0D18E79") : Loc.Text("L1E547C12E194");
         Instructions.Text = hostKey
-            ? "Parmak izini sunucu yöneticisinden aldığınız değerle karşılaştırın. Yalnızca eşleşiyorsa devam edin."
-            : confirmation || noticeOnly ? "SSH istemcisinin iletisini kontrol edin." : "Sunucunun istediği parolayı, anahtar parolasını veya kodu girin.";
+            ? Loc.Text("L09BC1F43940C")
+            : confirmation || noticeOnly ? Loc.Text("LB5C3DD4D9C77") : Loc.Text("L154A01E5C839");
         Secret.Visibility = confirmation || noticeOnly ? Visibility.Collapsed : Visibility.Visible;
-        ContinueButton.Content = hostKey ? "Parmak izi eşleşiyor, bağlan" : "Devam et";
+        ContinueButton.Content = hostKey ? Loc.Text("L7F76AA1AB0FC") : Loc.Text("L26183306DCAC");
         ContinueButton.Visibility = noticeOnly ? Visibility.Collapsed : Visibility.Visible;
         ContinueButton.IsDefault = !confirmation && !noticeOnly;
         Loaded += (_, _) =>

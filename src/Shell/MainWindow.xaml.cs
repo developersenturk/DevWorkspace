@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Closed += AppUpdateWindowClosed;
         _defaultProjectColumnWidths = ProjectColumns.Select(column => column.Width).ToArray();
         InitializeWorkspaceRefresh();
         InitializeFindingReminders();
@@ -61,14 +62,14 @@ public partial class MainWindow : Window
         }
     }
 
-    internal void ShowStartupError(string message) => StatusText.Text = $"Çalışma alanı hazırlanamadı. {message}";
+    internal void ShowStartupError(string message) => StatusText.Text = Loc.Format("L5233E4BF37D4", message);
 
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         if (PackageUpdateRunning)
         {
             e.Cancel = true;
-            StatusText.Text = "Kapatmadan önce paket güncellemesinin bitmesini bekleyin veya Durdur’u seçin.";
+            StatusText.Text = Loc.Text("L2337C6C48D60");
             return;
         }
         e.Cancel = _gitView?.IsBusy == true || _savingExplorerFolder;
@@ -102,7 +103,7 @@ public partial class MainWindow : Window
         if (_busy)
             return;
 
-        var picker = new OpenFolderDialog { Title = "Taranacak proje veya çalışma alanı klasörünü seçin" };
+        var picker = new OpenFolderDialog { Title = Loc.Text("L99BAC52C95F9") };
         if (_workspace is { } workspace && Directory.Exists(workspace.Root))
             picker.InitialDirectory = workspace.Root;
 
@@ -184,12 +185,12 @@ public partial class MainWindow : Window
 
         if (_gitView?.IsBusy == true && !string.Equals(root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
         {
-            StatusText.Text = "Çalışma alanını değiştirmeden önce Git işleminin bitmesini bekleyin.";
+            StatusText.Text = Loc.Text("LE9F54152A79A");
             return;
         }
         if (!Path.IsPathFullyQualified(root))
         {
-            StatusText.Text = "Sürücü harfi veya ağ yolu dahil tam klasör yolunu yazın.";
+            StatusText.Text = Loc.Text("LD6699A79F3D8");
             return;
         }
 
@@ -200,7 +201,7 @@ public partial class MainWindow : Window
         else
         {
             SetBusy(true);
-            StatusText.Text = "Çalışma alanı ve Git depoları taranıyor…";
+            StatusText.Text = Loc.Text("L44F896AF1C26");
         }
         try
         {
@@ -220,7 +221,7 @@ public partial class MainWindow : Window
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    warning = "Git kurtarma kaydı güncellenemedi.";
+                    warning = Loc.Text("L51970218AFC3");
                 }
                 return (opened, scan, warning);
             }, token);
@@ -239,7 +240,7 @@ public partial class MainWindow : Window
             bool sameWorkspace = _workspace?.Root.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase) == true;
             if (!sameWorkspace && _gitView?.IsBusy == true)
             {
-                StatusText.Text = "Çalışma alanını değiştirmeden önce Git işleminin bitmesini bekleyin.";
+                StatusText.Text = Loc.Text("LE9F54152A79A");
                 return;
             }
             if (!sameWorkspace && _workspace is not null)
@@ -307,11 +308,11 @@ public partial class MainWindow : Window
 
             int changed = CountRepositories(p => p.Git.State == GitState.Changed);
             int warnings = CountRepositories(HasGitWarning);
-            var details = new List<string> { $"{result.Repositories:N0} Git deposu", $"{changed:N0} değişiklikli" };
+            var details = new List<string> { $"{result.Repositories:N0} Git deposu", Loc.Format("LD127D09FFBAC", changed) };
             if (warnings > 0)
-                details.Add($"{warnings:N0} Git uyarısı");
+                details.Add(Loc.Format("LE907789CBBAA", warnings));
             if (result.SkippedDirectories > 0)
-                details.Add($"{result.SkippedDirectories:N0} klasör atlandı");
+                details.Add(Loc.Format("L2E7B900A1156", result.SkippedDirectories));
             if (recoveryWarning is not null)
                 details.Add(recoveryWarning);
             StatusText.Text = string.Join("   ·   ", details);
@@ -330,7 +331,7 @@ public partial class MainWindow : Window
         catch (JsonException)
         {
             if (!background)
-                StatusText.Text = $"{Workspace.ConfigFileName} okunamadı. JSON biçimini kontrol edin.";
+                StatusText.Text = Loc.Format("L96FADEFB1A6A", Workspace.ConfigFileName);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
@@ -409,19 +410,19 @@ public partial class MainWindow : Window
         ApplyProjectRows(filtered.ToArray(), GroupVersionsToggle?.IsChecked == true && key != "recent");
         int count = _visibleProjects.Length;
 
-        ViewHeading.Text = navigation?.Label ?? "Tüm projeler";
-        ViewCaption.Text = navigation?.Hint ?? "Çalışma alanındaki çözümler ve depolar";
-        FilterCount.Text = $"{count:N0} proje";
+        ViewHeading.Text = navigation?.Label ?? Loc.Text("L1191AFF270DA");
+        ViewCaption.Text = navigation?.Hint ?? Loc.Text("L05A07A01085A");
+        FilterCount.Text = Loc.Format("L44923C708A88", count);
         bool showScanSummary = _projects.Count > 0 && SelectedNavigationKey == "all" && query.Length == 0;
         ScanSummaryPanel.Visibility = showScanSummary ? Visibility.Visible : Visibility.Collapsed;
         if (showScanSummary)
         {
             int changed = CountRepositories(project => project.Git.State == GitState.Changed);
             int warnings = CountRepositories(HasGitWarning);
-            string gitSummary = changed > 0 ? $"{changed:N0} depoda değişiklik var" :
-                warnings > 0 ? $"{warnings:N0} Git uyarısı" :
-                _projects.Any(project => project.Repository is not null) ? "Yerel değişiklik yok" : "Git deposu bulunamadı";
-            ScanSummaryText.Text = $"{_projects.Count:N0} proje bulundu · {gitSummary}";
+            string gitSummary = changed > 0 ? Loc.Format("L7C99F3CF7272", changed) :
+                warnings > 0 ? Loc.Format("LE907789CBBAA", warnings) :
+                _projects.Any(project => project.Repository is not null) ? Loc.Text("L2E663BE0FA2E") : Loc.Text("L1D3FD8573CD5");
+            ScanSummaryText.Text = Loc.Format("L15A4BA932091", _projects.Count, gitSummary);
             ScanSummaryChanges.Visibility = changed > 0 ? Visibility.Visible : Visibility.Collapsed;
             ScanSummaryChanges.IsEnabled = !_busy;
             UpdateScanToolNotice();
@@ -430,16 +431,16 @@ public partial class MainWindow : Window
         EmptyOpenButton.Visibility = !_busy && _projects.Count == 0 && _archivedProjects.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         EmptyToolsButton.Visibility = !_busy && _workspace is null ? Visibility.Visible : Visibility.Collapsed;
         EmptyToolsButton.Content = DevelopmentTools.Find(DevelopmentTool.Git) is null
-            ? "Git eksik · Geliştirme araçları" : "Geliştirme araçları";
-        EmptyOpenButton.Content = _workspace is null ? "Proje klasörlerini tara" : "Başka klasör seç";
-        EmptyTitle.Text = _busy ? "Çalışma alanı taranıyor" :
-            _workspace is null ? "Projelerinizi bulun" : "Proje bulunamadı";
-        EmptyHint.Text = _busy ? "Projeler ve Git durumları okunuyor." :
-            _workspace is null ? "Bir proje klasörü veya projelerinizi içeren üst klasörü seçin. DevWorkspace projeleri ve Git durumlarını listeler." :
-            key == ArchivedProjectsKey && _archivedProjects.Count == 0 ? "Bir projeyi sağ tıklayarak arşive alabilirsiniz." :
-            _projects.Count == 0 && _archivedProjects.Count > 0 ? "Projeleri Arşivlenen projeler bölümünde bulabilirsiniz." :
-            _projects.Count == 0 ? "Bu klasörde desteklenen bir proje veya Git deposu bulunamadı. Başka bir klasör seçin ya da bir proje klasörünü buraya bırakın." :
-            "Arama veya sol taraftaki seçimi değiştirin.";
+            ? Loc.Text("L9A2B2383F4AB") : Loc.Text("LC6FBE8071474");
+        EmptyOpenButton.Content = _workspace is null ? Loc.Text("L362250DA3565") : Loc.Text("LCB67C67A5E9F");
+        EmptyTitle.Text = _busy ? Loc.Text("LDD3B39552575") :
+            _workspace is null ? Loc.Text("LDF653B0CC548") : Loc.Text("L8F5DCB93197B");
+        EmptyHint.Text = _busy ? Loc.Text("LBB58326667E7") :
+            _workspace is null ? Loc.Text("L6F1905A0B263") :
+            key == ArchivedProjectsKey && _archivedProjects.Count == 0 ? Loc.Text("L182338685D86") :
+            _projects.Count == 0 && _archivedProjects.Count > 0 ? Loc.Text("L9598C8DD9AD4") :
+            _projects.Count == 0 ? Loc.Text("LC448378E9BAE") :
+            Loc.Text("L7560B147AF5B");
         UpdateCentralView();
     }
 
@@ -504,11 +505,11 @@ public partial class MainWindow : Window
         try
         {
             Clipboard.SetText(project.Folder);
-            StatusText.Text = "Proje yolu panoya kopyalandı.";
+            StatusText.Text = Loc.Text("L775D742E0D7E");
         }
         catch (ExternalException)
         {
-            StatusText.Text = "Panoya erişilemedi. Tekrar deneyin.";
+            StatusText.Text = Loc.Text("L27388BFE0C95");
         }
     }
 
@@ -521,8 +522,8 @@ public partial class MainWindow : Window
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
-            StatusText.Text = ex.NativeErrorCode is 2 or 3 ? $"Dosya veya klasör bulunamadı. {path}" :
-                $"Açılamadı. {ex.Message}";
+            StatusText.Text = ex.NativeErrorCode is 2 or 3 ? Loc.Format("L339D8FF997E5", path) :
+                Loc.Format("L7CB70882BA6E", ex.Message);
             return offerEditor && (ex.NativeErrorCode is 31 or 1155) && File.Exists(path) && OfferProjectEditor(path);
         }
     }

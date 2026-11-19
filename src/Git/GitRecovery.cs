@@ -9,7 +9,7 @@ namespace DevWorkspace;
 
 internal sealed record GitRecoveryEntry(string Folder, string Remote, string Url, string? Branch)
 {
-    [JsonIgnore] public string BranchLabel => Branch ?? "Varsayılan dal";
+    [JsonIgnore] public string BranchLabel => Branch ?? Loc.Text("L9AEE1D2C46B5");
 }
 
 internal sealed class GitRecovery(string filePath)
@@ -73,7 +73,7 @@ internal sealed class GitRecovery(string filePath)
         try
         {
             if (!mutex.WaitOne(TimeSpan.FromSeconds(5)))
-                throw new IOException("Git kurtarma kaydı şu anda başka bir işlem tarafından kullanılıyor.");
+                throw new IOException(Loc.Text("L091A1C1F0F44"));
         }
         catch (AbandonedMutexException) { }
         try
@@ -121,16 +121,16 @@ internal sealed class GitRecovery(string filePath)
     private void CheckBackupFolder()
     {
         if (!Directory.Exists(Path.GetDirectoryName(filePath)))
-            throw new IOException("Yedek klasörüne erişilemiyor. Sürücüyü bağlayın veya yedek konumunu yeniden seçin.");
+            throw new IOException(Loc.Text("LB904D17F0E25"));
     }
 
     public static async Task RestoreAsync(GitRecoveryEntry entry, CancellationToken token)
     {
         string folder = Path.TrimEndingDirectorySeparator(Path.GetFullPath(entry.Folder));
-        string parent = Path.GetDirectoryName(folder) ?? throw new IOException("Hedef bir sürücü kökü olamaz.");
+        string parent = Path.GetDirectoryName(folder) ?? throw new IOException(Loc.Text("L4FDA10B98101"));
         CheckTarget(folder);
         if (!IsNetworkUrl(entry.Url) && !IsScpUrl(entry.Url) && !Path.IsPathFullyQualified(entry.Url))
-            throw new IOException("Uzak depo adresi desteklenmiyor.");
+            throw new IOException(Loc.Text("L551AC5A851E9"));
 
         token.ThrowIfCancellationRequested();
         Directory.CreateDirectory(parent);
@@ -144,17 +144,17 @@ internal sealed class GitRecovery(string filePath)
                  "-c", "protocol.http.allow=always", "-c", "protocol.ssh.allow=always", "-c", "protocol.git.allow=always",
                  "clone", "--no-local", "--origin", entry.Remote, .. branch, "--", entry.Url, temporary], token, 900);
             if (code != 0)
-                throw new IOException("Klonlama başarısız. Uzak depo erişimini ve dalın hâlâ var olduğunu kontrol edin.");
+                throw new IOException(Loc.Text("L75413E2FA326"));
 
             var (commitCode, _, _) = await GitProjectOperations.RunAsync(temporary, ["rev-parse", "--verify", "HEAD"], token);
             if (commitCode != 0)
-                throw new IOException("Uzak depoda açılabilecek bir dal bulunamadı.");
+                throw new IOException(Loc.Text("LCCE8F475E8C8"));
 
             if (entry.Branch is not null)
             {
                 var (headCode, head, _) = await GitProjectOperations.RunAsync(temporary, ["symbolic-ref", "--quiet", "HEAD"], token);
                 if (headCode != 0 || head.TrimEnd('\r', '\n') != "refs/heads/" + entry.Branch)
-                    throw new IOException("Kayıtlı uzak dal açılamadı.");
+                    throw new IOException(Loc.Text("L1B2156823EAC"));
             }
 
             token.ThrowIfCancellationRequested();
@@ -177,12 +177,12 @@ internal sealed class GitRecovery(string filePath)
     private static void CheckTarget(string folder)
     {
         if (Exists(folder))
-            throw new IOException("Hedef zaten var ve atlandı.");
+            throw new IOException(Loc.Text("L04AEDCE9C342"));
         for (string? current = Path.GetDirectoryName(folder); current is not null; current = Path.GetDirectoryName(current))
         {
             if (Exists(current) && (File.GetAttributes(current) & (FileAttributes.Directory | FileAttributes.ReparsePoint))
                 != FileAttributes.Directory)
-                throw new IOException("Hedef yolunda dosya veya klasör bağlantısı var.");
+                throw new IOException(Loc.Text("LD203A9BD5FD4"));
         }
     }
 
@@ -212,6 +212,6 @@ internal sealed class GitRecovery(string filePath)
         }
         catch (FileNotFoundException) { return []; }
         catch (DirectoryNotFoundException) { return []; }
-        catch (JsonException ex) { throw new IOException("Git kurtarma kaydı okunamadı.", ex); }
+        catch (JsonException ex) { throw new IOException(Loc.Text("L7C7CE1C4019A"), ex); }
     }
 }

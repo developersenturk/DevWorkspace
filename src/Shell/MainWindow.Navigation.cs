@@ -88,16 +88,16 @@ public partial class MainWindow
             _navigationToRestore = selectedKey;
 
             var overview = Section("ÇALIŞMA ALANI", sections);
-            overview.Children.Add(Node(new(DashboardKey, "Genel Bakış", "\uE80A", "Çalışma alanının özeti ve öncelikli işler", null)));
-            overview.Children.Add(Node(new("all", "Tüm projeler", "\uE80A", "Taranan çözümler, projeler ve depolar", _projects.Count)));
+            overview.Children.Add(Node(new(DashboardKey, Loc.Text("L699B4A551D76"), "\uE80A", Loc.Text("L0DA747F259DD"), null)));
+            overview.Children.Add(Node(new("all", Loc.Text("L1191AFF270DA"), "\uE80A", Loc.Text("L997C1AE39488"), _projects.Count)));
             if (_workspace is not null)
             {
-                overview.Children.Add(Node(new(ArchivedProjectsKey, "Arşivlenen projeler", "\uE7B8",
-                    "Arşivden çıkarmak için projeyi sağ tıklayın", _archivedProjects.Count)));
+                overview.Children.Add(Node(new(ArchivedProjectsKey, Loc.Text("L7A9E71860BEB"), "\uE7B8",
+                    Loc.Text("L7B215054C727"), _archivedProjects.Count)));
                 var recent = CurrentRecent().ToHashSet(StringComparer.OrdinalIgnoreCase);
-                overview.Children.Add(Node(new("favorites", "Favoriler", "\uE734", "Sabitlenen projeler",
+                overview.Children.Add(Node(new("favorites", Loc.Text("L13E9F8C058C9"), "\uE734", Loc.Text("LDE2B87364E10"),
                     _projects.Count(project => project.Preference.Favorite))));
-                overview.Children.Add(Node(new("recent", "Son açılanlar", "\uE81C", "Bu bilgisayarda açılan projeler",
+                overview.Children.Add(Node(new("recent", Loc.Text("LA46393ADBAA2"), "\uE81C", Loc.Text("LA6F0F60657C9"),
                     _projects.Count(project => recent.Contains(project.RelativePath)))));
             }
 
@@ -112,14 +112,14 @@ public partial class MainWindow
             }
             int linkedCount = _projects.Count(project => project.LinkPath is not null);
             if (linkedCount > 0)
-                overview.Children.Add(Node(new("linked", "Bağlı projeler", "\uE71B", "Kendi konumunda bağlı projeler", linkedCount)));
+                overview.Children.Add(Node(new("linked", Loc.Text("L68F3F11503E7"), "\uE71B", Loc.Text("L2B707D2D2055"), linkedCount)));
 
             var git = Section("GİT", sections);
-            git.Children.Add(Node(new(GitRepositoriesKey, "Git depoları", "\uE8F1", "Git deposu bulunan projeler",
+            git.Children.Add(Node(new(GitRepositoriesKey, Loc.Text("LBBF8DEC3700C"), "\uE8F1", Loc.Text("L25CDA9C7CD81"),
                 _projects.Count(project => project.Repository is not null))));
-            git.Children.Add(Node(new("changed", "Değişiklikler", "\uE70F", "Yerel değişiklik içeren projeler",
+            git.Children.Add(Node(new("changed", Loc.Text("L015C1B0968C6"), "\uE70F", Loc.Text("L7AC022BEDCCB"),
                 _projects.Count(project => project.Git.State == GitState.Changed))));
-            git.Children.Add(Node(new("warning", "Git uyarıları", "\uE7BA", "Okunamayan Git depoları", _projects.Count(HasGitWarning))));
+            git.Children.Add(Node(new("warning", Loc.Text("L087EEE8F2B23"), "\uE7BA", Loc.Text("L40C02B8FDA54"), _projects.Count(HasGitWarning))));
 
             var groups = _projects.Where(project => !string.IsNullOrWhiteSpace(project.Preference.Group))
                 .GroupBy(project => project.Preference.Group, StringComparer.OrdinalIgnoreCase)
@@ -128,7 +128,7 @@ public partial class MainWindow
             {
                 var section = Section("PROJE GRUPLARI", sections);
                 foreach (var group in groups)
-                    section.Children.Add(Node(new($"group:{group.Key}", group.Key, "\uE8EC", "Aynı gruba bağlanan projeler", group.Count())));
+                    section.Children.Add(Node(new($"group:{group.Key}", group.Key, "\uE8EC", Loc.Text("LA131CD96CAE8"), group.Count())));
             }
 
             if (_workspace?.Config.SavedFilters is { Length: > 0 } filters)
@@ -161,7 +161,7 @@ public partial class MainWindow
 
     private NavigationItem Section(string title, List<NavigationItem> sections)
     {
-        var item = new NavigationItem($"section:{title}", title, "", title, null) { Expanded = true };
+        var item = new NavigationItem($"section:{title}", Loc.Label(title), "", Loc.Label(title), null) { Expanded = true };
         sections.Add(item);
         return item;
     }
@@ -174,7 +174,7 @@ public partial class MainWindow
         return navigation;
     }
 
-    private NavigationItem NewFolderRow() => Node(new(NewFolderKey, "Yeni klasör", "\uE8B7", "Enter ile kaydet · Esc ile iptal et", null));
+    private NavigationItem NewFolderRow() => Node(new(NewFolderKey, Loc.Text("L8D62DD79B534"), "\uE8B7", Loc.Text("LD6D340899CDA"), null));
 
     private NavigationItem FolderNode(string relativePath, string label)
     {

@@ -77,7 +77,7 @@ public partial class MainWindow
         if (!_busy && _workspace is { } workspace && ProjectGrid.SelectedItem is ProjectEntry project)
             PopulateProjectMenu(ProjectMenu, workspace, project, SelectedProjects());
         else
-            ProjectMenu.Items.Add(new MenuItem { Header = "Bir proje seçin", IsEnabled = false });
+            ProjectMenu.Items.Add(new MenuItem { Header = Loc.Text("L8B7727A043AF"), IsEnabled = false });
     }
 
     private void PopulateProjectMenu(ItemsControl menu, Workspace workspace, ProjectEntry project, ProjectEntry[] pair)
@@ -86,7 +86,7 @@ public partial class MainWindow
         {
             var group = new MenuItem
             {
-                Header = $"Seçili {pair.Length} projeyi grupla…",
+                Header = Loc.Format("LC2CB7484AE81", pair.Length),
                 Icon = MenuGlyphExtension.Create("\uE8FD"),
                 IsEnabled = !_savingPreference
             };
@@ -122,12 +122,12 @@ public partial class MainWindow
 
         if (project.OwnerRelativePath is { } ownerPath && project.LinkPath is { } componentLink)
         {
-            Add("Ana projeye dön", "\uE72B", () =>
+            Add(Loc.Text("L0BC9CF040BE2"), "\uE72B", () =>
             {
                 if (FindComponentOwner(ownerPath) is { } owner)
                     NavigateToComponentOwner(owner);
             }, !_busy && FindComponentOwner(ownerPath) is not null);
-            Add("Ayrı satırı gizle", "\uE711",
+            Add(Loc.Text("L150C17378129"), "\uE711",
                 async () => await SetComponentRowAsync(workspace, componentLink, ownerPath, hide: true, returnToOwner: true), !_busy);
             menu.Items.Add(new Separator());
         }
@@ -141,38 +141,40 @@ public partial class MainWindow
                 .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
             string[] closed = components.Where(component => !IsComponentLinked(component)).Select(component => component.Folder)
                 .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            Add("Tüm bileşenleri aç", "\uE710",
+            Add(Loc.Text("L3DD95D714AF6"), "\uE710",
                 async () => await SetComponentRowsAsync(workspace, closed, project.RelativePath, hide: false, returnToOwner: true),
                 !_busy && closed.Length > 0);
-            Add("Tüm bileşenleri gizle", "\uE711",
+            Add(Loc.Text("L79792D4AF16F"), "\uE711",
                 async () => await SetComponentRowsAsync(workspace, opened, project.RelativePath, hide: true, returnToOwner: true),
                 !_busy && opened.Length > 0);
             menu.Items.Add(new Separator());
         }
-        Add(archived ? "Arşivden çıkar" : "Arşive al", "\uE7B8",
+        Add(archived ? Loc.Text("LFCD7700E64BF") : Loc.Text("LB1048C007FD9"), "\uE7B8",
             () => ChangeProjectArchive(project, !archived), CanChangeProjectArchive);
         if (archived)
         {
-            Add("Klasörü aç", "\uE838", () => ExplorerClick(this, new()), Directory.Exists(project.Folder));
-            Add("Yolu kopyala", "\uE8C8", () => CopyPathClick(this, new()));
+            Add(Loc.Text("LD6F2F6CAD078"), "\uE838", () => ExplorerClick(this, new()), Directory.Exists(project.Folder));
+            Add(Loc.Text("L72C32847EB3E"), "\uE8C8", () => CopyPathClick(this, new()));
             return;
         }
         menu.Items.Add(new Separator());
 
         bool folderExists = Directory.Exists(project.Folder);
-        Add(project.Kind == "Visual Studio" ? "Çözümü aç" : "Projeyi aç", "\uE8A7",
+        Add(project.Kind == "Visual Studio" ? Loc.Text("L686C9A600047") : Loc.Text("L439CC142CAA2"), "\uE8A7",
             () => OpenProjectClick(this, new()), folderExists);
-        Add("Klasörü aç", "\uE838", () => ExplorerClick(this, new()), folderExists);
-        Add("Yolu kopyala", "\uE8C8", () => CopyPathClick(this, new()));
+        if (VisualStudioInstallations.Supports(project.EntryFile))
+            Add(Loc.Text("VisualStudioChange"), "\uE713", () => ChangeProjectVisualStudio(project), folderExists);
+        Add(Loc.Text("LD6F2F6CAD078"), "\uE838", () => ExplorerClick(this, new()), folderExists);
+        Add(Loc.Text("L72C32847EB3E"), "\uE8C8", () => CopyPathClick(this, new()));
         bool favorite = project.Preference.Favorite;
-        Add(favorite ? "Favoriden çıkar" : "Favoriye ekle", favorite ? "\uE735" : "\uE734",
+        Add(favorite ? Loc.Text("LC81AC7A60617") : Loc.Text("LC1F494543AF2"), favorite ? "\uE735" : "\uE734",
             () => FavoriteClick(this, new()));
         menu.Items.Add(new Separator());
         if (project.Repository is not null)
         {
-            Add("Git geçmişi", MenuGlyphExtension.GitHistory, () => new GitHistoryWindow(project) { Owner = this }.ShowDialog());
-            Add("Git işlemleri", MenuGlyphExtension.GitOperations, () => OpenGitWorkbench(project));
-            Add("Dallar ve worktree’ler…", "\uE8F1", () =>
+            Add(Loc.Text("L8C9C5A963356"), MenuGlyphExtension.GitHistory, () => new GitHistoryWindow(project) { Owner = this }.ShowDialog());
+            Add(Loc.Text("LD11171088FD5"), MenuGlyphExtension.GitOperations, () => OpenGitWorkbench(project));
+            Add(Loc.Text("L405B8B84BC36"), "\uE8F1", () =>
             {
                 if (EnsureTool(DevelopmentTool.Git))
                     new GitWorktreeWindow(project.Repository, path => OpenPath(path)) { Owner = this }.ShowDialog();
@@ -181,32 +183,32 @@ public partial class MainWindow
                 Add("Git bulgusunu takip et…", "\uE7BA", () => TrackGitFinding(project));
         }
         else
-            Add("Git deposu oluştur…", "\uE710", () => InitializeProjectGitAsync(project), folderExists && !_initializingGit);
-        Add("README ve belgeler", "\uE8A5", () => OpenProjectDetail(ProjectDetailView.Documents), folderExists);
-        Add("Proje amacı ve konumu", "\uE946", () => OpenProjectDetail(ProjectDetailView.Purpose));
+            Add(Loc.Text("L55506B22BDCE"), "\uE710", () => InitializeProjectGitAsync(project), folderExists && !_initializingGit);
+        Add(Loc.Text("L8043F450A004"), "\uE8A5", () => OpenProjectDetail(ProjectDetailView.Documents), folderExists);
+        Add(Loc.Text("L407D86327F61"), "\uE946", () => OpenProjectDetail(ProjectDetailView.Purpose));
 
         menu.Items.Add(new Separator());
-        Add("Proje işlemleri", "\uE713", () => ProjectCommandsClick(this, new()), folderExists);
-        Add("Sağlık kontrolü", "\uE9D9", () => ProjectHealthClick(this, new()));
-        Add("Proje ilişkileri…", "\uE71B", () =>
-            new ProjectInspectionWindow($"Proje ilişkileri · {project.Name}",
+        Add(Loc.Text("L7CB1799388E1"), "\uE713", () => ProjectCommandsClick(this, new()), folderExists);
+        Add(Loc.Text("LA28B52C659C7"), "\uE9D9", () => ProjectHealthClick(this, new()));
+        Add(Loc.Text("LDF24BC28A25C"), "\uE71B", () =>
+            new ProjectInspectionWindow(Loc.Format("L9A357CE10D90", project.Name),
                 token => Task.FromResult(ProjectInspection.Relationships(project, _projects, token))) { Owner = this }.ShowDialog(),
             project.EntryFile is { } entry && ProjectTools.IsDotNetEntry(entry));
-        Add("Proje ortamı…", "\uE713", () => OpenProjectEnvironment(project), folderExists);
-        Add("Grup ve etiket", "\uE8EC", () => OpenProjectDetail(ProjectDetailView.Organization));
+        Add(Loc.Text("LC2580239A435"), "\uE713", () => OpenProjectEnvironment(project), folderExists);
+        Add(Loc.Text("L6031B86875C3"), "\uE8EC", () => OpenProjectDetail(ProjectDetailView.Organization));
         if (pair.Length == 2 && pair.Contains(project) && !pair[0].Folder.Equals(pair[1].Folder, StringComparison.OrdinalIgnoreCase))
-            Add("Seçili iki sürümü karşılaştır", "\uE8AB", () => new ComparisonWindow(workspace, pair[0], pair[1]) { Owner = this }.ShowDialog());
+            Add(Loc.Text("L3EB9B19DECBE"), "\uE8AB", () => new ComparisonWindow(workspace, pair[0], pair[1]) { Owner = this }.ShowDialog());
         else
-            Add("Bir sürümle karşılaştır…", "\uE8AB", () => CompareProjectClick(this, new()));
-        Add("Taşıma planı", "\uE8DE", () => PreviewMoveClick(this, new()), folderExists && project.LinkPath is null && !project.IsWorkspaceRoot);
+            Add(Loc.Text("L28418C937C30"), "\uE8AB", () => CompareProjectClick(this, new()));
+        Add(Loc.Text("L29290972B888"), "\uE8DE", () => PreviewMoveClick(this, new()), folderExists && project.LinkPath is null && !project.IsWorkspaceRoot);
         if (project.LinkPath is not null)
-            Add("Bağlantıyı kaldır", "\uE738", () => UnlinkProjectClick(this, new()));
+            Add(Loc.Text("L11F80F8CF5B1"), "\uE738", () => UnlinkProjectClick(this, new()));
     }
 
     private void OpenProjectEnvironment(ProjectEntry project)
     {
         if (_workspace is { } workspace)
-            new ProjectInspectionWindow($"Proje ortamı · {project.Name}",
+            new ProjectInspectionWindow(Loc.Format("L0CA64D8B19A5", project.Name),
                 token => ProjectInspection.EnvironmentAsync(workspace, project, token)) { Owner = this }.ShowDialog();
     }
 
@@ -239,9 +241,9 @@ public partial class MainWindow
             return;
 
         string? workspace = _workspace?.Root;
-        const string ignoreInfo = "Proje türüne uygun .gitignore kuralları eklenir. Mevcut kurallar korunur.";
-        if (MessageBox.Show(this, $"Bu klasörde yerel Git deposu oluşturulsun mu?\n\n{project.Folder}\n\n{ignoreInfo} İlk commit veya uzak depo bağlantısı ayrıca yapılır.",
-            "Git deposu oluştur", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+        string ignoreInfo = Loc.Text("IgnoreInfo");
+        if (MessageBox.Show(this, Loc.Format("LF660D25C7FC2", project.Folder, ignoreInfo),
+            Loc.Text("LF39C23D70767"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 
         _initializingGit = true;
@@ -250,7 +252,7 @@ public partial class MainWindow
             await GitProjectOperations.InitializeAsync(project.Folder, project.Kind, _closing.Token, project.EntryFile);
             if (_workspace?.Root == workspace)
                 await RefreshAsync();
-            StatusText.Text = "Yerel Git deposu oluşturuldu.";
+            StatusText.Text = Loc.Text("LC0EA8EBC6685");
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)

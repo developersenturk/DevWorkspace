@@ -1,0 +1,18 @@
+<dx:ThemedWindow x:Class="DevWorkspace.SettingsWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                 Title="{DynamicResource SettingsTitle}" Width="470" SizeToContent="Height"
+                 ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <StackPanel Margin="22">
+        <TextBlock Text="{DynamicResource SettingsTitle}" FontSize="21" FontWeight="SemiBold" Margin="0,0,0,18"/>
+        <Label Content="{DynamicResource InterfaceLanguage}" Target="{Binding ElementName=LanguagePicker}" Padding="0,0,0,6"/>
+        <ComboBox x:Name="LanguagePicker" DisplayMemberPath="Label" SelectedValuePath="Code"
+                  AutomationProperties.Name="{DynamicResource InterfaceLanguage}" MinHeight="30"/>
+        <TextBlock Text="{DynamicResource LanguageRestartHint}" TextWrapping="Wrap" Margin="0,12,0,20"/>
+        <WrapPanel HorizontalAlignment="Right">
+            <Button Content="{DynamicResource CancelSettings}" IsCancel="True" MinWidth="80" Margin="0,0,8,0"/>
+            <Button Content="{DynamicResource SaveAndRestart}" Click="SaveClick" IsDefault="True" MinWidth="170"/>
+        </WrapPanel>
+    </StackPanel>
+</dx:ThemedWindow>

@@ -26,7 +26,7 @@ Use PowerShell from the repository root:
 
 The script uses **Debug**, runs the update and project detection checks, publishes a self-contained Windows x64 application, and packages it with the pinned local `vpk` tool. It prints the new output directory under `.artifacts/updates/`. Neither the script nor packaging publishes anything to GitHub.
 
-Each stable version must be strictly newer than the previous one. For the next update, use `1.0.1`. Keep the app ID **DevWorkspace**, channel **win-x64**, and repository URL consistent.
+Each stable version must be strictly newer than the previous one. Version **1.0.1** includes interface language preferences, GitHub URL cloning, remembered Visual Studio selection and update notifications. For the next update, use `1.0.2`. Keep the app ID **DevWorkspace**, channel **win-x64**, and repository URL consistent.
 
 ## Publish through GitHub
 

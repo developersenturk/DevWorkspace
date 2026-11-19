@@ -11,14 +11,14 @@ internal sealed record GitFileChange(string Path, char Index, char WorkingTree, 
     public bool HasWorkingChange => WorkingTree != '.';
     public string StatusCode => IsConflict ? "U" : (HasWorkingChange ? WorkingTree : Index).ToString();
     public string DisplayPath => OriginalPath is null ? Path : $"{OriginalPath} → {Path}";
-    public string Label => Index == '?' ? "İzlenmiyor" : Index == 'U' || WorkingTree == 'U' ? "Çakışma"
-        : Index == '.' ? Describe(WorkingTree) : WorkingTree == '.' ? $"{Describe(Index)} · Hazırlandı"
-        : $"{Describe(Index)} · Hazırlandı / {Describe(WorkingTree)}";
+    public string Label => Index == '?' ? Loc.Text("L7BF1133CCA55") : Index == 'U' || WorkingTree == 'U' ? Loc.Text("LEF179F25624C")
+        : Index == '.' ? Describe(WorkingTree) : WorkingTree == '.' ? Loc.Format("LA717C0C0D31D", Describe(Index))
+        : Loc.Format("L91891FA6CA92", Describe(Index), Describe(WorkingTree));
 
     private static string Describe(char status) => status switch
     {
-        'A' => "Eklendi", 'M' => "Değişti", 'D' => "Silindi", 'R' => "Yeniden adlandırıldı",
-        'C' => "Kopyalandı", 'T' => "Türü değişti", _ => "Değişti"
+        'A' => Loc.Text("L8D30BFE1B823"), 'M' => Loc.Text("LC2FC0AECA605"), 'D' => Loc.Text("L216E07EEBE8C"), 'R' => Loc.Text("LDCF108D7DA68"),
+        'C' => Loc.Text("L02AF74B2F0D6"), 'T' => Loc.Text("L792215076BC4"), _ => Loc.Text("LC2FC0AECA605")
     };
 }
 
@@ -29,11 +29,11 @@ internal sealed record GitStatus(
 {
     public string Label => State switch
     {
-        GitState.Clean => "Temiz",
-        GitState.Changed => "Değişiklik var",
-        GitState.Ownership => "Sahiplik uyarısı",
-        GitState.Unavailable => "Okunamadı",
-        _ => "Git yok"
+        GitState.Clean => Loc.Text("LF811F51EB52C"),
+        GitState.Changed => Loc.Text("L10E0D7B9E625"),
+        GitState.Ownership => Loc.Text("L074324369F95"),
+        GitState.Unavailable => Loc.Text("LEDD1397983CA"),
+        _ => Loc.Text("L4A494445A8AA")
     };
 
     public string Tracking => Ahead.HasValue ? $"↑ {Ahead}   ↓ {Behind}" : "—";
@@ -66,7 +66,7 @@ internal sealed record GitStatus(
         }
         catch (System.ComponentModel.Win32Exception)
         {
-            return new(GitState.Unavailable, Detail: "Git başlatılamadı. Git for Windows kurulumunu kontrol edin.");
+            return new(GitState.Unavailable, Detail: Loc.Text("LEAF4AA46FEB9"));
         }
         catch (System.IO.IOException ex)
         {
@@ -74,9 +74,9 @@ internal sealed record GitStatus(
         }
 
         if (message.Contains("dubious ownership", StringComparison.OrdinalIgnoreCase))
-            return new(GitState.Ownership, Detail: "Git, depo sahipliği nedeniyle durum bilgisini vermedi.");
+            return new(GitState.Ownership, Detail: Loc.Text("L80A69AEF8A24"));
 
-        return new(GitState.Unavailable, Detail: string.IsNullOrEmpty(message) ? "Git durum sorgusu başarısız oldu." : message);
+        return new(GitState.Unavailable, Detail: string.IsNullOrEmpty(message) ? Loc.Text("L9AD0B824CC75") : message);
     }
 
     private static GitStatus Parse(string output)
@@ -125,7 +125,7 @@ internal sealed record GitStatus(
         if (branch == "(detached)")
             branch = $"HEAD {commit[..Math.Min(7, commit.Length)]}";
 
-        string detail = commit == "(initial)" ? "Depoda henüz commit yok." : "";
+        string detail = commit == "(initial)" ? Loc.Text("L5C1B5A61A33B") : "";
         return new(changes.Count == 0 ? GitState.Clean : GitState.Changed, branch, changes.Count, ahead, behind, detail, changes,
             headRef, commit is "" or "(initial)" ? null : commit, upstream);
     }

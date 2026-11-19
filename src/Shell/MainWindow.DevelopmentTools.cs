@@ -22,7 +22,7 @@ public partial class MainWindow
             DevelopmentTools.Find(DevelopmentTool.DotNet) is null)
             missing.Add(".NET SDK");
         ScanSummaryTools.Visibility = missing.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        ScanSummaryTools.Content = missing.Count == 1 ? $"{missing[0]} eksik · Kurulum" : $"{missing.Count:N0} araç eksik · Kurulum";
+        ScanSummaryTools.Content = missing.Count == 1 ? $"{missing[0]} eksik · Kurulum" : Loc.Format("LF92438F249C3", missing.Count);
         ScanSummaryTools.ToolTip = string.Join(", ", missing);
     }
 
@@ -49,13 +49,13 @@ public partial class MainWindow
         {
             bool ready = await ToolSetupWindow.EnsureReadyAsync(this, DevelopmentTool.DotNet, _closing.Token);
             if (!ready)
-                StatusText.Text = ".NET SDK bulunamadığı için tarama başlatılamadı.";
+                StatusText.Text = Loc.Text("L8699C32DD91A");
             return ready;
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { return false; }
         catch (Exception ex) when (ex is IOException or Win32Exception or UnauthorizedAccessException)
         {
-            StatusText.Text = $".NET SDK doğrulanamadı. {ex.Message}";
+            StatusText.Text = Loc.Format("L417F44E5B1BD", ex.Message);
             return false;
         }
     }
@@ -64,8 +64,8 @@ public partial class MainWindow
     {
         string? folder = Path.GetDirectoryName(path);
         if (folder is null || MessageBox.Show(this,
-                "Bu dosya türünü açacak uygulama bulunamadı. Proje klasörü Visual Studio Code’da açılsın mı?",
-                "Proje düzenleyicisi", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+                Loc.Text("LB09AA67DF2CC"),
+                Loc.Text("LC919B8148D2D"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return false;
         if (!EnsureTool(DevelopmentTool.Editor))
             return false;
@@ -78,7 +78,7 @@ public partial class MainWindow
         }
         catch (Exception ex) when (ex is IOException or Win32Exception)
         {
-            StatusText.Text = $"Düzenleyici açılamadı. {ex.Message}";
+            StatusText.Text = Loc.Format("L10455CFBEB8C", ex.Message);
             return false;
         }
     }

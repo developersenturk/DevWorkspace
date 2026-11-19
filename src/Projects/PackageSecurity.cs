@@ -4,7 +4,10 @@ using System.Text.Json;
 
 namespace DevWorkspace;
 
-internal sealed record PackageSecurityFinding(string Name, string Version, string Severity, string Advisory);
+internal sealed record PackageSecurityFinding(string Name, string Version, string Severity, string Advisory)
+{
+    public string SeverityLabel => Loc.Label(Severity);
+}
 internal sealed record PackageSecurityResult(PackageSecurityFinding[] Findings, bool HasPackages)
 {
     internal HashSet<(string Name, string Version)> Packages { get; } = [];
@@ -39,17 +42,17 @@ internal static class PackageSecurity
     {
         var info = ProjectTools.CreateCaptureInfo("osv-scanner.exe", Environment.SystemDirectory,
             ["scan", "source", "--no-resolve", "--all-packages", "--format", "json", "-L", lockfile]);
-        var (code, output, error) = await ProjectTools.CaptureAsync(info, "Paket güvenliği taraması", 120, token);
+        var (code, output, error) = await ProjectTools.CaptureAsync(info, Loc.Text("LABA523785AA1"), 120, token);
         if (code == 128)
             return new([], false);
         if (code is not (0 or 1))
         {
             string detail = error.Trim();
-            throw new IOException($"OSV-Scanner taramayı tamamlayamadı (kod {code}). {detail[..Math.Min(detail.Length, 450)]}");
+            throw new IOException(Loc.Format("L8B1BBC8EDDC8", code, detail[..Math.Min(detail.Length, 450)]));
         }
         var result = Parse(output);
         if (code == 1 && result.Findings.Length == 0)
-            throw new IOException("OSV-Scanner sonuç bildirdi ancak güvenlik bulguları okunamadı.");
+            throw new IOException(Loc.Text("LDCAE48CD4F86"));
         return result;
     }
 

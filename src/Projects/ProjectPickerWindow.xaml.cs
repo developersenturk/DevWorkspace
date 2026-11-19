@@ -29,8 +29,8 @@ public partial class ProjectPickerWindow : ThemedWindow
         _actions = actions ?? [];
         if (_actions.Count > 0)
         {
-            QueryBox.ToolTip = "Proje veya işlem ara · Örnek: Billing diff";
-            System.Windows.Automation.AutomationProperties.SetName(QueryBox, "Proje veya işlem ara");
+            QueryBox.ToolTip = Loc.Text("L35BB26C9BF9A");
+            System.Windows.Automation.AutomationProperties.SetName(QueryBox, Loc.Text("L3DA3E2CF9119"));
         }
         var recentOrder = recent.Select((path, index) => (path, index)).DistinctBy(item => item.path, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(item => item.path, item => item.index, StringComparer.OrdinalIgnoreCase);
@@ -65,7 +65,7 @@ public partial class ProjectPickerWindow : ThemedWindow
         Results.ItemsSource = matches;
         Results.SelectedIndex = matches.Length > 0 ? 0 : -1;
         ChooseButton.IsEnabled = matches.Length > 0;
-        PickerHint.Text = matches.Length == 0 ? "Eşleşme yok." : "↑ ↓ seç · Enter onayla · Esc kapat";
+        PickerHint.Text = matches.Length == 0 ? Loc.Text("L65A279254A1F") : Loc.Text("L29E498FD7D45");
     }
 
     private static bool Matches(ProjectPickerResult result, string query, string[] terms)

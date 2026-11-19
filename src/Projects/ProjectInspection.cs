@@ -32,13 +32,13 @@ internal static class ProjectInspection
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
             {
-                diagnostics.Add(new("Okunamadı", Path.GetFileName(file), file));
+                diagnostics.Add(new(Loc.Text("LEDD1397983CA"), Path.GetFileName(file), file));
             }
         }
         var reverse = edges.SelectMany(edge => edge.Value.Select(target => (Target: target, Source: edge.Key)))
             .ToLookup(edge => edge.Target, edge => edge.Source, StringComparer.OrdinalIgnoreCase);
-        return Walk(entry, file => edges.GetValueOrDefault(file) ?? [], "Bağımlılık")
-            .Concat(Walk(entry, file => reverse[file], "Etkilenen proje")).Concat(diagnostics).ToArray();
+        return Walk(entry, file => edges.GetValueOrDefault(file) ?? [], Loc.Text("L00BFE22C2A13"))
+            .Concat(Walk(entry, file => reverse[file], Loc.Text("LE6901D98598F"))).Concat(diagnostics).ToArray();
     }
 
     private static IEnumerable<InspectionRow> Walk(string entry, Func<string, IEnumerable<string>> neighbors, string category)
@@ -51,7 +51,7 @@ internal static class ProjectInspection
             foreach (string file in neighbors(node.File).Where(seen.Add))
             {
                 queue.Enqueue((file, node.Depth + 1));
-                string relation = node.Depth == 0 ? "Doğrudan" : $"Dolaylı · {node.Depth + 1} bağlantı";
+                string relation = node.Depth == 0 ? Loc.Text("L02E302C78C1E") : Loc.Format("L771613407287", node.Depth + 1);
                 yield return new(category, Path.GetFileName(file), $"{relation} · {file}");
             }
         }
@@ -81,11 +81,11 @@ internal static class ProjectInspection
             var definition = DevelopmentTools.Get(tool);
             if (DevelopmentTools.Find(tool) is not { } executable)
             {
-                rows.Add(new("Eksik", definition.Name, requirement ?? definition.Command));
+                rows.Add(new(Loc.Text("LE8AF1BA5B6FF"), definition.Name, requirement ?? definition.Command));
                 continue;
             }
 
-            string status = "Kurulu";
+            string status = Loc.Text("LB0BA7377089D");
             string detail = executable;
             if (tool != DevelopmentTool.Flutter)
             {
@@ -93,22 +93,22 @@ internal static class ProjectInspection
                 {
                     var info = ProjectTools.CreateCaptureInfo(executable, project.Folder, ["--version"]);
                     var (code, output, error) = await ProjectTools.CaptureAsync(info, definition.Name, 10, token);
-                    status = code == 0 ? "Seçili sürüm" : "Sürüm okunamadı";
+                    status = code == 0 ? Loc.Text("L5AF30E9219D3") : Loc.Text("L3B5AFEB0ED88");
                     detail = (code == 0 ? output : error + output).Trim();
                 }
                 catch (Exception ex) when (ex is IOException or Win32Exception)
                 {
-                    status = "Sürüm okunamadı";
+                    status = Loc.Text("L3B5AFEB0ED88");
                     detail = ex.Message;
                 }
             }
-            rows.Add(new(status, definition.Name, requirement is null ? detail : $"İstenen {requirement} · {detail}"));
+            rows.Add(new(status, definition.Name, requirement is null ? detail : Loc.Format("LBD1FA1EFE04B", requirement, detail)));
         }
         if (tools.Any(tool => tool.Tool == DevelopmentTool.DotNet))
         {
             var health = await ProjectHealth.CheckAsync(workspace, project, token);
             rows.AddRange(health.Findings.Where(finding => finding.Severity == "SDK")
-                .Select(finding => new InspectionRow("Uyumluluk", ".NET SDK", finding.Description)));
+                .Select(finding => new InspectionRow(Loc.Text("L3A1CCF19A70C"), ".NET SDK", finding.Description)));
         }
         return rows.ToArray();
     }

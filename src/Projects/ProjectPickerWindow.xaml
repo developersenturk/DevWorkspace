@@ -4,15 +4,15 @@
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
                  Width="650" Height="415" MinWidth="455" MinHeight="300"
-                 Title="Hızlı proje aç" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+                 Title="{DynamicResource LFBBDAF1D3B4D}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True" PreviewKeyDown="PickerKeyDown" Loaded="PickerLoaded">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
     <Grid Margin="13">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <TextBox x:Name="QueryBox" Height="35" Padding="8,4" VerticalContentAlignment="Center" TextChanged="QueryChanged"
-                 AutomationProperties.Name="Proje adı, yolu veya grup" ToolTip="Proje adı, yolu veya grup"/>
+                 AutomationProperties.Name="{DynamicResource L48F595DDE343}" ToolTip="{DynamicResource L48F595DDE343}"/>
         <dxe:ListBoxEdit x:Name="Results" Grid.Row="1" Margin="0,9,0,8"
-                 ItemContainerStyle="{StaticResource NavRow}" AutomationProperties.Name="Proje sonuçları"
+                 ItemContainerStyle="{StaticResource NavRow}" AutomationProperties.Name="{DynamicResource LF3FF5E8495C3}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <dxe:ListBoxEdit.ItemTemplate>
                 <DataTemplate>
@@ -29,7 +29,7 @@
             </dxe:ListBoxEdit.ItemTemplate>
         </dxe:ListBoxEdit>
         <DockPanel Grid.Row="2">
-            <Button x:Name="ChooseButton" DockPanel.Dock="Right" Content="Aç" Style="{StaticResource Primary}" Click="ChooseClick" Margin="9,0,0,0"/>
+            <Button x:Name="ChooseButton" DockPanel.Dock="Right" Content="{DynamicResource LDCC084F9A2E1}" Style="{StaticResource Primary}" Click="ChooseClick" Margin="9,0,0,0"/>
             <TextBlock x:Name="PickerHint" VerticalAlignment="Center" Foreground="{DynamicResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis"/>
         </DockPanel>
     </Grid>

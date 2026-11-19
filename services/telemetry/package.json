@@ -1,0 +1,13 @@
+{
+  "name": "devworkspace-telemetry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node node-server.mjs",
+    "deploy": "wrangler deploy",
+    "migrate": "wrangler d1 migrations apply telemetry --remote"
+  },
+  "engines": { "node": ">=24" },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}

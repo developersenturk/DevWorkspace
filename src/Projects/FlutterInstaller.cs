@@ -19,14 +19,14 @@ internal static class FlutterInstaller
         {
             Architecture.X64 => "x64",
             Architecture.Arm64 => "arm64",
-            _ => throw new IOException("Flutter kurulumu bu Windows mimarisinde desteklenmiyor.")
+            _ => throw new IOException(Loc.Text("L33D59158CF11"))
         };
         string root = DevelopmentTools.ToolsFolder;
         string destination = Path.Combine(root, "flutter");
         if (Directory.Exists(destination))
-            throw new IOException("DevWorkspace’in Flutter klasörü var ancak SDK bulunamadı. Kurulum kılavuzundan mevcut kurulumu onarın.");
+            throw new IOException(Loc.Text("LE95A716BA0E3"));
 
-        progress.Report("Flutter’ın kararlı Windows sürümü aranıyor…");
+        progress.Report(Loc.Text("L20FD1C4ED712"));
         using var releases = JsonDocument.Parse(await Client.GetStringAsync(new Uri(ReleaseRoot, "releases_windows.json"), token));
         var index = releases.RootElement;
         string? stable = index.GetProperty("current_release").GetProperty("stable").GetString();
@@ -34,13 +34,13 @@ internal static class FlutterInstaller
             item.GetProperty("hash").GetString() == stable && item.GetProperty("channel").GetString() == "stable" &&
             (item.TryGetProperty("dart_sdk_arch", out var arch) ? arch.GetString() : "x64") == architecture);
         if (release.ValueKind == JsonValueKind.Undefined)
-            throw new IOException("Bu Windows mimarisi için kararlı Flutter paketi bulunamadı.");
+            throw new IOException(Loc.Text("LA92D10D68C72"));
 
         string archive = release.GetProperty("archive").GetString() ?? "";
         string checksum = release.GetProperty("sha256").GetString() ?? "";
         if (!Regex.IsMatch(archive, @"\Astable/windows/flutter_windows_[a-zA-Z0-9._-]+\.zip\z") ||
             !Regex.IsMatch(checksum, @"\A[0-9a-fA-F]{64}\z"))
-            throw new IOException("Flutter paket adresi veya doğrulama bilgisi geçersiz.");
+            throw new IOException(Loc.Text("L8D4BCFAC4E29"));
 
         Directory.CreateDirectory(root);
         string staging = Path.Combine(root, $".flutter-{Guid.NewGuid():N}");
@@ -68,14 +68,14 @@ internal static class FlutterInstaller
                     if (next >= percent + 5)
                     {
                         percent = next;
-                        progress.Report(size > 0 ? $"Flutter indiriliyor · %{percent}" : "Flutter indiriliyor…");
+                        progress.Report(size > 0 ? Loc.Format("L42CD2A33570B", percent) : Loc.Text("LF4B63101017E"));
                     }
                 }
             }
             if (!Convert.ToHexString(hash.GetHashAndReset()).Equals(checksum, StringComparison.OrdinalIgnoreCase))
-                throw new IOException("Flutter paketinin SHA-256 doğrulaması başarısız.");
+                throw new IOException(Loc.Text("L0F6929F18DFF"));
 
-            progress.Report("Flutter SDK dosyaları açılıyor…");
+            progress.Report(Loc.Text("LCCD926CD6675"));
             using (var zip = ZipFile.OpenRead(zipPath))
             {
                 string prefix = staging + Path.DirectorySeparatorChar;
@@ -84,7 +84,7 @@ internal static class FlutterInstaller
                     token.ThrowIfCancellationRequested();
                     string path = Path.GetFullPath(Path.Combine(staging, entry.FullName));
                     if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                        throw new IOException("Flutter arşivinde geçersiz bir dosya yolu var.");
+                        throw new IOException(Loc.Text("L6BCA64FF4019"));
                     if (entry.Name.Length == 0)
                         Directory.CreateDirectory(path);
                     else
@@ -97,7 +97,7 @@ internal static class FlutterInstaller
             token.ThrowIfCancellationRequested();
             string sdk = Path.Combine(staging, "flutter");
             if (!File.Exists(Path.Combine(sdk, "bin", "flutter.bat")))
-                throw new IOException("Doğrulanan arşivde Flutter SDK bulunamadı.");
+                throw new IOException(Loc.Text("L25CE9143E103"));
             try { Directory.Move(sdk, destination); }
             catch (IOException) when (File.Exists(Path.Combine(destination, "bin", "flutter.bat"))) { }
         }

@@ -43,7 +43,7 @@ public partial class ProjectToolsWindow
 
     private async Task LoadActionsAsync()
     {
-        await RunActionsOperationAsync("GitHub Actions sonucu alınıyor…", ReadActionsResultAsync);
+        await RunActionsOperationAsync(Loc.Text("L95E31BAC5ABC"), ReadActionsResultAsync);
     }
 
     private async Task ReadActionsResultAsync()
@@ -54,8 +54,8 @@ public partial class ProjectToolsWindow
         _actionsLoaded = true;
         _remoteWorkflowExists = hasWorkflow;
         ActionsStatus.Text = run is null
-            ? hasWorkflow ? "GitHub’da iş akışı tanımlı. Henüz görüntülenebilir bir çalıştırma kaydı yok."
-                : "GitHub’da henüz iş akışı tanımlı değil."
+            ? hasWorkflow ? Loc.Text("L906E5C019BBF")
+                : Loc.Text("L988CCF038458")
             : "";
         if (run is null)
             return;
@@ -117,7 +117,7 @@ public partial class ProjectToolsWindow
     private void ActionsGuideClick(object sender, RoutedEventArgs e) => OpenIntegrationLink(GitHubCli.InstallGuide, ActionsStatus);
 
     private async void ActionsLoginClick(object sender, RoutedEventArgs e) =>
-        await RunActionsOperationAsync("GitHub giriş kodu alınıyor…", SignInAndRefreshAsync);
+        await RunActionsOperationAsync(Loc.Text("L332073CC27FA"), SignInAndRefreshAsync);
 
     private async Task SignInAndRefreshAsync()
     {
@@ -130,7 +130,7 @@ public partial class ProjectToolsWindow
                 return;
             ActionsDeviceCode.Text = code;
             ActionsDevicePanel.Visibility = Visibility.Visible;
-            ActionsStatus.Text = "Tarayıcıda GitHub onayı bekleniyor…";
+            ActionsStatus.Text = Loc.Text("L4BC25669BE54");
             OpenIntegrationLink(GitHubCli.DeviceLogin, ActionsStatus);
         });
         try
@@ -139,7 +139,7 @@ public partial class ProjectToolsWindow
         }
         catch (OperationCanceledException) when (!_closing.IsCancellationRequested)
         {
-            ActionsStatus.Text = "GitHub girişi iptal edildi.";
+            ActionsStatus.Text = Loc.Text("L69B68B59862C");
             ActionsLoginButton.Visibility = Visibility.Visible;
             return;
         }
@@ -155,7 +155,7 @@ public partial class ProjectToolsWindow
             ActionsCancelLoginButton.Visibility = ActionsDevicePanel.Visibility = Visibility.Collapsed;
             ActionsDeviceCode.Clear();
         }
-        ActionsStatus.Text = "GitHub girişi tamamlandı. Actions sonucu alınıyor…";
+        ActionsStatus.Text = Loc.Text("L5E1089B17787");
         await ReadActionsResultAsync();
     }
 
@@ -194,7 +194,7 @@ public partial class ProjectToolsWindow
             ComposeGrid.ItemsSource = services;
             ComposeGrid.CurrentItem = services.FirstOrDefault(service => service.Name == selected) ?? services.FirstOrDefault();
             _composeLoaded = true;
-            ComposeStatus.Text = services.Count == 0 ? "Etkin bir Compose servisi bulunamadı." : $"{services.Count:N0} servis";
+            ComposeStatus.Text = services.Count == 0 ? Loc.Text("L86B1E7F67AEA") : $"{services.Count:N0} servis";
         }
         catch
         {
@@ -214,12 +214,12 @@ public partial class ProjectToolsWindow
     {
         if (ComposeGrid.CurrentItem is not ComposeService service)
             return Task.CompletedTask;
-        return RunComposeOperationAsync($"{service.Name} {(start ? "başlatılıyor" : "durduruluyor")}…", async () =>
+        return RunComposeOperationAsync($"{service.Name} {(start ? Loc.Text("L8A18DC0B54BD") : Loc.Text("L9F3588621747"))}…", async () =>
         {
             await ProjectIntegrations.ChangeComposeAsync(_project, service.Name, start, _closing.Token);
             await UpdateComposeServicesAsync();
             if (!_closing.IsCancellationRequested)
-                ComposeStatus.Text = $"{service.Name} {(start ? "başlatıldı" : "durduruldu")}.";
+                ComposeStatus.Text = $"{service.Name} {(start ? Loc.Text("LC78F01307F90") : Loc.Text("L4377FFACE0E6"))}.";
         });
     }
 
@@ -227,15 +227,15 @@ public partial class ProjectToolsWindow
     {
         if (ComposeGrid.CurrentItem is not ComposeService service)
             return;
-        await RunComposeOperationAsync($"{service.Name} logları okunuyor…", async () =>
+        await RunComposeOperationAsync(Loc.Format("LF660F9BC9D15", service.Name), async () =>
         {
             ComposeOutput.Clear();
             string logs = await ProjectIntegrations.ReadComposeLogsAsync(_project, service.Name, _closing.Token);
             if (_closing.IsCancellationRequested)
                 return;
-            ComposeOutput.Text = string.IsNullOrWhiteSpace(logs) ? "Gösterilecek log kaydı yok." : logs;
+            ComposeOutput.Text = string.IsNullOrWhiteSpace(logs) ? Loc.Text("L8115A7F514D5") : logs;
             ComposeOutput.ScrollToEnd();
-            ComposeStatus.Text = $"{service.Name} · Son 200 log satırı (konteyner başına)";
+            ComposeStatus.Text = Loc.Format("L07B4F6E16E71", service.Name);
         });
     }
 
@@ -278,5 +278,5 @@ public partial class ProjectToolsWindow
         ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException or JsonException or InvalidOperationException;
 
     private static string IntegrationMessage(Exception ex) => ex is JsonException or InvalidOperationException
-        ? "Komutun döndürdüğü sonuç okunamadı." : ex.Message;
+        ? Loc.Text("L21506299539B") : ex.Message;
 }

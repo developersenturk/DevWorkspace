@@ -2,17 +2,17 @@
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
-                 Title="Uzak dal oluştur" Width="450" SizeToContent="Height" ResizeMode="NoResize"
+                 Title="{DynamicResource L701F825E0529}" Width="450" SizeToContent="Height" ResizeMode="NoResize"
                  ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
     <StackPanel Margin="20">
         <TextBlock x:Name="Description" TextWrapping="Wrap" Margin="0,0,0,10"/>
-        <Label Content="Uzak depo" Target="{Binding ElementName=RemoteInput}" Padding="0,0,0,4"/>
-        <ComboBox x:Name="RemoteInput" SelectionChanged="InputChanged" AutomationProperties.Name="Uzak depo"/>
-        <Label Content="Yeni dal adı" Target="{Binding ElementName=BranchInput}" Padding="0,10,0,4"/>
-        <TextBox x:Name="BranchInput" TextChanged="InputChanged" AutomationProperties.Name="Yeni dal adı"/>
+        <Label Content="{DynamicResource LAF3B790A5530}" Target="{Binding ElementName=RemoteInput}" Padding="0,0,0,4"/>
+        <ComboBox x:Name="RemoteInput" SelectionChanged="InputChanged" AutomationProperties.Name="{DynamicResource LAF3B790A5530}"/>
+        <Label Content="{DynamicResource LC6DC46E28ABB}" Target="{Binding ElementName=BranchInput}" Padding="0,10,0,4"/>
+        <TextBox x:Name="BranchInput" TextChanged="InputChanged" AutomationProperties.Name="{DynamicResource LC6DC46E28ABB}"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <Button x:Name="CreateButton" Content="Oluştur" Click="CreateClick" IsDefault="True" IsEnabled="False" Padding="8,4"/>
-            <Button Content="Vazgeç" IsCancel="True" Margin="7,0,0,0" Padding="8,4"/>
+            <Button x:Name="CreateButton" Content="{DynamicResource L89C75B03B93F}" Click="CreateClick" IsDefault="True" IsEnabled="False" Padding="8,4"/>
+            <Button Content="{DynamicResource L39A8D28C1C6B}" IsCancel="True" Margin="7,0,0,0" Padding="8,4"/>
         </StackPanel>
     </StackPanel>
 </dx:ThemedWindow>

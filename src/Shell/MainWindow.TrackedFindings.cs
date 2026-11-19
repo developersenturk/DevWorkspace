@@ -47,13 +47,13 @@ public partial class MainWindow
                 var existing = _session.For(workspace.Root).TrackedFindings ?? [];
                 SaveTrackedFindings(workspace.Root,
                     [.. existing.Where(previous => previous.Id != finding.Id), finding with { Due = due() }]);
-                StatusText.Text = $"{finding.Title} takibe alındı.";
+                StatusText.Text = Loc.Format("LAADE6E7B7C27", finding.Title);
             };
             menu.Items.Add(item);
         }
-        Add("Takip et · Bugün", () => DateTimeOffset.Now);
-        Add("Tekrar hatırlat · Yarın 09.00", () => new DateTimeOffset(DateTime.Today.AddDays(1).AddHours(9)));
-        Add("Takip et · Bu hafta", () =>
+        Add(Loc.Text("L38FAFAD543FD"), () => DateTimeOffset.Now);
+        Add(Loc.Text("LFB1B76770C77"), () => new DateTimeOffset(DateTime.Today.AddDays(1).AddHours(9)));
+        Add(Loc.Text("LEB57FA081E17"), () =>
         {
             int days = ((int)DayOfWeek.Friday - (int)DateTime.Today.DayOfWeek + 7) % 7;
             return new DateTimeOffset(DateTime.Today.AddDays(days).AddHours(9));

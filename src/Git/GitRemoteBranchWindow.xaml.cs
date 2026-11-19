@@ -8,7 +8,7 @@ public partial class GitRemoteBranchWindow : ThemedWindow
     internal GitRemoteBranchWindow(string[] remotes, string? selectedRemote, string currentBranch)
     {
         InitializeComponent();
-        Description.Text = $"{currentBranch} dalının son commit’i yeni uzak dala gönderilir. Bekleyen değişiklikler bu çalışma alanında kalır.";
+        Description.Text = Loc.Format("L35E0DAB74AEE", currentBranch);
         RemoteInput.ItemsSource = remotes;
         RemoteInput.SelectedItem = remotes.FirstOrDefault(remote => remote == selectedRemote)
             ?? (remotes.Length == 1 ? remotes[0] : null);

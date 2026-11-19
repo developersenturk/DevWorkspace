@@ -8,14 +8,14 @@
         Loaded="DetailLoaded" Closing="DetailClosing" Closed="DetailClosed" PreviewKeyDown="DetailKeyDown">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
     <dx:ThemedWindow.DialogButtons>
-        <dx:ThemedWindowDialogButton x:Name="RemoveGroupButton" Content="Gruptan çıkar" Placement="Left"
+        <dx:ThemedWindowDialogButton x:Name="RemoveGroupButton" Content="{DynamicResource LC3C43CF31D48}" Placement="Left"
                                      AllowCloseWindow="False" Click="RemoveGroupClick" Visibility="Collapsed"/>
-        <dx:ThemedWindowDialogButton x:Name="CloseButton" Content="Kapat" IsCancel="True" DialogResult="Cancel" MinWidth="72"/>
-        <dx:ThemedWindowDialogButton x:Name="PurposeCancelButton" Content="Vazgeç" AllowCloseWindow="False"
+        <dx:ThemedWindowDialogButton x:Name="CloseButton" Content="{DynamicResource L7B31A9FC4816}" IsCancel="True" DialogResult="Cancel" MinWidth="72"/>
+        <dx:ThemedWindowDialogButton x:Name="PurposeCancelButton" Content="{DynamicResource L39A8D28C1C6B}" AllowCloseWindow="False"
                                      Click="CancelPurposeClick" MinWidth="72" Visibility="Collapsed"/>
-        <dx:ThemedWindowDialogButton x:Name="PurposeSaveButton" Content="Kaydet" AllowCloseWindow="False"
+        <dx:ThemedWindowDialogButton x:Name="PurposeSaveButton" Content="{DynamicResource LC1FE2ECDFF02}" AllowCloseWindow="False"
                                      Click="SavePurposeClick" MinWidth="72" Visibility="Collapsed"/>
-        <dx:ThemedWindowDialogButton x:Name="OrganizationSaveButton" Content="Kaydet" IsDefault="True" AllowCloseWindow="False"
+        <dx:ThemedWindowDialogButton x:Name="OrganizationSaveButton" Content="{DynamicResource LC1FE2ECDFF02}" IsDefault="True" AllowCloseWindow="False"
                                      Click="SaveOrganizationClick" MinWidth="72" Visibility="Collapsed"/>
     </dx:ThemedWindow.DialogButtons>
     <Grid Margin="14">
@@ -27,24 +27,24 @@
                 <ScrollViewer x:Name="PurposeView" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="14">
                         <DockPanel>
-                            <Button x:Name="EditPurposeButton" DockPanel.Dock="Right" Content="Düzenle" Click="EditPurposeClick"
+                            <Button x:Name="EditPurposeButton" DockPanel.Dock="Right" Content="{DynamicResource LEA33B58C1D8E}" Click="EditPurposeClick"
                                     Style="{StaticResource IconButton}"/>
-                            <TextBlock Text="Proje amacı" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource LE53FA3711762}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
                         <TextBlock x:Name="PurposeText" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
                         <StackPanel x:Name="PurposeEditor" Visibility="Collapsed" Margin="0,5,0,0">
                             <TextBox x:Name="PurposeInput" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="82" MaxHeight="145"
                                      MaxLength="1200" VerticalScrollBarVisibility="Auto" Padding="6"
-                                     AutomationProperties.Name="Proje amacı"/>
+                                     AutomationProperties.Name="{DynamicResource LE53FA3711762}"/>
                         </StackPanel>
                         <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Margin="0,13,0,0" Padding="0,8,0,0">
                             <StackPanel>
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Click="CopyPathClick" Style="{StaticResource IconButton}"
-                                            AutomationProperties.Name="Proje yolunu kopyala" ToolTip="Proje yolunu kopyala">
+                                            AutomationProperties.Name="{DynamicResource L706EA53B0776}" ToolTip="{DynamicResource L706EA53B0776}">
                                         <TextBlock Text="&#xE8C8;" Style="{StaticResource Icon}"/>
                                     </Button>
-                                    <TextBlock Text="Proje konumu" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{DynamicResource LD0B79983DA82}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 </DockPanel>
                                 <TextBlock Text="{Binding Folder}" Foreground="{DynamicResource Muted}" FontSize="11"
                                            FontFamily="Consolas" TextWrapping="Wrap"/>
@@ -58,7 +58,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <ScrollViewer x:Name="BulkGroupProjects" Visibility="Collapsed"
-                                  VerticalScrollBarVisibility="Auto" Margin="0,0,0,9" AutomationProperties.Name="Seçilen projeler">
+                                  VerticalScrollBarVisibility="Auto" Margin="0,0,0,9" AutomationProperties.Name="{DynamicResource L3D6193D26158}">
                         <ItemsControl x:Name="BulkGroupProjectList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -72,10 +72,10 @@
                         </ItemsControl>
                     </ScrollViewer>
                     <StackPanel Grid.Row="1">
-                        <TextBlock Text="Proje grubu" Style="{StaticResource SmallLabel}"/>
-                        <ComboBox x:Name="ProjectGroupBox" IsEditable="True" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Proje grubu"/>
-                        <TextBlock x:Name="ProjectLabelTitle" Text="Sürüm etiketi" Style="{StaticResource SmallLabel}"/>
-                        <ComboBox x:Name="ProjectLabelBox" Height="28" Margin="0,4,0,7" AutomationProperties.Name="Sürüm etiketi"/>
+                        <TextBlock Text="{DynamicResource L7DB70C224410}" Style="{StaticResource SmallLabel}"/>
+                        <ComboBox x:Name="ProjectGroupBox" IsEditable="True" Height="28" Margin="0,4,0,7" AutomationProperties.Name="{DynamicResource L7DB70C224410}"/>
+                        <TextBlock x:Name="ProjectLabelTitle" Text="{DynamicResource L2C258DEDF2B4}" Style="{StaticResource SmallLabel}"/>
+                        <ComboBox x:Name="ProjectLabelBox" Height="28" Margin="0,4,0,7" AutomationProperties.Name="{DynamicResource L2C258DEDF2B4}"/>
                     </StackPanel>
                 </Grid>
                 <Grid x:Name="DocumentsView" Background="{DynamicResource Canvas}" Visibility="Collapsed">
@@ -84,15 +84,15 @@
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" Background="{DynamicResource Shell}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,1" Padding="9,5">
                         <DockPanel>
-                            <Button x:Name="OpenDocumentButton" DockPanel.Dock="Right" Content="Dosyayı aç" Click="OpenDocumentClick"
+                            <Button x:Name="OpenDocumentButton" DockPanel.Dock="Right" Content="{DynamicResource L9580C0E81F1F}" Click="OpenDocumentClick"
                                     IsEnabled="False" Margin="8,0,0,0"/>
                             <ComboBox x:Name="DocumentPicker" DisplayMemberPath="Label" MinHeight="30" VerticalContentAlignment="Center"
-                                      SelectionChanged="DocumentChanged" AutomationProperties.Name="Proje belgesi"/>
+                                      SelectionChanged="DocumentChanged" AutomationProperties.Name="{DynamicResource L0C5138FE5600}"/>
                         </DockPanel>
                     </Border>
                     <FlowDocumentScrollViewer x:Name="DocumentReader" Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                                              IsToolBarVisible="False" Visibility="Collapsed" AutomationProperties.Name="Belge önizlemesi"/>
-                    <TextBlock x:Name="DocumentMessage" Grid.Row="1" Text="Belgeler aranıyor…"
+                                              IsToolBarVisible="False" Visibility="Collapsed" AutomationProperties.Name="{DynamicResource LC4ADA73CC192}"/>
+                    <TextBlock x:Name="DocumentMessage" Grid.Row="1" Text="{DynamicResource L536FF91D201A}"
                                Foreground="{DynamicResource Muted}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="320"
                                HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12"/>
                 </Grid>

@@ -23,12 +23,12 @@ internal static class GitFilePreview
             if (truncated && !patch.EndsWith('\n'))
                 patch = patch[..(patch.LastIndexOf('\n') + 1)];
             return GitDiffPreview.FromPatch(patch, truncated
-                ? "Önizleme sınırına ulaşıldı."
-                : "Büyük dosya. Yalnızca değişen bölümler ve çevresindeki satırlar gösteriliyor.");
+                ? Loc.Text("LD55A20BEFFDA")
+                : Loc.Text("L2A071913F9E6"));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return new([], "Git önizlemesi zaman aşımına uğradı.");
+            return new([], Loc.Text("LB46B08E05BF9"));
         }
     }
 
@@ -49,7 +49,7 @@ internal static class GitFilePreview
 
         token.ThrowIfCancellationRequested();
         using var process = Process.Start(GitProjectOperations.CreateStartInfo(repository, arguments))
-            ?? throw new IOException("Git başlatılamadı.");
+            ?? throw new IOException(Loc.Text("L1E302889B87D"));
         process.StandardInput.Close();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
@@ -90,11 +90,11 @@ internal static class GitFilePreview
         string file = Path.GetFullPath(relative, root);
         string check = Path.GetRelativePath(root, file);
         if (Path.IsPathRooted(check) || check == ".." || check.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
-            throw new IOException("Dosya Git deposunun dışında.");
+            throw new IOException(Loc.Text("L2AF657F5C271"));
 
         for (string? item = file; item is not null && !item.Equals(root, StringComparison.OrdinalIgnoreCase); item = Path.GetDirectoryName(item))
             if (File.GetAttributes(item).HasFlag(FileAttributes.ReparsePoint))
-                throw new IOException("Bağlantılı dosyalarda metin önizlemesi kullanılamıyor.");
+                throw new IOException(Loc.Text("L9C5D4E2018C7"));
 
         using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 4096, FileOptions.Asynchronous);
         using var reader = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: true);
@@ -102,12 +102,12 @@ internal static class GitFilePreview
         int count = await reader.ReadBlockAsync(buffer.AsMemory(), token);
         string text = new(buffer, 0, Math.Min(count, Limit));
         if (text.Contains('\0'))
-            return new([], "İkili dosyaların metin önizlemesi yok.");
+            return new([], Loc.Text("LB074B1250292"));
 
         using var lines = new StringReader(text);
         var rows = new List<GitDiffRow>();
         while (lines.ReadLine() is string line)
             rows.Add(new(null, new(rows.Count + 1, line, GitDiffTone.Added)));
-        return new(rows, count > Limit ? "Önizleme sınırına ulaşıldı." : rows.Count == 0 ? "Dosya boş." : "");
+        return new(rows, count > Limit ? Loc.Text("LD55A20BEFFDA") : rows.Count == 0 ? Loc.Text("L36C8CD08C676") : "");
     }
 }

@@ -9,26 +9,26 @@
         <TextBlock x:Name="Status" DockPanel.Dock="Bottom" TextWrapping="Wrap" Margin="0,8,0,0"/>
         <StackPanel x:Name="RefControls" DockPanel.Dock="Top" Margin="0,0,0,8">
             <DockPanel Margin="0,0,0,6">
-                <Button DockPanel.Dock="Right" Content="Dala geç" Click="SwitchClick" Margin="6,0,0,0"/>
-                <TextBlock DockPanel.Dock="Left" Text="Dal / etiket" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <ComboBox x:Name="Reference" DisplayMemberPath="Label" AutomationProperties.Name="Dal veya etiket"/>
+                <Button DockPanel.Dock="Right" Content="{DynamicResource L89F161B3EF6C}" Click="SwitchClick" Margin="6,0,0,0"/>
+                <TextBlock DockPanel.Dock="Left" Text="{DynamicResource LBDB6F99C879A}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <ComboBox x:Name="Reference" DisplayMemberPath="Label" AutomationProperties.Name="{DynamicResource LBF221D608BFC}"/>
             </DockPanel>
             <DockPanel Margin="0,0,0,10">
-                <Button DockPanel.Dock="Right" Content="Etiket oluştur" Click="CreateTagClick" Margin="6,0,0,0"/>
-                <Button DockPanel.Dock="Right" Content="Dal oluştur" Click="CreateBranchClick" Margin="6,0,0,0"/>
-                <TextBlock DockPanel.Dock="Left" Text="Yeni ad" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox x:Name="NewName" MaxLength="240" AutomationProperties.Name="Yeni dal veya etiket adı"
-                         ToolTip="Seçili dal veya etiketi başlangıç olarak kullanır."/>
+                <Button DockPanel.Dock="Right" Content="{DynamicResource LBBB0C684A119}" Click="CreateTagClick" Margin="6,0,0,0"/>
+                <Button DockPanel.Dock="Right" Content="{DynamicResource L1A639B45102B}" Click="CreateBranchClick" Margin="6,0,0,0"/>
+                <TextBlock DockPanel.Dock="Left" Text="{DynamicResource LF08C2C0689BE}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="NewName" MaxLength="240" AutomationProperties.Name="{DynamicResource L3CA82F3453CE}"
+                         ToolTip="{DynamicResource L4E1E089B7818}"/>
             </DockPanel>
             <Grid Margin="0,0,0,6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <ComboBox x:Name="Before" DisplayMemberPath="Label" Margin="0,0,6,0" AutomationProperties.Name="Önceki dal veya etiket"/>
-                <ComboBox x:Name="After" Grid.Column="1" DisplayMemberPath="Label" Margin="0,0,6,0" AutomationProperties.Name="Sonraki dal veya etiket"/>
-                <Button Grid.Column="2" Content="Karşılaştır" Click="CompareClick"/>
+                <ComboBox x:Name="Before" DisplayMemberPath="Label" Margin="0,0,6,0" AutomationProperties.Name="{DynamicResource L3CED956D8C07}"/>
+                <ComboBox x:Name="After" Grid.Column="1" DisplayMemberPath="Label" Margin="0,0,6,0" AutomationProperties.Name="{DynamicResource L34444C609127}"/>
+                <Button Grid.Column="2" Content="{DynamicResource LD356DEEDAC55}" Click="CompareClick"/>
             </Grid>
-            <ComboBox x:Name="Files" SelectionChanged="FileChanged" AutomationProperties.Name="Farkı gösterilecek dosya"/>
+            <ComboBox x:Name="Files" SelectionChanged="FileChanged" AutomationProperties.Name="{DynamicResource LC7E97DECE1C6}"/>
         </StackPanel>
         <local:GitDiffView x:Name="Preview"/>
     </DockPanel>

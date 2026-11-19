@@ -17,7 +17,7 @@ internal sealed class GitWorktreeWindow : ThemedWindow
     private readonly CancellationTokenSource _cancel = new();
     private readonly DataGrid _trees = new() { AutoGenerateColumns = false, IsReadOnly = true, SelectionMode = DataGridSelectionMode.Single };
     private readonly ComboBox _branches = new() { MinWidth = 185, Margin = new(0, 0, 8, 0) };
-    private readonly TextBox _newBranch = new() { MinWidth = 125, Margin = new(0, 0, 8, 0), ToolTip = "HEAD’den yeni dal adı (isteğe bağlı)" };
+    private readonly TextBox _newBranch = new() { MinWidth = 125, Margin = new(0, 0, 8, 0), ToolTip = Loc.Text("LA8A008D78F9E") };
     private readonly StackPanel _commands = new() { Orientation = Orientation.Horizontal, Margin = new(0, 8, 0, 0) };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Margin = new(0, 8, 0, 0) };
     private bool _running;
@@ -26,27 +26,27 @@ internal sealed class GitWorktreeWindow : ThemedWindow
     {
         _repository = repository;
         _openFolder = openFolder;
-        Title = "Dallar ve worktree’ler";
+        Title = Loc.Text("L3D1AF3569EB3");
         Width = 870;
         Height = 460;
         MinWidth = 560;
         MinHeight = 290;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        foreach (var (header, property) in new[] { ("Klasör", "Path"), ("Dal", "Branch"), ("Commit", "Commit"), ("Durum", "Status") })
+        foreach (var (header, property) in new[] { (Loc.Text("L1DF9A7B4EB23"), "Path"), (Loc.Text("L1245EEBD439F"), "Branch"), ("Commit", "Commit"), (Loc.Text("L8BD057388E28"), "Status") })
             _trees.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(property), Width = new(property == "Path" ? 3 : 1, DataGridLengthUnitType.Star) });
         _commands.Children.Add(_branches);
-        System.Windows.Automation.AutomationProperties.SetName(_newBranch, "HEAD’den yeni dal adı");
+        System.Windows.Automation.AutomationProperties.SetName(_newBranch, Loc.Text("L633F4273E5E4"));
         _commands.Children.Add(_newBranch);
-        AddCommand("Worktree aç…", AddAsync);
-        AddCommand("Klasörü aç", () =>
+        AddCommand(Loc.Text("L04EE593941D9"), AddAsync);
+        AddCommand(Loc.Text("LD6F2F6CAD078"), () =>
         {
             if (_trees.SelectedItem is Worktree worktree)
                 _openFolder(worktree.Path);
             return Task.CompletedTask;
         });
-        AddCommand("Worktree kaldır…", RemoveAsync);
-        AddCommand("Yenile", LoadAsync);
+        AddCommand(Loc.Text("L280446943DF7"), RemoveAsync);
+        AddCommand(Loc.Text("L63CD725787A8"), LoadAsync);
 
         var footer = new StackPanel();
         footer.Children.Add(_commands);
@@ -102,7 +102,7 @@ internal sealed class GitWorktreeWindow : ThemedWindow
         _trees.ItemsSource = trees;
         _branches.ItemsSource = branches.Except(trees.Select(tree => tree.Branch), StringComparer.Ordinal).ToArray();
         _branches.SelectedIndex = 0;
-        _status.Text = $"{trees.Length:N0} çalışma kopyası";
+        _status.Text = Loc.Format("L1705DD306412", trees.Length);
     }
 
     private async Task AddAsync()
@@ -113,15 +113,15 @@ internal sealed class GitWorktreeWindow : ThemedWindow
             await GitAsync("check-ref-format", "--branch", newBranch);
         else if (branch is null)
         {
-            _status.Text = "Başka bir çalışma kopyasında açık olmayan yerel bir dal seçin.";
+            _status.Text = Loc.Text("LC0C3CDA9EB16");
             return;
         }
-        var picker = new OpenFolderDialog { Title = "Yeni worktree için boş bir klasör seçin" };
+        var picker = new OpenFolderDialog { Title = Loc.Text("LB0AD1221E9D6") };
         if (picker.ShowDialog(this) != true)
             return;
         if (Directory.EnumerateFileSystemEntries(picker.FolderName).Any())
         {
-            _status.Text = "Seçilen klasör boş olmalı.";
+            _status.Text = Loc.Text("L87DD68902E9A");
             return;
         }
         if (newBranch.Length > 0)
@@ -139,10 +139,10 @@ internal sealed class GitWorktreeWindow : ThemedWindow
         if (_trees.SelectedItem is not Worktree worktree || worktree.Main ||
             string.Equals(worktree.Path.Replace('/', '\\'), _repository, StringComparison.OrdinalIgnoreCase))
         {
-            _status.Text = "Kaldırmak için açık depo dışında bir çalışma kopyası seçin.";
+            _status.Text = Loc.Text("L063E9B349E9B");
             return;
         }
-        if (MessageBox.Show(this, $"{worktree.Path} çalışma kopyası kaldırılsın mı?", Title,
+        if (MessageBox.Show(this, Loc.Format("LB0260DD14960", worktree.Path), Title,
                 MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
             return;
         await GitAsync("worktree", "remove", "--", worktree.Path);
@@ -157,7 +157,7 @@ internal sealed class GitWorktreeWindow : ThemedWindow
             string Value(string prefix) => fields.FirstOrDefault(field => field.StartsWith(prefix, StringComparison.Ordinal))?[prefix.Length..] ?? "";
             string commit = Value("HEAD ");
             string status = fields.Any(field => field == "locked" || field.StartsWith("locked ", StringComparison.Ordinal))
-                ? "Kilitli" : fields.Any(field => field.StartsWith("prunable", StringComparison.Ordinal)) ? "Eksik" : "Hazır";
+                ? Loc.Text("L3F0A3653AE48") : fields.Any(field => field.StartsWith("prunable", StringComparison.Ordinal)) ? Loc.Text("LE8AF1BA5B6FF") : Loc.Text("L970DBBD01996");
             string branch = Value("branch refs/heads/");
             return new Worktree(Value("worktree "), branch.Length > 0 ? branch : "—", commit[..Math.Min(commit.Length, 8)], status, index == 0);
         }).Where(tree => tree.Path.Length > 0).ToArray();

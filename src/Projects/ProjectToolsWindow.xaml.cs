@@ -16,7 +16,7 @@ public partial class ProjectToolsWindow : ThemedWindow
 {
     private sealed record Option(ProjectCommand Command, bool Saved)
     {
-        public string Label => (Saved ? "Özel · " : "Hazır · ") + Command.Name;
+        public string Label => (Saved ? Loc.Text("LDA1426F3A8FF") : Loc.Text("LC1BE4BCA8639")) + Command.Name;
     }
 
     private Workspace _workspace;
@@ -98,7 +98,7 @@ public partial class ProjectToolsWindow : ThemedWindow
         if (RunButton is null || CommandPreview is null)
             return;
         var option = CommandPicker.SelectedItem as Option;
-        CommandPreview.Text = option?.Command.Display ?? "Bu proje için özel bir komut ekleyebilirsiniz.";
+        CommandPreview.Text = option?.Command.Display ?? Loc.Text("LD942EA74D8E2");
         CommandName.Text = option?.Saved == true ? option.Command.Name : "";
         CommandExecutable.Text = option?.Saved == true ? option.Command.Executable : "";
         CommandArguments.Text = option?.Saved == true ? option.Command.Arguments : "";
@@ -119,7 +119,7 @@ public partial class ProjectToolsWindow : ThemedWindow
         string arguments = CommandArguments.Text.Trim();
         if (name.Length == 0 || executable.Length == 0 || executable.Any(char.IsControl) || arguments.Any(ch => ch is '\r' or '\n'))
         {
-            CommandStatus.Text = "Komut adı ve çalıştırılabilir dosya gerekli.";
+            CommandStatus.Text = Loc.Text("L8F42D08C09B3");
             return;
         }
         await SaveAsync(commands => commands.Where(command => !command.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -146,7 +146,7 @@ public partial class ProjectToolsWindow : ThemedWindow
             if (!_closing.IsCancellationRequested)
             {
                 LoadOptions(selected);
-                CommandStatus.Text = "Proje komutları kaydedildi.";
+                CommandStatus.Text = Loc.Text("LA8DCC5911FD8");
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
@@ -180,7 +180,7 @@ public partial class ProjectToolsWindow : ThemedWindow
         _running = running;
         CommandOutput.Clear();
         CommandOutput.AppendText("> " + option.Command.Display + Environment.NewLine);
-        CommandStatus.Text = "Komut çalışıyor…";
+        CommandStatus.Text = Loc.Text("LAEC20C3BB94E");
         UpdateCommandActions();
         _outputTimer.Start();
         try
@@ -191,7 +191,7 @@ public partial class ProjectToolsWindow : ThemedWindow
                     return;
                 if (!await EnsureToolAsync(tool, running.Token))
                     return;
-                CommandStatus.Text = "Komut çalışıyor…";
+                CommandStatus.Text = Loc.Text("LAEC20C3BB94E");
             }
             var operation = OperationCenter.Start(option.Command.Name, _project.Name,
                 () => _ = OperationCenter.RunCommandAsync(option.Command, _project.Name, _project.Folder,
@@ -205,24 +205,24 @@ public partial class ProjectToolsWindow : ThemedWindow
                     QueueOutput(text);
                     operation.Append(text);
                 }, running.Token);
-                operation.Finish(exitCode == 0 ? "Tamamlandı" : "Başarısız", $"Çıkış kodu {exitCode}");
+                operation.Finish(exitCode == 0 ? Loc.Text("L7C6F3F5F37BC") : Loc.Text("LF0873175A881"), Loc.Format("L36D2AD5696B2", exitCode));
             }
             catch (OperationCanceledException)
             {
-                operation.Finish("Durduruldu");
+                operation.Finish(Loc.Text("L7C925A8624F1"));
                 throw;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or Win32Exception)
             {
-                operation.Finish("Başarısız", ex.Message);
+                operation.Finish(Loc.Text("LF0873175A881"), ex.Message);
                 throw;
             }
             if (!_closing.IsCancellationRequested)
-                CommandStatus.Text = exitCode == 0 ? "Komut tamamlandı." : $"Komut hata koduyla tamamlandı. Kod {exitCode}";
+                CommandStatus.Text = exitCode == 0 ? Loc.Text("L34A85FCC5C23") : Loc.Format("L3289E86BF3AB", exitCode);
         }
         catch (OperationCanceledException)
         {
-            if (!_closing.IsCancellationRequested) CommandStatus.Text = "Komut durduruldu.";
+            if (!_closing.IsCancellationRequested) CommandStatus.Text = Loc.Text("LC6EDBFBEA99C");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.ComponentModel.Win32Exception)
         {
@@ -247,7 +247,7 @@ public partial class ProjectToolsWindow : ThemedWindow
     {
         if (await ToolSetupWindow.EnsureReadyAsync(this, tool, token))
             return true;
-        CommandStatus.Text = $"{DevelopmentTools.Get(tool).Name} hazır olmadığı için komut başlatılamadı.";
+        CommandStatus.Text = Loc.Format("LFDD86D088E9E", DevelopmentTools.Get(tool).Name);
         return false;
     }
 
@@ -304,7 +304,7 @@ public partial class ProjectToolsWindow : ThemedWindow
             return;
         _checking = true;
         HealthRefresh.IsEnabled = false;
-        HealthSummary.Text = "Proje dosyaları ve SDK kontrol ediliyor…";
+        HealthSummary.Text = Loc.Text("L0E67B340C1AC");
         try
         {
             var result = await Task.Run(() => ProjectHealth.CheckAsync(_workspace, _project, _closing.Token), _closing.Token);
@@ -328,9 +328,9 @@ public partial class ProjectToolsWindow : ThemedWindow
     {
         HealthGrid.ItemsSource = result.Findings;
         _checked = true;
-        HealthSummary.Text = $"{result.FilesChecked:N0} dosya · {result.Findings.Count:N0} bulgu" +
-            (result.Unresolved > 0 ? $" · {result.Unresolved:N0} dinamik başvuru" : "") +
-            (result.Skipped > 0 ? $" · {result.Skipped:N0} atlandı" : "");
+        HealthSummary.Text = Loc.Format("LACA7EA77904F", result.FilesChecked, result.Findings.Count) +
+            (result.Unresolved > 0 ? Loc.Format("L3951FA21B42A", result.Unresolved) : "") +
+            (result.Skipped > 0 ? Loc.Format("LFEBF14235DFE", result.Skipped) : "");
     }
 
     private void HealthSelectionChanged(object sender, RoutedEventArgs e)

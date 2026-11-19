@@ -38,7 +38,7 @@ internal static partial class PackageSecurityRepair
         foreach (string path in locks.Prepend(manifest))
         {
             if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException($"Bağlantı olarak tanımlanan dosya elle güncellenmeli. {Path.GetFileName(path)}");
+                throw new IOException(Loc.Format("LFC1C66D710F4", Path.GetFileName(path)));
             originals.Add(path, await File.ReadAllBytesAsync(path, token));
         }
         var manifestBytes = originals[manifest];
@@ -53,7 +53,7 @@ internal static partial class PackageSecurityRepair
         foreach (string path in locks)
             scans.Add(path, await PackageSecurity.ScanAsync(path, token));
         if (scans.Values.Any(scan => !scan.HasPackages))
-            throw new IOException("Onaylı güncelleme için ilgili kilit dosyalarının tamamı taranabilmeli.");
+            throw new IOException(Loc.Text("L9DE78BF3D88B"));
 
         var plan = new PackageVersionPlan(manifest, text, hasBom, originals, scans, []);
         var transitive = await PlanTransitiveVersionsAsync(plan, pins, trialProgress, token);
@@ -99,14 +99,14 @@ internal static partial class PackageSecurityRepair
         {
             var bytes = await File.ReadAllBytesAsync(path, token);
             if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0 || !bytes.AsSpan().SequenceEqual(original))
-                throw new IOException($"Dosya inceleme sırasında değişti. Yeniden tarayın. {Path.GetFileName(path)}");
+                throw new IOException(Loc.Format("L781511BB4F8D", Path.GetFileName(path)));
         }
         if (Path.GetFileName(plan.Manifest) == "package.json")
         {
             string[] locks = ExistingJavaScriptLocks(folder);
             CheckJavaScriptLocks(folder, locks);
             if (!plan.Scans.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(locks))
-                throw new IOException("İnceleme sırasında kilit dosyaları değişti. Yeniden tarayın.");
+                throw new IOException(Loc.Text("LDF297EAED3F2"));
         }
 
         var text = new StringBuilder(plan.Text);
@@ -121,17 +121,17 @@ internal static partial class PackageSecurityRepair
             ReplaceFile(plan.Manifest, updated);
             foreach (var command in commands)
             {
-                var (code, output, error) = await ProjectTools.CaptureAsync(command, "Paket sürümü çözümlemesi", preview ? 45 : 300, token);
+                var (code, output, error) = await ProjectTools.CaptureAsync(command, Loc.Text("L369FEA1300F7"), preview ? 45 : 300, token);
                 if (code != 0)
                 {
                     string detail = (string.IsNullOrWhiteSpace(error) ? output : error).Trim();
-                    throw new IOException($"Paket yöneticisi onaylanan sürümü çözümleyemedi (kod {code}). {detail[..Math.Min(detail.Length, 350)]}");
+                    throw new IOException(Loc.Format("LDCC28712A8EF", code, detail[..Math.Min(detail.Length, 350)]));
                 }
             }
 
             verifyProgress();
             if (!(await File.ReadAllBytesAsync(plan.Manifest, token)).AsSpan().SequenceEqual(updated))
-                throw new IOException("Paket yöneticisi onaylanan sürüm değişikliği dışında paket bildirimini düzenledi.");
+                throw new IOException(Loc.Text("LEC1EE936848F"));
             int resolved = 0;
             var remaining = new HashSet<(string Name, string Advisory)>();
             foreach (var (path, before) in plan.Scans)
@@ -139,17 +139,17 @@ internal static partial class PackageSecurityRepair
                 var after = await PackageSecurity.ScanAsync(path, token);
                 if (!after.HasPackages || plan.Changes.Any(change => before.Packages.Any(package => package.Name == change.Name) &&
                         !after.Packages.Contains((change.Name, change.Target.ToString()))))
-                    throw new IOException($"Onaylanan paket sürümü kilit dosyasında doğrulanamadı. {Path.GetFileName(path)}");
+                    throw new IOException(Loc.Format("L5AD937BABD5B", Path.GetFileName(path)));
                 var known = before.Findings.Select(finding => (finding.Name, finding.Advisory)).ToHashSet();
                 if (after.Findings.Any(finding => !known.Contains((finding.Name, finding.Advisory))))
-                    throw new IOException($"Güncelleme yeni bir açık getirdi. {Path.GetFileName(path)}");
+                    throw new IOException(Loc.Format("LD86D779CE308", Path.GetFileName(path)));
                 remaining.UnionWith(after.Findings.Select(finding => (finding.Name, finding.Advisory)));
                 resolved += before.Findings.Length - after.Findings.Length;
             }
             if (resolved <= 0)
-                throw new IOException("Güncelleme doğrulanan açık sayısını azaltmadı.");
+                throw new IOException(Loc.Text("L0F8B43215758"));
             if (plan.ExpectedFixes.Overlaps(remaining))
-                throw new IOException("Önizlemede giderileceği gösterilen dolaylı açıklar yeniden taramada doğrulanamadı.");
+                throw new IOException(Loc.Text("L7B14F840373E"));
             token.ThrowIfCancellationRequested();
             keep = true;
             var cleared = plan.Scans.Values.SelectMany(scan => scan.Findings).Select(finding => (finding.Name, finding.Advisory))
@@ -179,12 +179,12 @@ internal static partial class PackageSecurityRepair
     {
         if (locks.Length == 0 || new[] { "npm-shrinkwrap.json", "yarn.lock", "bun.lock", "bun.lockb" }
             .Any(name => File.Exists(Path.Combine(folder, name))))
-            throw new IOException("Bu klasördeki kilit dosyalarının tamamı onaylı sürüm güncellemesini desteklemiyor.");
+            throw new IOException(Loc.Text("LD6A9B5FCB455"));
         if (locks.Any(path => Path.GetFileName(path) == "pnpm-lock.yaml") && !File.Exists(Path.Combine(folder, "pnpm-workspace.yaml")))
         {
             for (string? parent = Path.GetDirectoryName(folder); parent is not null; parent = Path.GetDirectoryName(parent))
                 if (File.Exists(Path.Combine(parent, "pnpm-workspace.yaml")))
-                    throw new IOException("Sürüm değişikliğini üst pnpm çalışma alanında inceleyin.");
+                    throw new IOException(Loc.Text("L6FF5FBAB2F22"));
         }
     }
 
@@ -231,7 +231,7 @@ internal static partial class PackageSecurityRepair
         using var json = await JsonDocument.ParseAsync(stream, cancellationToken: token);
         var results = json.RootElement.GetProperty("results");
         if (results.GetArrayLength() != candidates.Length)
-            throw new IOException("OSV sürüm sorgusu eksik sonuç döndürdü.");
+            throw new IOException(Loc.Text("L96A659BA8E06"));
         for (int index = 0; index < candidates.Length; index++)
         {
             var result = results[index];

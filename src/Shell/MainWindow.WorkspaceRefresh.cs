@@ -253,13 +253,13 @@ public partial class MainWindow
     {
         if (_workspace is null || _busy)
         {
-            StatusText.Text = "Proje bağlamak için önce bir çalışma alanı açın.";
+            StatusText.Text = Loc.Text("LDE63CBFC4B33");
             return;
         }
         var picker = new OpenFileDialog
         {
-            Title = "Bağlanacak çözüm veya projeyi seçin", Multiselect = true,
-            Filter = "Çözüm ve proje dosyaları|*.sln;*.slnx;*.csproj;*.vbproj;*.fsproj;*.vcxproj;AndroidManifest.xml"
+            Title = Loc.Text("L5D005E4F1E10"), Multiselect = true,
+            Filter = Loc.Text("LCD0DCFC442B3")
         };
         if (picker.ShowDialog(this) == true)
             await AttachProjectsAsync(picker.FileNames);
@@ -269,10 +269,10 @@ public partial class MainWindow
     {
         if (_workspace is null || _busy)
         {
-            StatusText.Text = "Proje bağlamak için önce bir çalışma alanı açın.";
+            StatusText.Text = Loc.Text("LDE63CBFC4B33");
             return;
         }
-        var picker = new OpenFolderDialog { Title = "Bağlanacak proje klasörünü seçin" };
+        var picker = new OpenFolderDialog { Title = Loc.Text("L50B45ECDBA99") };
         if (picker.ShowDialog(this) == true)
             await AttachProjectsAsync([picker.FolderName]);
     }
@@ -310,8 +310,8 @@ public partial class MainWindow
                 FocusProject(existing);
             else if (archived is not null)
                 FocusProject(archived);
-            StatusText.Text = linked is not null ? "Proje kendi konumunda çalışma alanına bağlandı." :
-                existing is null && archived is not null ? "Proje arşivde." : "Proje çalışma alanında görünüyor.";
+            StatusText.Text = linked is not null ? Loc.Text("LDA04A85424CB") :
+                existing is null && archived is not null ? Loc.Text("LA2B45BAC0E1B") : Loc.Text("L416A9740F156");
             return existing;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)
@@ -330,7 +330,7 @@ public partial class MainWindow
         {
             _workspace = workspace.RemoveLink(path);
             await RefreshAsync();
-            StatusText.Text = "Proje bağlantısı kaldırıldı.";
+            StatusText.Text = Loc.Text("L3AB7EFC0BB94");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {

@@ -20,7 +20,7 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
     internal bool LastAttemptFailed => _error is not null;
     public bool HasResult => _latest is not null;
     public NuGetReport? Report => _latest?.Report;
-    public string Status => _progress ?? (_error is not null ? "NuGet taraması tamamlanamadı." : ResultText);
+    public string Status => _progress ?? (_error is not null ? Loc.Text("L913F44A3EEC7") : ResultText);
     public string Tone => (_progress, _error, Report) switch
     {
         (not null, _, _) => "Neutral",
@@ -33,21 +33,21 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
 
     private string ResultText => Report switch
     {
-        null => "Henüz taranmadı",
-        { Diagnostics.Count: > 0 } report => $"{report.Findings.Count:N0} bulgu · Tarama uyarıları var",
-        { Findings.Count: > 0 } report => $"{report.Findings.Count:N0} güvenlik bulgusu",
-        _ => "Bilinen güvenlik açığı bulunamadı"
+        null => Loc.Text("LADA5F0684B79"),
+        { Diagnostics.Count: > 0 } report => Loc.Format("L635B37A91146", report.Findings.Count),
+        { Findings.Count: > 0 } report => Loc.Format("LD9A5E14C5B34", report.Findings.Count),
+        _ => Loc.Text("L39E33042373A")
     };
 
-    public string LastScan => _latest is null ? "" : $"Son tamamlanan tarama · {_latest.FinishedAt.ToLocalTime():g}";
+    public string LastScan => _latest is null ? "" : Loc.Format("L850BAB5AC443", _latest.FinishedAt.ToLocalTime());
 
     public string Breakdown => Report is not { Findings.Count: > 0 } report ? "" : string.Join(" · ",
         new[] { "Kritik", "Yüksek", "Orta", "Düşük", "Bilinmiyor" }
             .Select(severity => (Severity: severity, Count: report.Findings.Count(finding => finding.Severity == severity)))
-            .Where(item => item.Count > 0).Select(item => $"{item.Count:N0} {item.Severity.ToLower(CultureInfo.GetCultureInfo("tr-TR"))}"));
+            .Where(item => item.Count > 0).Select(item => $"{item.Count:N0} {Loc.Label(item.Severity).ToLower(CultureInfo.CurrentCulture)}"));
 
     public string Details => _error ?? (Report is { } report ? string.Join(Environment.NewLine, report.Diagnostics)
-        : "Paket bilgileri eksikse NuGet paketleri geri yüklenir ve tarama yeniden başlatılır.");
+        : Loc.Text("L309DA6D75C0D"));
 
     public string ShortDetails => Shorten(Details, 500);
     public string Notice => _error is not null ? Shorten(_error, 160) : "";
@@ -57,8 +57,8 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
         if (!CanScan || token.IsCancellationRequested)
             return;
         _error = null;
-        _progress = "NuGet paketleri taranıyor…";
-        var operation = OperationCenter.Start("NuGet taraması", project.Name, () => _ = ScanAsync(project, workspaceToken));
+        _progress = Loc.Text("LE4937ED2653D");
+        var operation = OperationCenter.Start(Loc.Text("L6A8DDDA55E3B"), project.Name, () => _ = ScanAsync(project, workspaceToken));
         NotifyChanged();
         try
         {
@@ -76,20 +76,20 @@ internal sealed class NuGetScanState(NuGetScanSnapshot? initial, Action<NuGetSca
             {
                 _latest = new(DateTimeOffset.UtcNow, report);
                 save(_latest);
-                operation.Finish("Tamamlandı", $"{report.Findings.Count:N0} bulgu" +
+                operation.Finish(Loc.Text("L7C6F3F5F37BC"), Loc.Format("L41A8C91CFFC6", report.Findings.Count) +
                     (report.Diagnostics.Count > 0 ? Environment.NewLine + string.Join(Environment.NewLine, report.Diagnostics) : ""));
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException or JsonException or InvalidOperationException)
         {
-            _error = ex is JsonException or InvalidOperationException ? "NuGet taramasının sonucu okunamadı." : ex.Message;
-            operation.Finish("Başarısız", _error);
+            _error = ex is JsonException or InvalidOperationException ? Loc.Text("L78BA0D9AB12B") : ex.Message;
+            operation.Finish(Loc.Text("LF0873175A881"), _error);
         }
         finally
         {
-            if (operation.Status == "Çalışıyor")
-                operation.Finish("Durduruldu");
+            if (operation.Status == Loc.Text("LAF7DA0BB4DFC"))
+                operation.Finish(Loc.Text("L7C925A8624F1"));
             _progress = null;
             NotifyChanged();
         }

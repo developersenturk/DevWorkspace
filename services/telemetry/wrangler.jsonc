@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "devworkspace-telemetry",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-19",
+  "workers_dev": true,
+  "observability": { "enabled": false },
+  "ratelimits": [{ "name": "INGEST_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } }],
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "devworkspace-telemetry",
+    "database_id": "REPLACE_AFTER_CREATE",
+    "migrations_dir": "migrations"
+  }]
+}

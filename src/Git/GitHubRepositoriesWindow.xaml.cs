@@ -30,48 +30,52 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         InitializeComponent();
         if (_remoteProject is not null)
         {
-            Title = "GitHub’dan uzak depo seç";
-            CloneButton.Content = "Bu depoyu seç";
+            LinkClonePanel.Visibility = Visibility.Collapsed;
+            Title = Loc.Text("L4C0A60283194");
+            CloneButton.Content = Loc.Text("LF28687C884B1");
             WritableOnly.IsChecked = true;
         }
         else if (workspaceRoot is null)
-            CloneButton.ToolTip = "Depo eklemek için önce bir çalışma alanı açın.";
+        {
+            CloneButton.ToolTip = Loc.Text("LCC44503E4B6E");
+            CloneUrlButton.ToolTip = CloneButton.ToolTip;
+        }
     }
 
     private async void WindowLoaded(object sender, RoutedEventArgs e) => await RefreshAsync();
     private async void RefreshClick(object sender, RoutedEventArgs e) => await RefreshAsync();
 
-    private Task RefreshAsync() => RunAsync("GitHub depoları yükleniyor…", ReadRepositoriesAsync);
+    private Task RefreshAsync() => RunAsync(Loc.Text("L93196E43B035"), ReadRepositoriesAsync);
 
     private async Task ReadRepositoriesAsync(CancellationToken token)
     {
         string? previousOwner = (Owners.SelectedItem as OwnerChoice)?.Login;
         string? previousRepository = (Repositories.CurrentItem as GitHubRepository)?.FullName;
         _account = null;
-        Account.Text = "GitHub hesabı";
+        Account.Text = Loc.Text("L9CD6624AD1AB");
         _repositories = [];
         Owners.ItemsSource = null;
         Repositories.ItemsSource = _repositories;
         EmptyResults.Visibility = Visibility.Collapsed;
         string account = await GitHubCli.ReadAccountAsync(token);
         if (string.IsNullOrWhiteSpace(account))
-            throw new IOException("GitHub hesabı doğrulanamadı.");
+            throw new IOException(Loc.Text("LA79F9B01442B"));
         _repositories = await GitHubCli.ReadRepositoriesAsync(token);
         var groups = _repositories.GroupBy(repo => repo.Owner, StringComparer.OrdinalIgnoreCase)
             .Select(group =>
             {
                 bool ownAccount = string.Equals(group.Key, account, StringComparison.OrdinalIgnoreCase);
-                string kind = ownAccount ? "Kişisel hesabım" : group.First().IsOrganization ? "Organizasyon" : "Kişisel hesap";
+                string kind = ownAccount ? Loc.Text("L8CE1BD6C15BB") : group.First().IsOrganization ? Loc.Text("L0F43367C2950") : Loc.Text("L2837FCF3B2F5");
                 return new OwnerChoice(group.Key, group.Key, kind, group.Count());
             })
             .OrderByDescending(owner => string.Equals(owner.Login, account, StringComparison.OrdinalIgnoreCase))
             .ThenBy(owner => owner.Label, StringComparer.OrdinalIgnoreCase);
-        OwnerChoice[] owners = [new(null, "Tüm depolar", "Tüm sahipler", _repositories.Length), .. groups];
+        OwnerChoice[] owners = [new(null, Loc.Text("LA570FC049A49"), Loc.Text("L2004308435DC"), _repositories.Length), .. groups];
         Owners.ItemsSource = owners;
         Owners.SelectedItem = owners.FirstOrDefault(owner => string.Equals(owner.Login, previousOwner, StringComparison.OrdinalIgnoreCase))
             ?? owners[0];
         _account = account;
-        Account.Text = $"@{account}   ·   {_repositories.Length} depo";
+        Account.Text = Loc.Format("L550B2151EB19", account, _repositories.Length);
         ApplySearch(previousRepository);
     }
 
@@ -83,7 +87,7 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         });
 
     private async void LoginClick(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub giriş kodu alınıyor…", async token =>
+        await RunAsync(Loc.Text("L332073CC27FA"), async token =>
         {
             var progress = new Progress<string>(code =>
             {
@@ -91,7 +95,7 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
                     return;
                 DeviceCode.Text = code;
                 DevicePanel.Visibility = Visibility.Visible;
-                Status.Text = "Tarayıcıda bu kodu girip GitHub girişini onaylayın.";
+                Status.Text = Loc.Text("LA5FC7022AE90");
             });
             try { await GitHubCli.LoginAsync(progress, token); }
             finally
@@ -99,7 +103,7 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
                 DeviceCode.Clear();
                 DevicePanel.Visibility = Visibility.Collapsed;
             }
-            Status.Text = "GitHub depoları yükleniyor…";
+            Status.Text = Loc.Text("L93196E43B035");
             await ReadRepositoriesAsync(token);
         });
 
@@ -118,15 +122,52 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         if (_workspaceRoot is null)
             return;
 
+        await CloneAsync(account, repository);
+    }
+
+    private void RepositoryUrlChanged(object sender, TextChangedEventArgs e) => UpdateActions();
+
+    private async void RepositoryUrlKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+            return;
+        e.Handled = true;
+        await CloneFromUrlAsync();
+    }
+
+    private async void CloneUrlClick(object sender, RoutedEventArgs e) => await CloneFromUrlAsync();
+
+    private async Task CloneFromUrlAsync()
+    {
+        if (_operation is not null || _workspaceRoot is null || string.IsNullOrWhiteSpace(RepositoryUrl.Text))
+            return;
+        string url = RepositoryUrl.Text;
+        GitHubRepository? repository = null;
+        string? account = null;
+        await RunAsync(Loc.Text("LB4051CFB9D9E"), async token =>
+        {
+            // Validate locally before requesting credentials or accessing the network.
+            GitHubCli.RepositoryNameFromUrl(url);
+            account = await GitHubCli.ReadAccountAsync(token);
+            repository = await GitHubCli.ReadRepositoryByUrlAsync(url, token);
+        });
+        if (repository is not null && account is not null)
+            await CloneAsync(account, repository);
+        else
+            RepositoryUrl.Focus();
+    }
+
+    private async Task CloneAsync(string account, GitHubRepository repository)
+    {
         var picker = new OpenFolderDialog
         {
-            Title = $"{repository.FullName} için üst klasörü seçin",
+            Title = Loc.Format("L10B3533B0F8B", repository.FullName),
             InitialDirectory = _workspaceRoot
         };
         if (picker.ShowDialog(this) != true)
             return;
 
-        await RunAsync($"{repository.FullName} indiriliyor…", async token =>
+        await RunAsync(Loc.Format("L08FEC4CB33B9", repository.FullName), async token =>
         {
             ClonedFolder = await GitHubCli.CloneRepositoryAsync(account, repository, picker.FolderName, token);
         });
@@ -157,14 +198,14 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
             _repositories = [];
             Owners.ItemsSource = null;
             Repositories.ItemsSource = _repositories;
-            Account.Text = "GitHub hesabı";
+            Account.Text = Loc.Text("L9CD6624AD1AB");
             Status.Text = ex.Message;
             feedback.Text = ex.Message;
             LoginButton.Visibility = Visibility.Visible;
         }
         catch (OperationCanceledException)
         {
-            feedback.Text = "İşlem iptal edildi.";
+            feedback.Text = Loc.Text("L294EA0BB2D0A");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException or JsonException)
         {
@@ -193,15 +234,15 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
                 terms.All(term => MatchesTerm(repo, term)))
             .OrderByDescending(repo => _remoteProject is not null && repo.Name.Equals(_remoteProject, StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        ListHeading.Text = owner?.Label ?? "Tüm depolar";
+        ListHeading.Text = owner?.Label ?? Loc.Text("LA570FC049A49");
         OwnerColumn.Visible = owner?.Login is null;
         Repositories.ItemsSource = visible;
         Repositories.CurrentItem = visible.FirstOrDefault(repo => repo.FullName.Equals(previousRepository, StringComparison.OrdinalIgnoreCase))
             ?? visible.FirstOrDefault();
         EmptyResults.Visibility = visible.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        Status.Text = $"{visible.Length} / {owner?.Count ?? _repositories.Length} depo";
+        Status.Text = Loc.Format("L2276FB23899D", visible.Length, owner?.Count ?? _repositories.Length);
         if (_workspaceRoot is null)
-            Status.Text += " · Depo eklemek için önce bir çalışma alanı açın.";
+            Status.Text += Loc.Text("LEED5DEB60C5D");
         UpdateActions();
     }
 
@@ -223,12 +264,12 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         if (repo is not null)
         {
             DetailName.Text = repo.Name;
-            DetailOwner.Text = $"{repo.Owner} · {(repo.IsOrganization ? "Organizasyon" : "Kişisel hesap")}";
+            DetailOwner.Text = $"{repo.Owner} · {(repo.IsOrganization ? Loc.Text("L0F43367C2950") : Loc.Text("L2837FCF3B2F5"))}";
             DetailDescription.Text = repo.DescriptionLabel + (string.IsNullOrWhiteSpace(repo.Description) ? ". README’den inceleyebilirsiniz." : "");
             DetailAccess.Text = $"{repo.VisibilityLabel} · {repo.AccessLabel}";
-            DetailTechnology.Text = $"Dil · {repo.Language ?? "Belirtilmemiş"}\nVarsayılan dal · {repo.DefaultBranch ?? "—"}";
+            DetailTechnology.Text = Loc.Format("L698D77CC788F", repo.Language ?? Loc.Text("L6317EAC1D512"), repo.DefaultBranch ?? "—");
             DetailActivity.Text = repo.PushedAt is { Year: > 1 } pushed
-                ? $"Son push · {pushed.ToLocalTime():dd.MM.yyyy}" : "Son push · —";
+                ? Loc.Format("LFC0CC52A1D2B", pushed.ToLocalTime()) : Loc.Text("L6BF466220B5A");
             DetailTopics.Text = string.Join(" · ", repo.Topics ?? []);
         }
         UpdateActions();
@@ -243,13 +284,13 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         RepositoryBrowser.Visibility = Visibility.Collapsed;
         ReadmeView.Visibility = Visibility.Visible;
         ReadmeBackButton.Focus();
-        await RunAsync("README yükleniyor…", async token =>
+        await RunAsync(Loc.Text("L02C90C7BC595"), async token =>
         {
             string readme = await GitHubCli.ReadRepositoryReadmeAsync(repo, token);
             token.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(readme))
             {
-                ReadmeStatus.Text = "Bu depo için görüntülenebilir bir README bulunamadı.";
+                ReadmeStatus.Text = Loc.Text("LEE889703153C");
                 return;
             }
 
@@ -296,12 +337,17 @@ public partial class GitHubRepositoriesWindow : ThemedWindow
         if (CloneButton is null)
             return;
         bool idle = _operation is null;
+        if (CloneUrlButton is not null && RepositoryUrl is not null)
+        {
+            RepositoryUrl.IsEnabled = idle;
+            CloneUrlButton.IsEnabled = idle && _workspaceRoot is not null && !string.IsNullOrWhiteSpace(RepositoryUrl.Text);
+        }
         Search.IsEnabled = WritableOnly.IsEnabled = Owners.IsEnabled = idle && _account is not null;
         RefreshButton.IsEnabled = Repositories.IsEnabled = idle;
         bool hasSelection = idle && _account is not null && Repositories.CurrentItem is GitHubRepository;
         CloneButton.IsEnabled = hasSelection && (_workspaceRoot is not null || _remoteProject is not null);
         ReadmeButton.IsEnabled = OpenRepositoryButton.IsEnabled = hasSelection;
-        CloseButton.Content = idle ? "Kapat" : "İptal";
+        CloseButton.Content = idle ? Loc.Text("L7B31A9FC4816") : Loc.Text("L72278748133A");
     }
 
     private void CloseClick(object sender, RoutedEventArgs e)

@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  Width="650" Height="430" MinWidth="450" MinHeight="330"
-                 Title="Paket sürümü değişiklikleri" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+                 Title="{DynamicResource L6FB17E6F4BF6}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
@@ -17,11 +17,11 @@
             <TextBlock x:Name="ProjectLabel" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBlock x:Name="ManifestLabel" Margin="0,4,0,7" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
             <TextBlock x:Name="ReviewExplanation"
-                       Text="Onayladığınızda bu sürümler yazılır, kilit dosyaları güncellenir ve açıklar yeniden taranır."
+                       Text="{DynamicResource L7BEF7AD80892}"
                        TextWrapping="Wrap"/>
         </StackPanel>
         <ListBox x:Name="ChangesList" Grid.Row="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 AutomationProperties.Name="Önerilen paket sürümleri">
+                 AutomationProperties.Name="{DynamicResource L57327A3F4083}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <TextBlock Text="{Binding}" Padding="8,6" TextWrapping="Wrap"/>
@@ -29,8 +29,8 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,13,0,0">
-            <Button Content="Atla" IsCancel="True" Padding="14,6"/>
-            <Button Content="Onayla ve güncelle" Style="{StaticResource Primary}" Click="ApproveClick" Margin="8,0,0,0"/>
+            <Button Content="{DynamicResource LD74E88C16BD7}" IsCancel="True" Padding="14,6"/>
+            <Button Content="{DynamicResource L563C1D1B749C}" Style="{StaticResource Primary}" Click="ApproveClick" Margin="8,0,0,0"/>
         </StackPanel>
     </Grid>
 </dx:ThemedWindow>

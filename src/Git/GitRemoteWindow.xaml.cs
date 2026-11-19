@@ -19,13 +19,13 @@ public partial class GitRemoteWindow : ThemedWindow
         _connectedUrls = connected.Select(remote => remote.Url).OfType<string>().ToHashSet(StringComparer.Ordinal);
         _project = project;
         InitializeComponent();
-        ProjectHeading.Text = $"Yerel proje · {project}";
+        ProjectHeading.Text = Loc.Format("LC8165CB52914", project);
         CreateGitHubButton.IsEnabled = canPublish;
-        CreateGitHubButton.ToolTip = canPublish ? "Hesap, organizasyon, depo adı ve görünürlük seçin."
-            : "Yayımlamak için önce etkin dalda bir commit oluşturun ve devam eden Git işlemini tamamlayın.";
+        CreateGitHubButton.ToolTip = canPublish ? Loc.Text("LBF67761CEE73")
+            : Loc.Text("L721B53EEA622");
         NameInput.Text = SuggestedName("remote");
         if (remotes.Length == 0)
-            CancelButton.Content = "Yerel olarak devam et";
+            CancelButton.Content = Loc.Text("LCF5183260E94");
     }
 
     internal string RemoteName => NameInput.Text.Trim();
@@ -37,7 +37,7 @@ public partial class GitRemoteWindow : ThemedWindow
     {
         using var cancellation = new CancellationTokenSource();
         _discovery = cancellation;
-        DiscoveryStatus.Text = "Çalışma alanındaki Git bağlantıları okunuyor…";
+        DiscoveryStatus.Text = Loc.Text("LCD6240133153");
         try
         {
             var targets = await GitWorkbench.DiscoverRemotesAsync(_repositories, cancellation.Token);
@@ -45,7 +45,7 @@ public partial class GitRemoteWindow : ThemedWindow
                 return;
             KnownTargets.ItemsSource = targets;
             KnownTargets.IsEnabled = targets.Length > 0;
-            DiscoveryStatus.Text = targets.Length == 0 ? "Bilinen sunucu bulunamadı." : "";
+            DiscoveryStatus.Text = targets.Length == 0 ? Loc.Text("LAF7331EC9E11") : "";
             DiscoveryStatus.Visibility = targets.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
@@ -100,10 +100,10 @@ public partial class GitRemoteWindow : ThemedWindow
         bool validUrl = GitWorkbench.IsSupportedRemoteUrl(url);
         bool needsPath = KnownTargets.SelectedItem is GitRemoteSuggestion suggestion && url == suggestion.Prefix;
         InputStatus.Text = name.Length == 0 ? "" :
-            !GitWorkbench.IsSupportedRemoteName(name) ? "Depo adında harf, rakam, nokta, tire veya alt çizgi kullanın." :
-            _remotes.Contains(name, StringComparer.OrdinalIgnoreCase) ? "Bu adla bir uzak depo zaten var." :
-            _connectedUrls.Contains(url) ? "Bu adres zaten projeye bağlı." :
-            url.Length > 0 && !validUrl && !needsPath ? "Geçerli bir SSH veya HTTP(S) adresi girin." : "";
+            !GitWorkbench.IsSupportedRemoteName(name) ? Loc.Text("LF843C1FC6B52") :
+            _remotes.Contains(name, StringComparer.OrdinalIgnoreCase) ? Loc.Text("LBAB26178BA59") :
+            _connectedUrls.Contains(url) ? Loc.Text("L024383573C86") :
+            url.Length > 0 && !validUrl && !needsPath ? Loc.Text("L66FA8D72D57E") : "";
         AddButton.IsEnabled = name.Length > 0 && validUrl && !needsPath && InputStatus.Text.Length == 0;
     }
 

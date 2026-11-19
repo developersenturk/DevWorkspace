@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-                 Title="Taşıma planı" Width="950" Height="550"
+                 Title="{DynamicResource L29290972B888}" Width="950" Height="550"
                  MinWidth="660" MinHeight="385" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" Closed="WindowClosed">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
@@ -18,20 +18,20 @@
                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="0,3,0,9"/>
         </StackPanel>
         <DockPanel Grid.Row="1">
-            <Button x:Name="AnalyzeButton" DockPanel.Dock="Right" Content="Önizle" Style="{StaticResource Primary}" Click="AnalyzeClick" Margin="6,0,0,0"/>
-            <Button x:Name="BrowseTargetButton" DockPanel.Dock="Right" Content="Göz at…" Click="BrowseClick" Margin="6,0,0,0"/>
-            <TextBlock DockPanel.Dock="Left" Text="Hedef üst klasör" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <Button x:Name="AnalyzeButton" DockPanel.Dock="Right" Content="{DynamicResource LEB0101C871C4}" Style="{StaticResource Primary}" Click="AnalyzeClick" Margin="6,0,0,0"/>
+            <Button x:Name="BrowseTargetButton" DockPanel.Dock="Right" Content="{DynamicResource L7F8F18807560}" Click="BrowseClick" Margin="6,0,0,0"/>
+            <TextBlock DockPanel.Dock="Left" Text="{DynamicResource LD6FDD8F89A94}" VerticalAlignment="Center" Margin="0,0,8,0"/>
             <TextBox x:Name="TargetFolder" Height="31" VerticalContentAlignment="Center" Padding="6,3"
-                     TextChanged="TargetChanged" AutomationProperties.Name="Hedef üst klasör"/>
+                     TextChanged="TargetChanged" AutomationProperties.Name="{DynamicResource LD6FDD8F89A94}"/>
         </DockPanel>
         <TextBlock x:Name="DestinationText" Grid.Row="2" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,8,0,7"/>
         <dxg:GridControl x:Name="FindingsGrid" AutoGenerateColumns="None" Grid.Row="3"
-                         AutomationProperties.Name="Taşıma bulguları">
+                         AutomationProperties.Name="{DynamicResource L3ED37E07B127}">
             <dxg:GridControl.Columns>
-                <dxg:GridColumn Header="DURUM" FieldName="Severity" Width="135"/>
-                <dxg:GridColumn Header="DOSYA" FieldName="File" Width="265"/>
-                <dxg:GridColumn Header="BAŞVURU" FieldName="Reference" Width="190"/>
-                <dxg:GridColumn Header="AYRINTI" FieldName="Detail" Width="285"/>
+                <dxg:GridColumn Header="{DynamicResource L0BD7591945A2}" FieldName="Severity" Width="135"/>
+                <dxg:GridColumn Header="{DynamicResource L761D8B3A39BA}" FieldName="File" Width="265"/>
+                <dxg:GridColumn Header="{DynamicResource L2C36070D8DAB}" FieldName="Reference" Width="190"/>
+                <dxg:GridColumn Header="{DynamicResource LFF1AE9CA7D71}" FieldName="Detail" Width="285"/>
             </dxg:GridControl.Columns>
             <dxg:GridControl.View>
                 <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -45,8 +45,8 @@
             </dxg:GridControl.View>
         </dxg:GridControl>
         <DockPanel Grid.Row="4" Margin="0,8,0,0">
-            <Button DockPanel.Dock="Right" IsCancel="True" Content="Kapat" Margin="8,0,0,0"/>
-            <TextBlock x:Name="PlanStatus" Text="Hedefi seçerek başvuruları ve çakışmaları kontrol edin." VerticalAlignment="Center"
+            <Button DockPanel.Dock="Right" IsCancel="True" Content="{DynamicResource L7B31A9FC4816}" Margin="8,0,0,0"/>
+            <TextBlock x:Name="PlanStatus" Text="{DynamicResource LC8F0037CB805}" VerticalAlignment="Center"
                        Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
         </DockPanel>
     </Grid>

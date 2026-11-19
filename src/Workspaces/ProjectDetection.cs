@@ -21,7 +21,7 @@ internal static class ProjectDetection
         ("dbt_project.yml", "dbt"), ("Chart.yaml", "Helm"), ("ansible.cfg", "Ansible"),
         ("playbook.yml", "Ansible"), ("playbook.yaml", "Ansible"),
         ("nx.json", "Nx"),
-        ("pnpm-workspace.yaml", "JavaScript çalışma alanı"),
+        ("pnpm-workspace.yaml", Loc.Text("L353AEA7754A1")),
         ("deno.json", "Deno"), ("deno.jsonc", "Deno"),
         (AndroidManifest, Android),
         ("pyproject.toml", "Python"), ("Pipfile", "Python"), ("setup.py", "Python"), ("requirements.txt", "Python"),
@@ -341,7 +341,7 @@ internal static class ProjectDetection
         if (nx)
             return "Nx";
         if (workspace)
-            return "JavaScript çalışma alanı";
+            return Loc.Text("L353AEA7754A1");
         return Frameworks.FirstOrDefault(framework => dependencies.Contains(framework.Dependency)).Kind ?? "JavaScript";
     }
 }

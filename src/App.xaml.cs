@@ -21,6 +21,8 @@ public partial class App : Application
     public App()
     {
         var session = SessionState.Load();
+        Loc.Initialize(session.Language);
+        Resources.MergedDictionaries.Add(Loc.CreateResources());
         LightweightThemeManager.CurrentThemeChanged += (_, _) => UpdatePalette();
         var saved = LightweightThemeManager.Themes.FirstOrDefault(theme => theme.ShowInThemeSelector && theme.Name == session.ThemeName);
         ApplyTheme(saved ?? (session.DarkTheme ? LightweightTheme.Win11Dark : LightweightTheme.Win11Light));
@@ -98,7 +100,7 @@ public partial class App : Application
         {
             System.Diagnostics.Trace.TraceError(ex.ToString());
             finished = true;
-            MessageBox.Show(splash, $"DevWorkspace başlatılamadı.\n\n{ex.Message}", "DevWorkspace",
+            MessageBox.Show(splash, Loc.Format("LB3D31315A568", ex.Message), "DevWorkspace",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
         }

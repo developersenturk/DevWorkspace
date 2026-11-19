@@ -19,10 +19,10 @@ internal static class ProjectTools
         var actions = new List<ProjectCommand>();
         if (project.EntryFile is string entry && File.Exists(entry) && IsDotNetEntry(entry))
         {
-            actions.Add(new("Testleri çalıştır", "dotnet.exe", $"test {Quote(entry)}"));
+            actions.Add(new(Loc.Text("LA41DB5EBB4A7"), "dotnet.exe", $"test {Quote(entry)}"));
             foreach (string runnable in FindRunnableProjects(entry).Take(8))
-                actions.Add(new($"Çalıştır · {Path.GetFileNameWithoutExtension(runnable)}", "dotnet.exe", $"run --project {Quote(runnable)}"));
-            actions.Add(new("Derle", "dotnet.exe", $"build {Quote(entry)}"));
+                actions.Add(new(Loc.Format("LA9BB9157092C", Path.GetFileNameWithoutExtension(runnable)), "dotnet.exe", $"run --project {Quote(runnable)}"));
+            actions.Add(new(Loc.Text("LAF6C5426522C"), "dotnet.exe", $"build {Quote(entry)}"));
         }
 
         string package = Path.Combine(project.Folder, "package.json");
@@ -35,19 +35,19 @@ internal static class ProjectTools
                     && scripts.ValueKind == JsonValueKind.Object)
                 {
                     if (scripts.TryGetProperty("test", out _))
-                        actions.Add(new("Testleri çalıştır · npm", "cmd.exe", "/d /c npm.cmd test"));
+                        actions.Add(new(Loc.Text("LE0FDC386FE22"), "cmd.exe", "/d /c npm.cmd test"));
                     if (scripts.TryGetProperty("dev", out _))
-                        actions.Add(new("Geliştirme sunucusunu başlat", "cmd.exe", "/d /c npm.cmd run dev"));
+                        actions.Add(new(Loc.Text("LCD512A6AF993"), "cmd.exe", "/d /c npm.cmd run dev"));
                     else if (scripts.TryGetProperty("start", out _))
-                        actions.Add(new("Uygulamayı başlat · npm", "cmd.exe", "/d /c npm.cmd start"));
+                        actions.Add(new(Loc.Text("LDD610212B6BE"), "cmd.exe", "/d /c npm.cmd start"));
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { }
         }
         if (File.Exists(Path.Combine(project.Folder, "pubspec.yaml")))
         {
-            actions.Add(new("Testleri çalıştır · Flutter", "cmd.exe", "/d /c flutter.bat test"));
-            actions.Add(new("Uygulamayı başlat · Flutter", "cmd.exe", "/d /c flutter.bat run"));
+            actions.Add(new(Loc.Text("L4055A909606A"), "cmd.exe", "/d /c flutter.bat test"));
+            actions.Add(new(Loc.Text("L9767029B8FE1"), "cmd.exe", "/d /c flutter.bat run"));
         }
         return actions;
     }
@@ -121,7 +121,7 @@ internal static class ProjectTools
         ProcessStartInfo info, string label, int timeoutSeconds, CancellationToken token, Action<string>? errorLine = null)
     {
         token.ThrowIfCancellationRequested();
-        using var process = Process.Start(info) ?? throw new IOException($"{label} başlatılamadı.");
+        using var process = Process.Start(info) ?? throw new IOException(Loc.Format("L19F9ABCDFDA7", label));
         process.StandardInput.Close();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
         timeout.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
@@ -138,7 +138,7 @@ internal static class ProjectTools
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested)
         {
-            throw new IOException($"{label} işlemi zaman aşımına uğradı.");
+            throw new IOException(Loc.Format("L6B4C2B49F100", label));
         }
     }
 
@@ -212,7 +212,7 @@ internal static class ProjectTools
         {
             DevelopmentTools.ApplyPath(info);
         }
-        using var process = Process.Start(info) ?? throw new IOException("Komut başlatılamadı.");
+        using var process = Process.Start(info) ?? throw new IOException(Loc.Text("LC288EBA686E0"));
         using var cancellation = KillOnCancellation(process, token);
         async Task Pump(StreamReader reader)
         {

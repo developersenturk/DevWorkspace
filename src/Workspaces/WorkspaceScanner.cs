@@ -11,15 +11,16 @@ internal sealed record ProjectEntry(
     string Kind, string? Repository, GitStatus Git, ProjectPreference? SavedPreference = null, string? LinkPath = null,
     string? OwnerName = null, string? OwnerRelativePath = null, string? OwnerGroupKey = null)
 {
-    public string ListName => OwnerName is null ? Name : $"{Name} · Ana proje: {OwnerName}";
+    public string ListName => OwnerName is null ? Name : Loc.Format("LD6793EA727E9", Name, OwnerName);
     public string Branch => string.IsNullOrWhiteSpace(Git.Branch) ? "—" : Git.Branch;
     public int? ChangedFiles => Git.Changes;
     public ProjectPreference Preference => SavedPreference ?? ProjectPreference.Empty;
     public string Label => Preference.Label ?? "";
+    public string LabelDisplay => Loc.Label(Label);
     public string ProjectGroupKey => OwnerGroupKey ?? (string.IsNullOrWhiteSpace(Preference.Group)
         ? $"project:{RelativePath}" : $"group:{Preference.Group.Trim().ToUpperInvariant()}");
     public bool IsWorkspaceRoot => LinkPath is null && RelativePath == ".";
-    public string DisplayPath => IsWorkspaceRoot ? "Çalışma alanı kökü" : LinkPath is null ? RelativePath : EntryFile ?? Folder;
+    public string DisplayPath => IsWorkspaceRoot ? Loc.Text("L8305835D3AFB") : LinkPath is null ? RelativePath : EntryFile ?? Folder;
     public string Summary => string.IsNullOrEmpty(Git.Detail) ? Folder : $"{Folder}\n{Git.Detail}";
 
     public bool HasSameSnapshot(ProjectEntry other) =>
@@ -60,7 +61,7 @@ internal static class WorkspaceScanner
         var hiddenSubfolders = subfolders.Where(folder => !folder.IsVisible).Select(folder => folder.Name)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         string[] folders = layout.Where(folder => folder.IsVisible).Select(folder => folder.Name).ToArray();
-        var scopes = new List<ScanScope> { new("Çalışma alanı", workspace.Root, RootOnly: true) };
+        var scopes = new List<ScanScope> { new(Loc.Text("L5321550F56C9"), workspace.Root, RootOnly: true) };
         scopes.AddRange(folders.Where(category => !exclusions.Contains(category))
             .Select(category => new ScanScope(category, Path.Combine(workspace.Root, category))));
         foreach (string link in (workspace.Config.LinkedProjects ?? []).Where(path => !string.IsNullOrWhiteSpace(path)).Distinct(StringComparer.OrdinalIgnoreCase))
@@ -68,18 +69,18 @@ internal static class WorkspaceScanner
             if (!Path.IsPathFullyQualified(link) || link.Equals(workspace.Root, StringComparison.OrdinalIgnoreCase))
                 continue;
             if (Directory.Exists(link))
-                scopes.Add(new("Bağlı projeler", link, link));
+                scopes.Add(new(Loc.Text("L68F3F11503E7"), link, link));
             else if (File.Exists(link) && IsProjectFile(link))
             {
                 string parent = Path.GetDirectoryName(link)!;
                 string kind = KindForFile(link);
                 string name = ProjectName(link, Path.GetFileName(parent), kind);
-                projects.Add(new(name, "Bağlı projeler", LinkIdentity(link), parent, link,
+                projects.Add(new(name, Loc.Text("L68F3F11503E7"), LinkIdentity(link), parent, link,
                     kind, FindGitRoot(parent), new(GitState.None), LinkPath: link));
             }
             else
-                projects.Add(new(Path.GetFileName(link), "Bağlı projeler", LinkIdentity(link), link, null,
-                    "Bağlantı eksik", null, new(GitState.None), LinkPath: link));
+                projects.Add(new(Path.GetFileName(link), Loc.Text("L68F3F11503E7"), LinkIdentity(link), link, null,
+                    Loc.Text("LBEAFC51072E1"), null, new(GitState.None), LinkPath: link));
         }
 
         string? rootKind = null;
@@ -163,11 +164,11 @@ internal static class WorkspaceScanner
                         IsExtension(entry, ".sln") && Path.GetFileNameWithoutExtension(entry.Name)
                             .Equals(Path.GetFileNameWithoutExtension(parent.Name), StringComparison.OrdinalIgnoreCase) &&
                         ContainsSolutionProjects(parent, entry);
-                    string? role = coveredBySolution ? "Çözüm bileşeni" :
-                        inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ? "Platform" :
-                        inProjectScripts && kind == ".NET / MSBuild" ? "Yardımcı araç" :
+                    string? role = coveredBySolution ? Loc.Text("L7BAC3214A0DD") :
+                        inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ? Loc.Text("LC78FFE195710") :
+                        inProjectScripts && kind == ".NET / MSBuild" ? Loc.Text("LF7586694B384") :
                         ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path, ownerFolder)
-                            ? "Gömülü istemci" : null;
+                            ? Loc.Text("L7C70C099C75E") : null;
                     bool coveredByParent = role is not null && ownerFolder is not null &&
                         !current.Path.Equals(scope.Link, StringComparison.OrdinalIgnoreCase) &&
                         workspace.PreferenceFor(relativePath) == ProjectPreference.Empty &&
@@ -182,11 +183,11 @@ internal static class WorkspaceScanner
                         components.Add(new(ownerFolder!, current.Path, name, kind, role!));
                 }
                 else if (isRepoRoot)
-                    repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, "Git deposu", repo, new(GitState.None), LinkPath: scope.Link));
+                    repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, Loc.Text("LB9C67E2C19F8"), repo, new(GitState.None), LinkPath: scope.Link));
 
                 if (kind == "Tauri" && entry is not null && directories.FirstOrDefault(child =>
                         child.Name.Equals("src-tauri", StringComparison.OrdinalIgnoreCase)) is { } tauri)
-                    components.Add(new(current.Path, tauri.FullName, tauri.Name, "Tauri", "Platform"));
+                    components.Add(new(current.Path, tauri.FullName, tauri.Name, "Tauri", Loc.Text("LC78FFE195710")));
 
                 if (scope.RootOnly)
                 {
@@ -210,7 +211,7 @@ internal static class WorkspaceScanner
             }
             if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
                 projects.Add(new(Path.GetFileName(scope.Folder), scope.Category, LinkIdentity(scope.Folder), scope.Folder, null,
-                    "Proje klasörü", FindGitRoot(scope.Folder), new(GitState.None), LinkPath: scope.Link));
+                    Loc.Text("L153E900124CF"), FindGitRoot(scope.Folder), new(GitState.None), LinkPath: scope.Link));
         }
 
         var representedRepos = projects.Select(project => project.Repository).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);

@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-                 Title="Git projelerini geri yükle" Width="820" Height="450"
+                 Title="{DynamicResource L844C855FC18E}" Width="820" Height="450"
                  MinWidth="580" MinHeight="310" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True"
                  Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}" Closing="WindowClosing">
@@ -13,16 +13,16 @@
             <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,10">
-            <TextBlock Text="Eksik Git depoları" FontSize="19" FontWeight="SemiBold"/>
+            <TextBlock Text="{DynamicResource L6A08CFF2017F}" FontSize="19" FontWeight="SemiBold"/>
             <TextBlock x:Name="Instructions" Margin="0,4,0,0" TextWrapping="Wrap" Foreground="{DynamicResource Muted}"
-                       Text="Seçili depolar eski klasörlerine klonlanır. Yalnızca uzak depoya gönderilmiş içerik geri gelir."/>
+                       Text="{DynamicResource LF063B3B77D01}"/>
         </StackPanel>
         <dxg:GridControl x:Name="Repositories" AutoGenerateColumns="None" Grid.Row="1" SelectionMode="Row" SelectionChanged="SelectionChanged"
-                         AutomationProperties.Name="Geri yüklenecek Git depoları">
+                         AutomationProperties.Name="{DynamicResource L540D8844F16D}">
             <dxg:GridControl.Columns>
-                <dxg:GridColumn Header="ESKİ KLASÖR" Binding="{Binding Entry.Folder}" Width="360"/>
-                <dxg:GridColumn Header="UZAK DAL" Binding="{Binding Entry.BranchLabel}" Width="130"/>
-                <dxg:GridColumn Header="DURUM" FieldName="Status" Width="260"/>
+                <dxg:GridColumn Header="{DynamicResource LCF2E2D0A363A}" Binding="{Binding Entry.Folder}" Width="360"/>
+                <dxg:GridColumn Header="{DynamicResource LD292CD21B55E}" Binding="{Binding Entry.BranchLabel}" Width="130"/>
+                <dxg:GridColumn Header="{DynamicResource L0BD7591945A2}" FieldName="Status" Width="260"/>
             </dxg:GridControl.Columns>
             <dxg:GridControl.View>
                 <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -36,8 +36,8 @@
             </dxg:GridControl.View>
         </dxg:GridControl>
         <DockPanel Grid.Row="2" Margin="0,10,0,0">
-            <Button x:Name="CloseButton" DockPanel.Dock="Right" Content="Kapat" IsCancel="True" Margin="6,0,0,0"/>
-            <Button x:Name="RestoreButton" DockPanel.Dock="Right" Content="Seçilenleri geri yükle"
+            <Button x:Name="CloseButton" DockPanel.Dock="Right" Content="{DynamicResource L7B31A9FC4816}" IsCancel="True" Margin="6,0,0,0"/>
+            <Button x:Name="RestoreButton" DockPanel.Dock="Right" Content="{DynamicResource L87AF808841E7}"
                     Style="{StaticResource Primary}" Click="RestoreClick" IsEnabled="False"/>
             <TextBlock x:Name="RecoveryStatus" Margin="0,0,8,0" TextWrapping="Wrap" VerticalAlignment="Center"/>
         </DockPanel>

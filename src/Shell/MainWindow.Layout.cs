@@ -148,6 +148,11 @@ public partial class MainWindow
         finally
         {
             _restoringDockLayout = false;
+            // Dock snapshots contain captions from the previous session's language.
+            ExplorerPane.Caption = Loc.Text("L768201CBF793");
+            ProjectsPane.Caption = Loc.Text("L30BCB5BCCD3E");
+            ProjectPane.Caption = Loc.Text("L4C26507A1012");
+            GitPane.Caption = Loc.Text("LD11171088FD5");
         }
     }
 
@@ -208,7 +213,7 @@ public partial class MainWindow
             ColumnsMenu.Items.Add(item);
         }
         ColumnsMenu.Items.Add(new Separator());
-        var reset = new MenuItem { Header = "Sütun genişliklerini sıfırla", Icon = MenuGlyphExtension.Create("\uE777") };
+        var reset = new MenuItem { Header = Loc.Text("LBA583019C9D8"), Icon = MenuGlyphExtension.Create("\uE777") };
         reset.Click += (_, _) =>
         {
             var columns = ProjectColumns.ToArray();
@@ -225,7 +230,7 @@ public partial class MainWindow
         foreach (var (name, layout) in _session.SavedLayouts.OrderBy(pair => pair.Key, StringComparer.CurrentCultureIgnoreCase))
         {
             var item = new MenuItem { Header = new TextBlock { Text = name }, Icon = MenuGlyphExtension.Create("\uE78B") };
-            item.Click += (_, _) => ApplyDockLayout(layout, $"Pencere düzeni uygulandı · {name}");
+            item.Click += (_, _) => ApplyDockLayout(layout, Loc.Format("L59C16893E1E3", name));
             SavedLayoutsMenu.Items.Add(item);
         }
         SavedLayoutsMenu.IsEnabled = SavedLayoutsMenu.HasItems;
@@ -233,7 +238,7 @@ public partial class MainWindow
     }
 
     private void ResetDockLayoutClick(object sender, RoutedEventArgs e) =>
-        ApplyDockLayout(_defaultDockLayout, "Varsayılan pencere düzeni uygulandı.", keepOpenPanels: true);
+        ApplyDockLayout(_defaultDockLayout, Loc.Text("L0055A08BBF75"), keepOpenPanels: true);
 
     private void ApplyDockLayout(byte[]? layout, string status, bool keepOpenPanels = false)
     {
@@ -241,7 +246,7 @@ public partial class MainWindow
         bool gitWasOpen = !GitPane.IsClosed;
         if (!TryRestoreDockLayout(layout))
         {
-            StatusText.Text = "Pencere düzeni yüklenemedi.";
+            StatusText.Text = Loc.Text("L8E25556E1E12");
             return;
         }
 
@@ -271,13 +276,13 @@ public partial class MainWindow
             SizeToContent = SizeToContent.WidthAndHeight, ResizeMode = ResizeMode.NoResize, ShowInTaskbar = false };
         var save = new ThemedWindowDialogButton
         {
-            Content = "Kaydet", IsDefault = true, IsEnabled = false, MinWidth = 75, AllowCloseWindow = false
+            Content = Loc.Text("LC1FE2ECDFF02"), IsDefault = true, IsEnabled = false, MinWidth = 75, AllowCloseWindow = false
         };
         save.Click += (_, _) => dialog.DialogResult = true;
         nameInput.TextChanged += (_, _) => save.IsEnabled = !string.IsNullOrWhiteSpace(nameInput.Text);
         dialog.DialogButtons.Add(new ThemedWindowDialogButton
         {
-            Content = "Vazgeç", IsCancel = true, DialogResult = MessageBoxResult.Cancel, MinWidth = 75
+            Content = Loc.Text("L39A8D28C1C6B"), IsCancel = true, DialogResult = MessageBoxResult.Cancel, MinWidth = 75
         });
         dialog.DialogButtons.Add(save);
         var form = new StackPanel { Margin = new(14) };
@@ -290,20 +295,20 @@ public partial class MainWindow
 
     private void SaveNamedLayoutClick(object sender, RoutedEventArgs e)
     {
-        if (AskName("Pencere düzenini kaydet", "Düzen adı") is not { } name)
+        if (AskName(Loc.Text("L47328ED1E1F5"), Loc.Text("L4247BB7D33F3")) is not { } name)
             return;
 
-        if (_session.SavedLayouts.ContainsKey(name) && MessageBox.Show(this, $"“{name}” düzeni güncellensin mi?",
-                "Pencere düzeni", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+        if (_session.SavedLayouts.ContainsKey(name) && MessageBox.Show(this, Loc.Format("LF01E1A1E1610", name),
+                Loc.Text("L89F0107C5FEE"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
         if (CaptureDockLayout() is { Length: > 0 and <= 1_000_000 } layout)
         {
             _session.SavedLayouts[name] = layout;
             _session.Save();
-            StatusText.Text = $"Pencere düzeni kaydedildi · {name}";
+            StatusText.Text = Loc.Format("LE5D51EB0637C", name);
         }
         else
-            StatusText.Text = "Pencere düzeni kaydedilemedi.";
+            StatusText.Text = Loc.Text("L592BB9311DF8");
     }
 
     private static string ThemeFamily(LightweightTheme theme) =>

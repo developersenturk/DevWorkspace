@@ -18,6 +18,12 @@ try {
     if ($LASTEXITCODE) { throw 'Update verification failed.' }
     dotnet run --project tests/ProjectDetection/ProjectDetection.csproj -c Debug
     if ($LASTEXITCODE) { throw 'Project detection verification failed.' }
+    dotnet run --project tests/GitHubLinks/GitHubLinks.csproj -c Debug
+    if ($LASTEXITCODE) { throw 'GitHub link verification failed.' }
+    dotnet run --project tests/Localization/Localization.csproj -c Debug
+    if ($LASTEXITCODE) { throw 'Localization verification failed.' }
+    dotnet run --project tests/VisualStudioSelection/VisualStudioSelection.csproj -c Debug
+    if ($LASTEXITCODE) { throw 'Visual Studio selection verification failed.' }
     dotnet publish src/DevWorkspace.csproj -c Debug -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true "-p:Version=$Version" -o "$output/publish"
     if ($LASTEXITCODE) { throw 'Debug publish failed.' }
     dotnet tool run vpk pack --packId DevWorkspace --packVersion $Version --packDir "$output/publish" --mainExe DevWorkspace.exe --packTitle DevWorkspace --channel win-x64 --runtime win-x64 --icon src/Assets/DevWorkspace.ico --outputDir "$output/releases"

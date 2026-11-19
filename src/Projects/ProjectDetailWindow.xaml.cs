@@ -12,6 +12,10 @@ internal enum ProjectDetailView { Purpose, Documents, Organization }
 public partial class ProjectDetailWindow : ThemedWindow
 {
     private static readonly string[] Labels = ["", "Aktif", "Deneme", "Arşiv"];
+    private sealed record LabelChoice(string Value)
+    {
+        public string Caption => Loc.Label(Value);
+    }
     private readonly Workspace _workspace;
     private readonly ProjectEntry _project;
     private readonly ProjectDetailView _view;
@@ -21,7 +25,7 @@ public partial class ProjectDetailWindow : ThemedWindow
 
     internal Workspace? UpdatedWorkspace { get; private set; }
     internal string Group => ProjectGroupBox.Text.Trim();
-    internal string Label => ProjectLabelBox.SelectedItem as string ?? "";
+    internal string Label => ProjectLabelBox.SelectedValue as string ?? "";
 
     internal ProjectDetailWindow(Workspace workspace, ProjectEntry project, ProjectDetailView view, IReadOnlyList<ProjectEntry> projects)
     {
@@ -33,9 +37,9 @@ public partial class ProjectDetailWindow : ThemedWindow
         ProjectTitle.Text = project.Name;
         Title = view switch
         {
-            ProjectDetailView.Purpose => "Proje amacı ve konumu",
-            ProjectDetailView.Documents => "README ve belgeler",
-            _ => "Grup ve etiket"
+            ProjectDetailView.Purpose => Loc.Text("L407D86327F61"),
+            ProjectDetailView.Documents => Loc.Text("L8043F450A004"),
+            _ => Loc.Text("L6031B86875C3")
         };
 
         switch (view)
@@ -56,14 +60,16 @@ public partial class ProjectDetailWindow : ThemedWindow
                 Height = 290;
                 MinHeight = 270;
                 OrganizationEditor.Visibility = Visibility.Visible;
-                CloseButton.Content = "Vazgeç";
+                CloseButton.Content = Loc.Text("L39A8D28C1C6B");
                 OrganizationSaveButton.Visibility = Visibility.Visible;
                 ProjectGroupBox.ItemsSource = projects.Select(entry => entry.Preference.Group)
                     .Where(group => !string.IsNullOrWhiteSpace(group)).Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(group => group, StringComparer.CurrentCultureIgnoreCase).ToArray();
                 ProjectGroupBox.Text = project.Preference.Group ?? "";
-                ProjectLabelBox.ItemsSource = Labels;
-                ProjectLabelBox.SelectedItem = Labels.Contains(project.Label) ? project.Label : "";
+                ProjectLabelBox.DisplayMemberPath = nameof(LabelChoice.Caption);
+                ProjectLabelBox.SelectedValuePath = nameof(LabelChoice.Value);
+                ProjectLabelBox.ItemsSource = Labels.Select(value => new LabelChoice(value)).ToArray();
+                ProjectLabelBox.SelectedValue = Labels.Contains(project.Label) ? project.Label : "";
                 break;
         }
     }
@@ -78,8 +84,8 @@ public partial class ProjectDetailWindow : ThemedWindow
     internal void ConfigureBulkOrganization(IReadOnlyList<ProjectEntry> selection)
     {
         _bulkOrganization = true;
-        Title = "Seçili projeleri grupla";
-        ProjectTitle.Text = $"{selection.Count} proje seçildi";
+        Title = Loc.Text("LA73676E86E11");
+        ProjectTitle.Text = Loc.Format("L5EB9C807F3C6", selection.Count);
         Width = 525;
         Height = 365;
         MinHeight = 320;
@@ -124,12 +130,12 @@ public partial class ProjectDetailWindow : ThemedWindow
     {
         if (_bulkOrganization && Group.Length == 0)
         {
-            DetailMessage.Text = "Bir grup adı yazın veya listeden bir grup seçin.";
+            DetailMessage.Text = Loc.Text("LBF6064BAE091");
             return;
         }
         if (Group.Length > 80 || Group.Any(char.IsControl))
         {
-            DetailMessage.Text = "Grup adı en fazla 80 karakter olmalı ve tek satırda yazılmalı.";
+            DetailMessage.Text = Loc.Text("L9B181A6C792E");
             return;
         }
         DialogResult = true;
@@ -145,7 +151,7 @@ public partial class ProjectDetailWindow : ThemedWindow
     private void UpdatePurpose()
     {
         string description = (UpdatedWorkspace ?? _workspace).DescriptionFor(_project.RelativePath);
-        PurposeText.Text = description.Length == 0 ? "Henüz bir amaç notu eklenmedi." : description;
+        PurposeText.Text = description.Length == 0 ? Loc.Text("L958FD806E521") : description;
         SetPurposeEditing(false);
     }
 
@@ -181,11 +187,11 @@ public partial class ProjectDetailWindow : ThemedWindow
             UpdatedWorkspace = await Task.Run(() => workspace.SaveDescriptions(
                 new Dictionary<string, string> { [_project.RelativePath] = description }));
             UpdatePurpose();
-            DetailMessage.Text = "Proje amacı çalışma alanına kaydedildi.";
+            DetailMessage.Text = Loc.Text("L30439DB85090");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            DetailMessage.Text = $"Proje amacı kaydedilemedi. {ex.Message}";
+            DetailMessage.Text = Loc.Format("LE597CC24FEAF", ex.Message);
         }
         finally
         {
@@ -199,11 +205,11 @@ public partial class ProjectDetailWindow : ThemedWindow
         try
         {
             Clipboard.SetText(_project.Folder);
-            DetailMessage.Text = "Proje yolu kopyalandı.";
+            DetailMessage.Text = Loc.Text("LDEF906DDCF89");
         }
         catch (System.Runtime.InteropServices.ExternalException)
         {
-            DetailMessage.Text = "Proje yolu panoya kopyalanamadı.";
+            DetailMessage.Text = Loc.Text("L9509BF63F343");
         }
     }
 
@@ -218,7 +224,7 @@ public partial class ProjectDetailWindow : ThemedWindow
         }
         catch (System.ComponentModel.Win32Exception ex)
         {
-            DetailMessage.Text = "Dosya açılamadı. " + ex.Message;
+            DetailMessage.Text = Loc.Text("LFDB5BCC75777") + ex.Message;
         }
     }
 
@@ -226,14 +232,14 @@ public partial class ProjectDetailWindow : ThemedWindow
     {
         DocumentPicker.ItemsSource = null;
         OpenDocumentButton.IsEnabled = false;
-        SetDocumentMessage("Belgeler aranıyor…");
+        SetDocumentMessage(Loc.Text("L536FF91D201A"));
         var documents = await Task.Run(() => ProjectDocuments.Find(_project));
         if (_closing.IsCancellationRequested)
             return;
 
         DocumentPicker.ItemsSource = documents;
         if (documents.Count == 0)
-            SetDocumentMessage("Bu proje klasöründe README veya desteklenen bir belge bulunamadı.");
+            SetDocumentMessage(Loc.Text("LD9845FEE1A76"));
         else
             DocumentPicker.SelectedIndex = 0;
     }
@@ -246,7 +252,7 @@ public partial class ProjectDetailWindow : ThemedWindow
         OpenDocumentButton.IsEnabled = true;
         if (!document.CanPreview)
         {
-            SetDocumentMessage("Bu belgeyi varsayılan uygulamasında görüntülemek için Dosyayı aç seçeneğini kullanın.");
+            SetDocumentMessage(Loc.Text("L17E2C61F9389"));
             return;
         }
 

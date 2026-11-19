@@ -51,27 +51,29 @@ public partial class MainWindow
             return;
         foreach (var profile in _session.For(workspace.Root).Profiles ?? [])
         {
-            var item = new MenuItem { Header = $"Başlat · {profile.Name.Replace("_", "__")}" };
+            var item = new MenuItem { Header = Loc.Format("LDBF5A5D7DF9A", profile.Name.Replace("_", "__")) };
             item.Click += (_, _) => StartLaunchProfile(profile);
             LaunchProfilesMenu.Items.Add(item);
         }
     }
 
-    private void StartLaunchProfile(LaunchProfile profile)
+    private async void StartLaunchProfile(LaunchProfile profile)
     {
+        string? root = _workspace?.Root;
         foreach (var step in profile.Steps)
         {
+            if (_closing.IsCancellationRequested || _workspace?.Root != root) return;
             var project = _projects.FirstOrDefault(candidate => candidate.RelativePath.Equals(step.Project, StringComparison.OrdinalIgnoreCase));
             if (project is null || !Directory.Exists(project.Folder))
             {
-                OperationCenter.Start(profile.Name, step.Project).Finish("Başarısız", "Proje klasörü bulunamadı.");
+                OperationCenter.Start(profile.Name, step.Project).Finish(Loc.Text("LF0873175A881"), Loc.Text("LAC678EB688A2"));
                 continue;
             }
             if (step.Command is { } command)
                 _ = OperationCenter.RunCommandAsync(command, project.Name, project.Folder, _closing.Token);
             else
-                OpenProject(project);
+                await OpenProjectAsync(project);
         }
-        ShowOperationCenter();
+        if (!_closing.IsCancellationRequested) ShowOperationCenter();
     }
 }

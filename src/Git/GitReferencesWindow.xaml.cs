@@ -17,8 +17,8 @@ public partial class GitReferencesWindow : ThemedWindow
     {
         _git = new(project.Repository!);
         InitializeComponent();
-        Title = $"Dallar ve etiketler · {project.Name}";
-        Preview.ShowPreview(new([], "Dosya farklarını görmek için iki dal veya etiket seçin."));
+        Title = Loc.Format("LE4EAF09C9389", project.Name);
+        Preview.ShowPreview(new([], Loc.Text("L60BC45766743")));
     }
 
     private async void WindowLoaded(object sender, RoutedEventArgs e) => await ExecuteAsync(LoadReferencesAsync);
@@ -31,15 +31,15 @@ public partial class GitReferencesWindow : ThemedWindow
         Reference.SelectedItem = refs.FirstOrDefault(item => item.Current) ?? refs.FirstOrDefault();
         After.SelectedItem = Reference.SelectedItem;
         Before.SelectedItem = refs.FirstOrDefault(item => !Equals(item, After.SelectedItem)) ?? After.SelectedItem;
-        Status.Text = refs.Length == 0 ? "Dal veya etiket oluşturmak için depoda en az bir commit olmalı." :
-            "Yeni dal ve etiketler seçili referanstan oluşturulur.";
+        Status.Text = refs.Length == 0 ? Loc.Text("L0C09FF892E69") :
+            Loc.Text("LFCC20400D9E6");
     }
 
     private async void SwitchClick(object sender, RoutedEventArgs e)
     {
         if (Reference.SelectedItem is not GitReference { IsLocalBranch: true, Current: false } branch)
         {
-            Status.Text = "Geçmek için etkin daldan farklı bir yerel dal seçin.";
+            Status.Text = Loc.Text("L538BB2AB6FCA");
             return;
         }
 
@@ -48,7 +48,7 @@ public partial class GitReferencesWindow : ThemedWindow
             await _git.SwitchBranchAsync(branch, CancellationToken.None);
             RepositoryChanged = true;
             await LoadReferencesAsync();
-            Status.Text = $"Etkin dal · {branch.Name}";
+            Status.Text = Loc.Format("L66A037E48168", branch.Name);
         });
     }
 
@@ -59,12 +59,12 @@ public partial class GitReferencesWindow : ThemedWindow
     {
         string name = NewName.Text.Trim();
         if (name.Length == 0)
-            throw new IOException("Dal veya etiket adını yazın.");
+            throw new IOException(Loc.Text("LC0D907A6B098"));
         await _git.CreateReferenceAsync(name, tag, Reference.SelectedItem as GitReference, CancellationToken.None);
         RepositoryChanged = true;
         NewName.Clear();
         await LoadReferencesAsync();
-        Status.Text = tag ? $"Etiket oluşturuldu · {name}" : $"Dal oluşturuldu · {name}";
+        Status.Text = tag ? Loc.Format("L0489CFC0A22E", name) : Loc.Format("L2F1D1559FACA", name);
     });
 
     private async void CompareClick(object sender, RoutedEventArgs e)
@@ -76,12 +76,12 @@ public partial class GitReferencesWindow : ThemedWindow
         {
             _comparison = null;
             Files.ItemsSource = null;
-            Preview.ShowPreview(new([], "Dosya farkları okunuyor…"));
+            Preview.ShowPreview(new([], Loc.Text("L83BFBF00DC50")));
             _comparison = await _git.CompareReferencesAsync(before, after, CancellationToken.None);
-            Preview.SetHeaders($"Önce · {before.Name}", $"Sonra · {after.Name}");
+            Preview.SetHeaders(Loc.Format("LA94EDBFBE2EC", before.Name), Loc.Format("LC000EED61DED", after.Name));
             Files.ItemsSource = _comparison.Files;
             Files.SelectedIndex = _comparison.Files.Length > 0 ? 0 : -1;
-            Status.Text = $"{_comparison.Files.Length} farklı dosya";
+            Status.Text = Loc.Format("L4F61222B8422", _comparison.Files.Length);
             await LoadFileAsync();
         });
     }
@@ -96,10 +96,10 @@ public partial class GitReferencesWindow : ThemedWindow
     {
         if (_comparison is not { } comparison || Files.SelectedItem is not string file)
         {
-            Preview.ShowPreview(new([], "Gösterilecek dosya farkı yok."));
+            Preview.ShowPreview(new([], Loc.Text("L65426D628640")));
             return;
         }
-        Preview.ShowPreview(new([], "Dosya farkı okunuyor…"));
+        Preview.ShowPreview(new([], Loc.Text("LFA162256A875")));
         Preview.ShowPreview(await _git.CompareReferenceFileAsync(comparison, file, CancellationToken.None));
     }
 
@@ -114,7 +114,7 @@ public partial class GitReferencesWindow : ThemedWindow
         {
             Status.Text = ex.Message;
             if (_comparison is null)
-                Preview.ShowPreview(new([], "Karşılaştırılacak bir dosya seçin."));
+                Preview.ShowPreview(new([], Loc.Text("L53A9EC6CDBF4")));
         }
         finally
         {

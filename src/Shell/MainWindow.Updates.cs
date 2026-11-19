@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using DevExpress.Mvvm;
 
 namespace DevWorkspace;
 
@@ -9,6 +10,9 @@ public partial class MainWindow
     private bool _appUpdateManualCheck;
     private bool _restartForAppUpdate;
     private AppUpdatePhase? _dismissedAppUpdatePhase;
+    private INotification? _appUpdateNotification;
+    private AppUpdateToastModel? _appUpdateToast;
+    private AppUpdateStatus? _displayedAppUpdate;
 
     internal void StartUpdateChecks()
     {
@@ -16,7 +20,6 @@ public partial class MainWindow
         _appUpdates = new(new VelopackUpdateFeed(manager));
         _appUpdates.Changed += AppUpdateChanged;
         _ = RunAppUpdateChecksAsync();
-        Closed += AppUpdateWindowClosed;
     }
 
     private async Task RunAppUpdateChecksAsync()
@@ -45,8 +48,9 @@ public partial class MainWindow
         if (_closing.IsCancellationRequested) return;
         bool visible = status.Phase is AppUpdatePhase.Downloading or AppUpdatePhase.Ready || manual;
         if (!manual && _dismissedAppUpdatePhase == status.Phase) visible = false;
-        AppUpdateBanner.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
-        AppUpdateMessage.Text = status.Phase switch
+        RestartAppUpdateMenu.Visibility = status.Phase == AppUpdatePhase.Ready ? Visibility.Visible : Visibility.Collapsed;
+        if (!visible) { HideAppUpdateToast(); return; }
+        string message = status.Phase switch
         {
             AppUpdatePhase.Checking => AppUpdateText.Text("UpdateChecking"),
             AppUpdatePhase.Downloading => AppUpdateText.Format("UpdateDownloading", status.Version, status.Progress),
@@ -55,11 +59,58 @@ public partial class MainWindow
             AppUpdatePhase.Unavailable => AppUpdateText.Text("UpdateUnavailable"),
             _ => AppUpdateText.Text("UpdateCurrent")
         };
-        AppUpdateProgress.Visibility = status.Phase == AppUpdatePhase.Downloading ? Visibility.Visible : Visibility.Collapsed;
-        AppUpdateProgress.Value = status.Progress;
-        AppUpdateRestartButton.Visibility = status.Phase == AppUpdatePhase.Ready ? Visibility.Visible : Visibility.Collapsed;
-        AppUpdateRetryButton.Visibility = status.Phase == AppUpdatePhase.Failed ? Visibility.Visible : Visibility.Collapsed;
-        AppUpdateInstallButton.Visibility = status.Phase == AppUpdatePhase.Unavailable ? Visibility.Visible : Visibility.Collapsed;
+        // Progress updates mutate the current toast rather than queueing a new popup.
+        if (_appUpdateToast is not null && _displayedAppUpdate?.Phase == status.Phase && _displayedAppUpdate.Version == status.Version)
+        {
+            _appUpdateToast.Message = message;
+            _appUpdateToast.Progress = status.Progress;
+            return;
+        }
+        HideAppUpdateToast();
+        _displayedAppUpdate = status;
+        _appUpdateToast = new(status.Phase,
+            () => RestartForAppUpdateClick(this, new RoutedEventArgs()),
+            () => CheckAppUpdatesClick(this, new RoutedEventArgs()),
+            () => AppUpdateReleasesClick(this, new RoutedEventArgs()),
+            () => DismissAppUpdateClick(this, new RoutedEventArgs())) { Message = message, Progress = status.Progress };
+        AppUpdateNotifications.CustomNotificationDuration = status.Phase switch
+        {
+            AppUpdatePhase.Downloading or AppUpdatePhase.Checking => TimeSpan.FromDays(1),
+            AppUpdatePhase.Ready or AppUpdatePhase.Unavailable => TimeSpan.FromSeconds(12),
+            AppUpdatePhase.Failed => TimeSpan.FromSeconds(8),
+            _ => TimeSpan.FromSeconds(4)
+        };
+        var notification = AppUpdateNotifications.CreateCustomNotification(_appUpdateToast);
+        _appUpdateNotification = notification;
+        _ = ObserveAppUpdateToastAsync(notification);
+    }
+
+    private async Task ObserveAppUpdateToastAsync(INotification notification)
+    {
+        try { await notification.ShowAsync(); }
+        catch (Exception ex) { Trace.TraceWarning("Update notification failed: {0}", ex); }
+        finally
+        {
+            if (ReferenceEquals(_appUpdateNotification, notification))
+            {
+                _appUpdateNotification = null;
+                _appUpdateToast = null;
+            }
+        }
+    }
+
+    private void HideAppUpdateToast()
+    {
+        var notification = _appUpdateNotification;
+        _appUpdateNotification = null;
+        _appUpdateToast = null;
+        notification?.Hide();
+    }
+
+    private void ShowAppUpdateActionMessage(string key)
+    {
+        if (_appUpdates is not null) ShowAppUpdateStatus(_appUpdates.Status, manual: true);
+        if (_appUpdateToast is not null) _appUpdateToast.Message = AppUpdateText.Text(key);
     }
 
     private async void CheckAppUpdatesClick(object sender, RoutedEventArgs e)
@@ -85,7 +136,7 @@ public partial class MainWindow
     private void DismissAppUpdateClick(object sender, RoutedEventArgs e)
     {
         _dismissedAppUpdatePhase = _appUpdates?.Status.Phase;
-        AppUpdateBanner.Visibility = Visibility.Collapsed;
+        HideAppUpdateToast();
     }
 
     private void AppUpdateReleasesClick(object sender, RoutedEventArgs e) =>
@@ -97,14 +148,14 @@ public partial class MainWindow
         if (_busy || _workspaceCheck is not null || _gitView?.IsBusy == true || _savingExplorerFolder ||
             OperationCenter.Entries.Any(operation => operation.Cancel is not null))
         {
-            AppUpdateMessage.Text = AppUpdateText.Text("UpdateBusy");
+            ShowAppUpdateActionMessage("UpdateBusy");
             return;
         }
         try
         {
             if (!lease.TryAcquireExclusive())
             {
-                AppUpdateMessage.Text = AppUpdateText.Text("UpdateOtherInstance");
+                ShowAppUpdateActionMessage("UpdateOtherInstance");
                 return;
             }
             _restartForAppUpdate = true;
@@ -121,12 +172,13 @@ public partial class MainWindow
             _restartForAppUpdate = false;
             lease.ReleaseExclusive();
             Trace.TraceWarning("Application update restart failed: {0}", ex);
-            AppUpdateMessage.Text = AppUpdateText.Text("UpdateRestartFailed");
+            ShowAppUpdateActionMessage("UpdateRestartFailed");
         }
     }
 
     private void AppUpdateWindowClosed(object? sender, EventArgs e)
     {
+        HideAppUpdateToast();
         if (_appUpdates is not null) _appUpdates.Changed -= AppUpdateChanged;
         if (!_restartForAppUpdate || Program.UpdateManager is not { } manager) return;
         try

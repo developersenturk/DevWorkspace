@@ -20,10 +20,10 @@ internal static class ProjectDocuments
         var documents = new List<ProjectDocument>();
         AddFromRoot(project.Folder, "", documents);
         if (project.Repository is not null && !project.Repository.Equals(project.Folder, StringComparison.OrdinalIgnoreCase))
-            AddFromRoot(project.Repository, "Depo · ", documents);
+            AddFromRoot(project.Repository, Loc.Text("L282D9622B8F9"), documents);
 
         return documents.OrderBy(document => !IsReadme(document.Path))
-            .ThenBy(document => document.Label.StartsWith("Depo · ", StringComparison.Ordinal))
+            .ThenBy(document => document.Label.StartsWith(Loc.Text("L282D9622B8F9"), StringComparison.Ordinal))
             .ThenBy(document => document.Label, StringComparer.CurrentCultureIgnoreCase).ToArray();
     }
 
@@ -33,7 +33,7 @@ internal static class ProjectDocuments
         var buffer = new char[MaxPreviewCharacters + 1];
         int count = reader.ReadBlock(buffer, 0, buffer.Length);
         if (count > MaxPreviewCharacters)
-            throw new IOException("Dosya önizleme için çok büyük. Dosyayı ayrı olarak açabilirsiniz.");
+            throw new IOException(Loc.Text("L8E2B8FC9E100"));
 
         return new string(buffer, 0, count);
     }

@@ -9,10 +9,10 @@ internal sealed record FileDifference(string Path, string? LeftPath, string? Rig
 {
     public string Label => Kind switch
     {
-        FileDifferenceKind.LeftOnly => "Yalnızca solda",
-        FileDifferenceKind.RightOnly => "Yalnızca sağda",
-        FileDifferenceKind.Unreadable => "Okunamadı",
-        _ => "İçerik farklı"
+        FileDifferenceKind.LeftOnly => Loc.Text("LDBC37A445165"),
+        FileDifferenceKind.RightOnly => Loc.Text("L801CA4BAD200"),
+        FileDifferenceKind.Unreadable => Loc.Text("LEDD1397983CA"),
+        _ => Loc.Text("L15328D0AEF91")
     };
 }
 
@@ -99,9 +99,9 @@ internal static class ProjectComparison
             string[] left = ReadLines(difference.LeftPath);
             string[] right = ReadLines(difference.RightPath);
             if (left.Length > 6000 || right.Length > 6000)
-                return new([], "Dosya çok fazla satır içeriyor. Önizleme sınırı 6.000 satır.");
+                return new([], Loc.Text("L28E6CBFAB9A4"));
             if ((long)left.Length * right.Length > AlignmentLimit)
-                return new(Pair(left, right, 0, 0).ToArray(), "Bu boyutta satırlar konumlarına göre gösterilir.");
+                return new(Pair(left, right, 0, 0).ToArray(), Loc.Text("LF17E8DCF603E"));
 
             var scores = new int[left.Length + 1, right.Length + 1];
             for (int i = left.Length - 1; i >= 0; i--)
@@ -137,7 +137,7 @@ internal static class ProjectComparison
         }
         catch (DecoderFallbackException)
         {
-            return new([], "Dosya metin olarak görüntülenemiyor.");
+            return new([], Loc.Text("L14FE45FDCD02"));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -162,16 +162,16 @@ internal static class ProjectComparison
 
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
         if (stream.Length > PreviewLimit)
-            throw new IOException("Dosya metin önizlemesi için çok büyük.");
+            throw new IOException(Loc.Text("LF1B540820D7B"));
 
         using var reader = new StreamReader(stream, new UTF8Encoding(false, true), detectEncodingFromByteOrderMarks: true);
         var buffer = new char[PreviewLimit + 1];
         int count = reader.ReadBlock(buffer, 0, buffer.Length);
         if (count > PreviewLimit)
-            throw new IOException("Dosya metin önizlemesi için çok büyük.");
+            throw new IOException(Loc.Text("LF1B540820D7B"));
         var text = new string(buffer, 0, count);
         if (text.Contains('\0'))
-            throw new IOException("İkili dosyaların metin önizlemesi yok.");
+            throw new IOException(Loc.Text("LB074B1250292"));
         return text.Length == 0 ? [] : text.ReplaceLineEndings("\n").Split('\n');
     }
 }

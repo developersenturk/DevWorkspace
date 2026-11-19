@@ -29,15 +29,15 @@ internal static class GitProjectOperations
     {
         string fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
         if (!Directory.Exists(fullPath))
-            throw new DirectoryNotFoundException("Proje klasörü bulunamadı.");
+            throw new DirectoryNotFoundException(Loc.Text("LAC678EB688A2"));
 
         for (string? current = fullPath; !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
         {
             if (File.GetAttributes(current).HasFlag(FileAttributes.ReparsePoint))
-                throw new IOException("Bağlantılı bir klasörde Git deposu oluşturulamaz.");
+                throw new IOException(Loc.Text("L18B53AF26112"));
             string git = Path.Combine(current, ".git");
             if (File.Exists(git) || Directory.Exists(git))
-                throw new IOException("Proje zaten bir Git deposunun içinde.");
+                throw new IOException(Loc.Text("L5E087E1CA16F"));
         }
 
         token.ThrowIfCancellationRequested();
@@ -47,7 +47,7 @@ internal static class GitProjectOperations
         if (code != 0)
             throw new IOException(error.Trim());
         if (!Directory.Exists(Path.Combine(fullPath, ".git")))
-            throw new IOException("Git deposunun oluşturulduğu doğrulanamadı.");
+            throw new IOException(Loc.Text("L88AEB9D7C58F"));
     }
 
     private static void CreateGitIgnore(string folder, string projectKind, string? entryFile)
@@ -90,7 +90,7 @@ internal static class GitProjectOperations
         string[] patterns = [header, ".DS_Store", "Thumbs.db", .. projectPatterns, .. javascript];
         bool exists = File.Exists(path);
         if (exists && File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint))
-            throw new IOException("Bağlantılı .gitignore dosyası otomatik güncellenemedi.");
+            throw new IOException(Loc.Text("L9E7D12299DA6"));
         string existing = exists ? File.ReadAllText(path) : "";
         var existingLines = existing.Split('\n').Select(line => line.TrimEnd('\r')).ToHashSet(StringComparer.Ordinal);
         string[] missing = patterns.Skip(1).Where(pattern => !existingLines.Contains(pattern)).Distinct().ToArray();

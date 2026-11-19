@@ -16,28 +16,28 @@ internal static class ProjectMovePlanner
     public static MovePlan Analyze(Workspace workspace, ProjectEntry project, string destinationParent, CancellationToken token)
     {
         if (!Path.IsPathFullyQualified(destinationParent))
-            throw new IOException("Hedef klasörün tam yolunu yazın.");
+            throw new IOException(Loc.Text("L1B7709A6E3E1"));
 
         string source = Path.TrimEndingDirectorySeparator(Path.GetFullPath(project.Folder));
         string parent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(destinationParent));
         string target = Path.Combine(parent, Path.GetFileName(source));
         if (!Inside(source, workspace.Root) || Same(source, workspace.Root) || !Directory.Exists(source))
-            throw new IOException("Kaynak proje çalışma alanı içinde bulunamadı.");
+            throw new IOException(Loc.Text("LC6FEE4AB75EC"));
         if (!Inside(parent, workspace.Root) || !Directory.Exists(parent) || Inside(parent, source))
-            throw new IOException("Hedef, çalışma alanındaki başka bir mevcut klasör olmalı.");
+            throw new IOException(Loc.Text("LC8C2F6663415"));
 
         AssertPlainPath(source, workspace.Root);
         AssertPlainPath(parent, workspace.Root);
         if (Same(source, target))
-            throw new IOException("Proje zaten bu klasörün altında.");
+            throw new IOException(Loc.Text("L11A284E844CB"));
 
         var findings = new List<MoveFinding>();
         if (Directory.Exists(target) || File.Exists(target))
-            findings.Add(new("Çakışma", target, "", "Hedefte aynı adlı bir dosya veya klasör var."));
+            findings.Add(new(Loc.Text("LEF179F25624C"), target, "", Loc.Text("LE771340C920E")));
         if (project.Repository is not null && !Same(project.Repository, source))
-            findings.Add(new("Git uyarısı", project.Repository, project.RelativePath, "Proje bir deponun alt klasörü. Konum değişikliği Git tarafından silme ve ekleme olarak görülebilir."));
+            findings.Add(new(Loc.Text("L1EBD42841C77"), project.Repository, project.RelativePath, Loc.Text("LE2992FD81990")));
         if (File.Exists(Path.Combine(source, ".git")))
-            findings.Add(new("Git uyarısı", source, ".git", "Git çalışma ağacı veya alt modül bağlantısı ayrıca kontrol edilmeli."));
+            findings.Add(new(Loc.Text("L1EBD42841C77"), source, ".git", Loc.Text("L22DFEB2E1661")));
 
         int checkedFiles = 0, unresolved = 0, skipped = 0;
         string sourceName = Path.GetFileName(source);
@@ -68,8 +68,8 @@ internal static class ProjectMovePlanner
                     {
                         unresolved++;
                         if (ownerMoves || reference.Contains(sourceName, StringComparison.OrdinalIgnoreCase))
-                            findings.Add(new("Elle kontrol", Path.GetRelativePath(workspace.Root, owner), reference,
-                                "Dinamik başvuru kesin olarak çözümlenemedi."));
+                            findings.Add(new(Loc.Text("LF94C085EAC97"), Path.GetRelativePath(workspace.Root, owner), reference,
+                                Loc.Text("L24D7AAFCE706")));
                         continue;
                     }
 
@@ -81,8 +81,8 @@ internal static class ProjectMovePlanner
 
                     string expected = Relocate(before, source, target);
                     if (!Same(after, expected))
-                        findings.Add(new("Başvuru etkileniyor", Path.GetRelativePath(workspace.Root, owner), reference,
-                            $"Taşındıktan sonra beklenen konum: {expected}"));
+                        findings.Add(new(Loc.Text("LBCC29DBAC212"), Path.GetRelativePath(workspace.Root, owner), reference,
+                            Loc.Format("LF1C0A8DC3F6E", expected)));
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
@@ -169,7 +169,7 @@ internal static class ProjectMovePlanner
         for (string? item = path; item is not null && Inside(item, root); item = Path.GetDirectoryName(item))
         {
             if (File.GetAttributes(item).HasFlag(FileAttributes.ReparsePoint))
-                throw new IOException("Klasör bağlantıları için taşıma önizlemesi oluşturulamaz.");
+                throw new IOException(Loc.Text("LF2013D051B20"));
             if (Same(item, root))
                 break;
         }

@@ -15,13 +15,13 @@ internal static class ProjectHealth
     public static async Task<HealthResult> CheckAsync(Workspace workspace, ProjectEntry project, CancellationToken token)
     {
         var findings = new List<HealthFinding>();
-        if (project.Kind == "Bağlantı eksik" || !Directory.Exists(project.Folder))
+        if (project.Kind == Loc.Text("LBEAFC51072E1") || !Directory.Exists(project.Folder))
         {
-            findings.Add(new("Eksik", "Bağlı proje klasörü veya dosyası bulunamadı."));
+            findings.Add(new(Loc.Text("LE8AF1BA5B6FF"), Loc.Text("L79A84F50AA6B")));
             return new(findings, 0, 0, 0);
         }
         if (project.EntryFile is string entry && !File.Exists(entry))
-            findings.Add(new("Eksik", "Çözüm veya proje dosyası bulunamadı."));
+            findings.Add(new(Loc.Text("LE8AF1BA5B6FF"), Loc.Text("LED6917660D95")));
 
         int checkedFiles = 0, unresolved = 0, skipped = 0, targetMajor = 0;
         var checkedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -51,8 +51,8 @@ internal static class ProjectHealth
                     }
                     if (!File.Exists(path) && !Directory.Exists(path))
                     {
-                        string severity = Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? "Kontrol" : "Eksik";
-                        findings.Add(new(severity, $"Başvuru bulunamadı · {path}", file.FullName));
+                        string severity = Path.GetExtension(path).Equals(".dll", StringComparison.OrdinalIgnoreCase) ? Loc.Text("L2EF74D2207B7") : Loc.Text("LE8AF1BA5B6FF");
+                        findings.Add(new(severity, Loc.Format("L5D977FC5F032", path), file.FullName));
                     }
                 }
                 foreach (string name in new[] { "TargetFramework", "TargetFrameworks" })
@@ -67,7 +67,7 @@ internal static class ProjectHealth
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
             {
-                findings.Add(new("Okunamadı", "Proje ayar dosyası incelenemedi.", file.FullName));
+                findings.Add(new(Loc.Text("LEDD1397983CA"), Loc.Text("LD09F10FCC74F"), file.FullName));
                 skipped++;
             }
         }
@@ -84,17 +84,17 @@ internal static class ProjectHealth
                     message => { lock (output) if (output.Length < 3000) output.Append(message); }, timeout.Token);
                 string selected = output.ToString().Trim();
                 if (code != 0)
-                    findings.Add(new("SDK", "Bu klasörde .NET SDK seçilemedi. global.json ve kurulu SDK sürümlerini kontrol edin.", FindGlobalJson(project.Folder)));
+                    findings.Add(new("SDK", Loc.Text("L2A32E0CF7DC2"), FindGlobalJson(project.Folder)));
                 else if (targetMajor > 0 && int.TryParse(selected.Split('.')[0], out int sdkMajor) && sdkMajor < targetMajor)
-                    findings.Add(new("SDK", $"Seçilen SDK {selected}. Projede .NET {targetMajor} hedefleniyor.", projectFile));
+                    findings.Add(new("SDK", Loc.Format("L415B4936EA60", selected, targetMajor), projectFile));
             }
             catch (OperationCanceledException) when (!token.IsCancellationRequested)
             {
-                findings.Add(new("SDK", ".NET SDK sorgusu zaman aşımına uğradı."));
+                findings.Add(new("SDK", Loc.Text("L819D2FA28BCD")));
             }
             catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
             {
-                findings.Add(new("SDK", ".NET SDK komutu başlatılamadı."));
+                findings.Add(new("SDK", Loc.Text("L62BA7AC906F6")));
             }
         }
 

@@ -22,8 +22,8 @@ internal sealed class BatchFetchWindow : ThemedWindow
     internal BatchFetchWindow(IEnumerable<ProjectEntry> repositories, CancellationToken workspaceToken)
     {
         _results = new(repositories.Select(project => new Result(project.Repository!, project.Branch,
-            project.Git.Label, "Bekliyor", $"git fetch · {project.Git.RemoteNames}")));
-        Title = "Toplu Fetch";
+            project.Git.Label, Loc.Text("L9025B4AF025A"), $"git fetch · {project.Git.RemoteNames}")));
+        Title = Loc.Text("L04777757E3AE");
         Width = 910;
         Height = 440;
         MinWidth = 530;
@@ -31,17 +31,17 @@ internal sealed class BatchFetchWindow : ThemedWindow
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var grid = new DataGrid { ItemsSource = _results, AutoGenerateColumns = false, CanUserAddRows = false, CanUserDeleteRows = false };
-        var include = new DataGridCheckBoxColumn { Header = "Dahil", Binding = new Binding("Included") };
+        var include = new DataGridCheckBoxColumn { Header = Loc.Text("L2A957CDC6892"), Binding = new Binding("Included") };
         grid.Columns.Add(include);
         void AddColumn(string header, string property, DataGridLength width) =>
             grid.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(property), Width = width, IsReadOnly = true });
-        AddColumn("Depo", "Repository", new(2, DataGridLengthUnitType.Star));
-        AddColumn("Dal", "Branch", new(100));
-        AddColumn("Çalışma ağacı", "Worktree", new(118));
-        AddColumn("Durum", "Status", new(110));
-        AddColumn("Komut ve sonuç", "Detail", new(2, DataGridLengthUnitType.Star));
-        var start = new Button { Content = "Seçili depolarda Fetch", MinWidth = 145, Margin = new(0, 8, 8, 0) };
-        var close = new Button { Content = "Kapat", MinWidth = 82, Margin = new(0, 8, 0, 0) };
+        AddColumn(Loc.Text("L582095FBE4C3"), "Repository", new(2, DataGridLengthUnitType.Star));
+        AddColumn(Loc.Text("L1245EEBD439F"), "Branch", new(100));
+        AddColumn(Loc.Text("L55998A2BD3B4"), "Worktree", new(118));
+        AddColumn(Loc.Text("L8BD057388E28"), "Status", new(110));
+        AddColumn(Loc.Text("L2B36A0FE599A"), "Detail", new(2, DataGridLengthUnitType.Star));
+        var start = new Button { Content = Loc.Text("L6F312B82B8DF"), MinWidth = 145, Margin = new(0, 8, 8, 0) };
+        var close = new Button { Content = Loc.Text("L7B31A9FC4816"), MinWidth = 82, Margin = new(0, 8, 0, 0) };
         close.Click += (_, _) =>
         {
             if (_running)
@@ -68,19 +68,19 @@ internal sealed class BatchFetchWindow : ThemedWindow
             grid.CommitEdit(DataGridEditingUnit.Row, true);
             if (!_results.Any(row => row.Included))
             {
-                MessageBox.Show(this, "En az bir depo seçin.", Title);
+                MessageBox.Show(this, Loc.Text("LD1152FC0382B"), Title);
                 return;
             }
 
             grid.IsReadOnly = true;
             start.IsEnabled = false;
-            close.Content = "Durdur";
+            close.Content = Loc.Text("L5769A8F8AECD");
             _running = true;
             try { await FetchAsync(workspaceToken); }
             finally
             {
                 _running = false;
-                close.Content = "Kapat";
+                close.Content = Loc.Text("L7B31A9FC4816");
                 close.IsEnabled = true;
             }
         };
@@ -94,33 +94,33 @@ internal sealed class BatchFetchWindow : ThemedWindow
             var row = _results[i];
             if (!row.Included)
             {
-                _results[i] = row with { Status = "Seçilmedi" };
+                _results[i] = row with { Status = Loc.Text("LE6DDB798B890") };
                 continue;
             }
             if (token.IsCancellationRequested)
             {
-                _results[i] = row with { Status = "İptal edildi" };
+                _results[i] = row with { Status = Loc.Text("LDBD417DA03E1") };
                 continue;
             }
 
-            _results[i] = row with { Status = "Getiriliyor" };
-            var operation = OperationCenter.Start("Toplu Fetch", row.Repository,
+            _results[i] = row with { Status = Loc.Text("L922579148843") };
+            var operation = OperationCenter.Start(Loc.Text("L04777757E3AE"), row.Repository,
                 () => _ = RetryFetchAsync(row.Repository, workspaceToken));
             try
             {
                 var (status, detail) = await FetchRepositoryAsync(row.Repository, token);
                 _results[i] = row with { Status = status, Detail = detail };
-                operation.Finish(status == "Kısmen tamamlandı" ? "Başarısız" : status, detail);
+                operation.Finish(status == Loc.Text("L34B5B124A137") ? Loc.Text("LF0873175A881") : status, detail);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
-                _results[i] = row with { Status = "İptal edildi" };
-                operation.Finish("Durduruldu");
+                _results[i] = row with { Status = Loc.Text("LDBD417DA03E1") };
+                operation.Finish(Loc.Text("L7C925A8624F1"));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
             {
-                _results[i] = row with { Status = "Başarısız", Detail = ex.Message };
-                operation.Finish("Başarısız", ex.Message);
+                _results[i] = row with { Status = Loc.Text("LF0873175A881"), Detail = ex.Message };
+                operation.Finish(Loc.Text("LF0873175A881"), ex.Message);
             }
         }
     }
@@ -136,7 +136,7 @@ internal sealed class BatchFetchWindow : ThemedWindow
             try
             {
                 await git.FetchAsync(remote, token);
-                details.Add($"{remote} · Tamamlandı");
+                details.Add(Loc.Format("L4905B289A951", remote));
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
             {
@@ -145,8 +145,8 @@ internal sealed class BatchFetchWindow : ThemedWindow
             }
         }
         if (remotes.Length == 0)
-            return ("Atlandı", "Uzak depo tanımlı değil.");
-        return (failures == 0 ? "Tamamlandı" : failures == remotes.Length ? "Başarısız" : "Kısmen tamamlandı",
+            return (Loc.Text("L594B1254C47D"), Loc.Text("LF8A40EEE03A3"));
+        return (failures == 0 ? Loc.Text("L7C6F3F5F37BC") : failures == remotes.Length ? Loc.Text("LF0873175A881") : Loc.Text("L34B5B124A137"),
             string.Join(Environment.NewLine, details));
     }
 
@@ -156,15 +156,15 @@ internal sealed class BatchFetchWindow : ThemedWindow
         try
         {
             var (status, detail) = await FetchRepositoryAsync(repository, token);
-            operation.Finish(status == "Kısmen tamamlandı" ? "Başarısız" : status, detail);
+            operation.Finish(status == Loc.Text("L34B5B124A137") ? Loc.Text("LF0873175A881") : status, detail);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
-            operation.Finish("Durduruldu");
+            operation.Finish(Loc.Text("L7C925A8624F1"));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            operation.Finish("Başarısız", ex.Message);
+            operation.Finish(Loc.Text("LF0873175A881"), ex.Message);
         }
     }
 }

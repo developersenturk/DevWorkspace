@@ -6,16 +6,16 @@ using System.Text.RegularExpressions;
 
 namespace DevWorkspace;
 
-internal sealed class GitHubCliMissingException() : IOException("Bu işlem için GitHub CLI kurulumu gerekli.");
+internal sealed class GitHubCliMissingException() : IOException(Loc.Text("L2068C1AEE7E0"));
 
-internal sealed class GitHubLoginRequiredException() : IOException("Bu işlem için GitHub’a giriş yapın.");
+internal sealed class GitHubLoginRequiredException() : IOException(Loc.Text("LB9B1D2623718"));
 
 internal sealed class GitHubWorkflowPermissionException() : IOException(
-    "GitHub Actions dosyalarını göndermek için GitHub hesabında ek izin gerekiyor.");
+    Loc.Text("L0E1FB6872E44"));
 
 internal sealed record GitHubRepositoryOwner(string Login, bool IsOrganization)
 {
-    public string Label => IsOrganization ? $"{Login} (organizasyon)" : $"{Login} (kişisel hesap)";
+    public string Label => IsOrganization ? $"{Login} (organizasyon)" : Loc.Format("L5CA1CE7E0517", Login);
     public string CreateEndpoint => IsOrganization ? $"orgs/{Login}/repos" : "user/repos";
     public Uri RepositoryUrl(string name) => new($"https://github.com/{Login}/{name}");
 }
@@ -26,20 +26,20 @@ internal sealed record GitHubRepository(string FullName, string Visibility, bool
     public string Name => FullName[(FullName.IndexOf('/') + 1)..];
     public string Owner => FullName[..FullName.IndexOf('/')];
     internal string HttpsCloneUrl => $"https://github.com/{FullName}.git";
-    public string DescriptionLabel => string.IsNullOrWhiteSpace(Description) ? "Açıklama eklenmemiş" : Description;
+    public string DescriptionLabel => string.IsNullOrWhiteSpace(Description) ? Loc.Text("L300235F3EE63") : Description;
     internal bool IsOrganization => OwnerType == "Organization";
     public string VisibilityLabel => Visibility switch
     {
-        "private" => "Özel",
-        "internal" => "Kuruluş içi",
-        "public" => "Herkese açık",
-        _ => "Bilinmiyor"
+        "private" => Loc.Text("L7BD8B8264C4E"),
+        "internal" => Loc.Text("LC705CFF59F46"),
+        "public" => Loc.Text("LC5848E39E3A2"),
+        _ => Loc.Text("L1C5B653893E8")
     };
-    public string AccessLabel => Archived ? "Arşivlenmiş" : CanPush switch
+    public string AccessLabel => Archived ? Loc.Text("LBEBC19C34B1F") : CanPush switch
     {
-        true => "Yazabilir",
-        false => "Salt okunur",
-        null => "Bilinmiyor"
+        true => Loc.Text("LAAD73169BE56"),
+        false => Loc.Text("LC66561B3DF3A"),
+        null => Loc.Text("L1C5B653893E8")
     };
 }
 
@@ -64,14 +64,14 @@ internal static class GitHubCli
     private static async Task AuthorizeAsync(string[] args, IProgress<string> progress, CancellationToken token)
     {
         var info = CreateInfo(args);
-        var (code, output, error) = await ProjectTools.CaptureAsync(info, "GitHub girişi", 900, token, line =>
+        var (code, output, error) = await ProjectTools.CaptureAsync(info, Loc.Text("L71612484AF92"), 900, token, line =>
         {
             var match = DeviceCode.Match(line);
             if (match.Success)
                 progress.Report(match.Groups["code"].Value);
         });
         if (code != 0)
-            throw new IOException($"GitHub girişi tamamlanamadı. {CommandError(code, output, error)}");
+            throw new IOException(Loc.Format("L5A1F6CF6EA68", CommandError(code, output, error)));
     }
 
     public static async Task<string> RunAsync(string[] arguments, CancellationToken token, int timeoutSeconds = 30)
@@ -82,7 +82,7 @@ internal static class GitHubCli
             if (code == 4 || error.Contains("HTTP 401", StringComparison.OrdinalIgnoreCase) ||
                 error.Contains("gh auth login", StringComparison.OrdinalIgnoreCase))
                 throw new GitHubLoginRequiredException();
-            throw new IOException($"{Label} tamamlanamadı. {CommandError(code, output, error)}");
+            throw new IOException(Loc.Format("L8070CD466E9B", Label, CommandError(code, output, error)));
         }
         return output;
     }
@@ -104,6 +104,46 @@ internal static class GitHubCli
         Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}\z") &&
         !name.EndsWith("/.", StringComparison.Ordinal) && !name.EndsWith("/..", StringComparison.Ordinal);
 
+    internal static string RepositoryNameFromUrl(string input)
+    {
+        string value = input.Trim();
+        string path;
+        if (value.StartsWith("git@github.com:", StringComparison.OrdinalIgnoreCase))
+            path = value["git@github.com:".Length..];
+        else
+        {
+            if (value.StartsWith("github.com/", StringComparison.OrdinalIgnoreCase))
+                value = "https://" + value;
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps ||
+                !uri.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase) || !uri.IsDefaultPort ||
+                uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0)
+                throw new ArgumentException(Loc.Text("L79C668FE03E8"));
+            // Validate the original path as well: Uri normalizes dot segments.
+            path = value[(value.IndexOf("://", StringComparison.Ordinal) + 3)..];
+            path = path.Contains('/') ? path[(path.IndexOf('/') + 1)..] : "";
+        }
+        path = path.TrimEnd('/');
+        if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+            path = path[..^4];
+        if (!IsRepositoryName(path))
+            throw new ArgumentException(Loc.Text("L94884D283C7A"));
+        return path;
+    }
+
+    internal static async Task<GitHubRepository> ReadRepositoryByUrlAsync(string input, CancellationToken token)
+    {
+        string name = RepositoryNameFromUrl(input);
+        string output = await RunAsync(["api", "--hostname", "github.com", $"repos/{name}", "--jq", """
+            {FullName: .full_name, Visibility: .visibility, Archived: .archived, CanPush: .permissions.push,
+             OwnerType: .owner.type, Description: .description, Language: .language,
+             DefaultBranch: .default_branch, PushedAt: .pushed_at, Topics: .topics}
+            """], token);
+        var repository = JsonSerializer.Deserialize<GitHubRepository>(output);
+        if (repository is null || !IsRepositoryName(repository.FullName))
+            throw new IOException(Loc.Text("L927EB2846641"));
+        return repository;
+    }
+
     public static async Task<GitHubRepository[]> ReadRepositoriesAsync(CancellationToken token)
     {
         string output = await RunAsync(["api", "--hostname", "github.com", "--paginate",
@@ -124,7 +164,7 @@ internal static class GitHubCli
     public static async Task<string> ReadRepositoryReadmeAsync(GitHubRepository repository, CancellationToken token)
     {
         if (!IsRepositoryName(repository.FullName))
-            throw new IOException("GitHub depo adı doğrulanamadı.");
+            throw new IOException(Loc.Text("LCE2E7290A093"));
 
         try
         {
@@ -141,9 +181,9 @@ internal static class GitHubCli
         CancellationToken token)
     {
         if (!IsRepositoryName(repository.FullName))
-            throw new IOException("GitHub depo adı doğrulanamadı.");
+            throw new IOException(Loc.Text("LCE2E7290A093"));
         if (!string.Equals(account, await ReadAccountAsync(token), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Etkin GitHub hesabı değişti. Depo listesini yenileyin.");
+            throw new IOException(Loc.Text("L3A9F06A2E736"));
 
         parent = Path.GetFullPath(parent);
         string name = repository.Name.TrimEnd('.');
@@ -151,7 +191,7 @@ internal static class GitHubCli
             name = "repo-" + name;
         string destination = Path.Combine(parent, name);
         if (Path.Exists(destination))
-            throw new IOException($"Bu konumda aynı adlı bir dosya veya klasör var. Başka bir üst klasör seçin. {destination}");
+            throw new IOException(Loc.Format("L471179E51D9F", destination));
 
         string url = repository.HttpsCloneUrl;
         string key = $"credential.{url}.helper";
@@ -164,7 +204,7 @@ internal static class GitHubCli
                 ["clone", "--origin", "origin", "--config", $"{key}=", "--config", $"{key}={helper}",
                     "--", url, staging], token, timeoutSeconds: 900);
             if (code != 0)
-                throw new IOException($"Depo indirilemedi. {CommandError(code, output, error)}");
+                throw new IOException(Loc.Format("LB0635DF555E9", CommandError(code, output, error)));
 
             token.ThrowIfCancellationRequested();
             Directory.Move(staging, destination);
@@ -201,7 +241,7 @@ internal static class GitHubCli
         bool isPrivate, CancellationToken token)
     {
         if (!string.Equals(account, await ReadAccountAsync(token), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+            throw new IOException(Loc.Text("L398AA24E6615"));
 
         string url;
         try
@@ -211,10 +251,10 @@ internal static class GitHubCli
         }
         catch (IOException ex) when (owner.IsOrganization && ex is not (GitHubCliMissingException or GitHubLoginRequiredException))
         {
-            throw new IOException($"{owner.Login} organizasyonunda depo oluşturulamadı. {ex.Message}", ex);
+            throw new IOException(Loc.Format("LBEF38E2DB113", owner.Login, ex.Message), ex);
         }
         if (!string.Equals(url, owner.RepositoryUrl(name).AbsoluteUri, StringComparison.OrdinalIgnoreCase))
-            throw new IOException("GitHub beklenen depo adresini döndürmedi.");
+            throw new IOException(Loc.Text("L911FF88C5B07"));
     }
 
     internal static string CredentialHelper()
@@ -242,6 +282,6 @@ internal static class GitHubCli
         string detail = string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim();
         // A failed sign-in can include the one-time device code in its output.
         detail = DeviceCode.Replace(detail, "one-time code");
-        return $"Kod {code}. {detail[..Math.Min(detail.Length, 900)]}";
+        return Loc.Format("L530E35E8B4C3", code, detail[..Math.Min(detail.Length, 900)]);
     }
 }

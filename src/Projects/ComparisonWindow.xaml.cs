@@ -19,8 +19,8 @@ public partial class ComparisonWindow : ThemedWindow
         _workspace = workspace;
         _left = left;
         _right = right;
-        LeftName.Text = $"Sol · {left.Name}";
-        RightName.Text = $"Sağ · {right.Name}";
+        LeftName.Text = Loc.Format("L1CE1D6431325", left.Name);
+        RightName.Text = Loc.Format("L08668719AC61", right.Name);
         LeftPathText.Text = left.RelativePath;
         RightPathText.Text = right.RelativePath;
     }
@@ -34,11 +34,11 @@ public partial class ComparisonWindow : ThemedWindow
                 return;
 
             _differences = result.Differences;
-            SummaryText.Text = $"{result.Identical:N0} aynı · {_differences.Count(d => d.Kind == FileDifferenceKind.Modified):N0} değişmiş · " +
-                $"{_differences.Count(d => d.Kind == FileDifferenceKind.LeftOnly):N0} yalnız solda · {_differences.Count(d => d.Kind == FileDifferenceKind.RightOnly):N0} yalnız sağda";
+            SummaryText.Text = Loc.Format("L3C75734A6EBE", result.Identical, _differences.Count(d => d.Kind == FileDifferenceKind.Modified)) +
+                Loc.Format("L230EEBAAD0ED", _differences.Count(d => d.Kind == FileDifferenceKind.LeftOnly), _differences.Count(d => d.Kind == FileDifferenceKind.RightOnly));
             int skipped = result.Skipped + _differences.Count(d => d.Kind == FileDifferenceKind.Unreadable);
             if (skipped > 0)
-                SummaryText.Text += $" · {skipped:N0} atlandı / okunamadı";
+                SummaryText.Text += Loc.Format("L38197D42FA04", skipped);
             FilterFiles();
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
@@ -59,7 +59,7 @@ public partial class ComparisonWindow : ThemedWindow
         DifferenceList.ItemsSource = files;
         DifferenceList.SelectedIndex = files.Length > 0 ? 0 : -1;
         if (files.Length == 0)
-            PreviewCaption.Text = query.Length == 0 ? "Gösterilecek dosya farkı yok." : "Aramaya uyan dosya farkı yok.";
+            PreviewCaption.Text = query.Length == 0 ? Loc.Text("L65426D628640") : Loc.Text("L508568E67CF7");
     }
 
     private async void DifferenceChanged(object sender, RoutedEventArgs e)

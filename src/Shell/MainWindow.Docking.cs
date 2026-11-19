@@ -14,7 +14,7 @@ public partial class MainWindow
 
         if (!_resumeSessions.TryGetValue(workspace.Root, out var saved) || saved.View is not { } view)
         {
-            StatusText.Text = "Bu çalışma alanı için önceki oturum bulunamadı.";
+            StatusText.Text = Loc.Text("L4EDDE597A21A");
             return;
         }
 
@@ -32,7 +32,7 @@ public partial class MainWindow
                     project.RelativePath.Equals(saved.SelectedProject, StringComparison.OrdinalIgnoreCase)) is { } project)
                 FocusProject(project);
             await RestoreWorkspacePanelsAsync(view);
-            StatusText.Text = "Önceki çalışma görünümü açıldı.";
+            StatusText.Text = Loc.Text("LEB731D19C1BA");
         }
         finally
         {
@@ -87,7 +87,7 @@ public partial class MainWindow
 
         var project = ProjectGrid.SelectedItem as ProjectEntry;
         SelectedRepositoryMenu.Header = project?.Repository is not null
-            ? new TextBlock { Text = $"Seçili depo · {project.Name}" } : "Seçili depo";
+            ? new TextBlock { Text = Loc.Format("L639DE7AC8860", project.Name) } : Loc.Text("LC9FB4EFC0339");
         SelectedRepositoryMenu.IsEnabled = !_busy && _gitView?.IsBusy != true && project?.Repository is not null;
         BatchFetchMenu.IsEnabled = !_busy && _gitView?.IsBusy != true && SelectedProjects().Any(item => item.Repository is not null);
         GitHubRepositoriesMenu.IsEnabled = !_busy && _gitView?.IsBusy != true;
@@ -111,7 +111,7 @@ public partial class MainWindow
         }
         else
         {
-            StatusText.Text = $"Depo {folder} konumuna indirildi. Çalışma alanına eklemek için Dosya menüsünden klasörü bağlayın.";
+            StatusText.Text = Loc.Format("L635DCEEDC8D1", folder);
         }
     }
 
@@ -178,7 +178,7 @@ public partial class MainWindow
         {
             if (current.IsBusy)
             {
-                StatusText.Text = "Başka bir projeye geçmeden önce Git işleminin bitmesini bekleyin.";
+                StatusText.Text = Loc.Text("L7C0AB8F2E092");
                 return null;
             }
 
@@ -267,11 +267,11 @@ public partial class MainWindow
         UpdateCentralView();
     }
 
-    internal void SetGitDiffHeader(string title, string subtitle, string before = "Önce", string after = "Sonra")
+    internal void SetGitDiffHeader(string title, string subtitle, string? before = null, string? after = null)
     {
         GitDiffTitle.Text = title;
         GitDiffSubtitle.Text = subtitle;
-        GetGitDiff().SetHeaders(before, after);
+        GetGitDiff().SetHeaders(before ?? Loc.Text("LC9809CB12580"), after ?? Loc.Text("L765EB2F15309"));
     }
 
     internal void SetGitDiffPreview(GitDiffPreview preview) => GetGitDiff().ShowPreview(preview);

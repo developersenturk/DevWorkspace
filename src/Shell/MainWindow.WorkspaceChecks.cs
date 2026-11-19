@@ -46,11 +46,11 @@ public partial class MainWindow
         bool ready = !_busy && _projects.Count > 0;
         bool hasPackages = _projects.Any(PackageSecurity.IsSupported);
         bool hasActions = _projects.Any(project => project.Git.Remotes is { Count: > 0 });
-        DashboardHealthButton.Content = CheckButton(WorkspaceCheck.Health, "Projeleri kontrol et");
-        DashboardPackagesButton.Content = CheckButton(WorkspaceCheck.Packages, "Paketleri tara");
-        DashboardPackageRepairButton.Content = CheckButton(WorkspaceCheck.PackageRepair, "Açıkları düzelt");
-        DashboardPackageVersionsButton.Content = CheckButton(WorkspaceCheck.PackageVersions, "Sürüm değişikliklerini incele");
-        DashboardActionsButton.Content = CheckButton(WorkspaceCheck.Actions, "Actions durumunu al");
+        DashboardHealthButton.Content = CheckButton(WorkspaceCheck.Health, Loc.Text("LA63B0EB6F351"));
+        DashboardPackagesButton.Content = CheckButton(WorkspaceCheck.Packages, Loc.Text("L8379E9BCE67F"));
+        DashboardPackageRepairButton.Content = CheckButton(WorkspaceCheck.PackageRepair, Loc.Text("L875C0631DB2C"));
+        DashboardPackageVersionsButton.Content = CheckButton(WorkspaceCheck.PackageVersions, Loc.Text("LF259510EC4E6"));
+        DashboardActionsButton.Content = CheckButton(WorkspaceCheck.Actions, Loc.Text("L763DD50948E1"));
         DashboardHealthButton.IsEnabled = CheckEnabled(WorkspaceCheck.Health, ready);
         DashboardPackagesButton.IsEnabled = CheckEnabled(WorkspaceCheck.Packages, ready && hasPackages);
         DashboardPackageRepairButton.IsEnabled = CheckEnabled(WorkspaceCheck.PackageRepair, ready && _packageRepairTargets.Count > 0);
@@ -60,31 +60,31 @@ public partial class MainWindow
         var health = _checkReports.GetValueOrDefault(WorkspaceCheck.Health);
         var packages = _checkReports.GetValueOrDefault(WorkspaceCheck.Packages);
         var actions = _checkReports.GetValueOrDefault(WorkspaceCheck.Actions);
-        DashboardHealthSummary.Text = Summary(WorkspaceCheck.Health, health.Summary, "Henüz kontrol edilmedi.");
+        DashboardHealthSummary.Text = Summary(WorkspaceCheck.Health, health.Summary, Loc.Text("L5ED3D706C1AC"));
         DashboardPackagesSummary.Text = Summary(IsPackageUpdate(_activeCheck) ? _activeCheck : WorkspaceCheck.Packages, packages.Summary, hasPackages
-            ? "npm, pnpm, Yarn, Bun ve Flutter kilit dosyalarındaki sürümler OSV ile kontrol edilir."
-            : "JavaScript veya Flutter projesi bulunamadı.");
+            ? Loc.Text("L341D339E1D03")
+            : Loc.Text("LE22D1CF8CD9F"));
         DashboardActionsSummary.Text = Summary(WorkspaceCheck.Actions, actions.Summary, hasActions
-            ? "GitHub’daki en son iş akışı sonucu isteğe bağlı olarak alınır."
-            : "Uzak adresi olan bir Git deposu bulunamadı.");
+            ? Loc.Text("L847CFA816980")
+            : Loc.Text("L7A21CA0766CC"));
         DashboardHealthRows.ItemsSource = health.Rows;
         DashboardPackageRows.ItemsSource = packages.Rows;
         DashboardActionRows.ItemsSource = actions.Rows;
         DashboardAheadRows.ItemsSource = ahead.Select(project => new DashboardLink(project.Name,
-            $"{project.Branch} · {project.Git.Ahead:N0} gönderilmemiş commit · {project.Git.Upstream}", "git-workbench", project)).ToArray();
+            Loc.Format("L8C5C90056ECE", project.Branch, project.Git.Ahead, project.Git.Upstream), "git-workbench", project)).ToArray();
 
         if (DevelopmentTools.Find(DevelopmentTool.Git) is null)
-            tasks.Add(new("Git’i kur", "Projeler taranabilir. Depo durumu ve Git işlemleri için Git gerekli.", "tools-git"));
+            tasks.Add(new("Git’i kur", Loc.Text("L99F02E5CDAAA"), "tools-git"));
         if (ahead.Length > 0)
-            tasks.Add(new("Gönderilmemiş commit’leri incele", $"{ahead.Length:N0} depo", "actions-section"));
+            tasks.Add(new(Loc.Text("LC171C8B8E925"), Loc.Format("LB06EC83762FB", ahead.Length), "actions-section"));
         if (health.Rows is { Length: > 0 })
-            tasks.Add(new("Proje sağlığı bulgularını incele", health.Summary!, "health-section"));
+            tasks.Add(new(Loc.Text("LCED9A7258414"), health.Summary!, "health-section"));
         if (packages.Rows?.Any(row => row.Navigation == "external") == true)
-            tasks.Add(new("JavaScript ve Flutter paket açıklarını incele", packages.Summary!, "packages-section"));
+            tasks.Add(new(Loc.Text("L93E9F1B85B52"), packages.Summary!, "packages-section"));
         if (actions.Rows?.Any(row => row.Link is not null) == true)
-            tasks.Add(new("Başarısız GitHub Actions çalıştırmalarını incele", actions.Summary!, "actions-section"));
+            tasks.Add(new(Loc.Text("L3E550115E74A"), actions.Summary!, "actions-section"));
 
-        string CheckButton(WorkspaceCheck check, string label) => running && check == _activeCheck ? "Durdur" : label;
+        string CheckButton(WorkspaceCheck check, string label) => running && check == _activeCheck ? Loc.Text("L5769A8F8AECD") : label;
         bool CheckEnabled(WorkspaceCheck check, bool available) =>
             running ? check == _activeCheck && !_workspaceCheck!.IsCancellationRequested : available;
         string Summary(WorkspaceCheck check, string? completed, string initial) =>
@@ -107,10 +107,10 @@ public partial class MainWindow
         }
         if (_busy || _packageRepairTargets.Count == 0)
             return;
-        string message = $"{_packageRepairTargets.Count:N0} kilit dosyasında açık bulundu. " +
-            "Mevcut sürüm aralıklarına uyan güncellemeler kilit dosyalarına uygulanacak. " +
-            "DevWorkspace güncellenen dosyaları yeniden tarayıp kalan açıkları gösterecek.\n\nDevam edilsin mi?";
-        if (MessageBox.Show(this, message, "Paket açıklarını düzelt", MessageBoxButton.YesNo,
+        string message = Loc.Format("L2988696A5CEF", _packageRepairTargets.Count) +
+            Loc.Text("L798785C6F6BA") +
+            Loc.Text("LC47CB29F6D6A");
+        if (MessageBox.Show(this, message, Loc.Text("LB3664698ABD4"), MessageBoxButton.YesNo,
                 MessageBoxImage.Question, MessageBoxResult.No) == MessageBoxResult.Yes)
             await RunWorkspaceCheckAsync(WorkspaceCheck.PackageRepair, RepairWorkspacePackagesAsync);
     }
@@ -143,13 +143,13 @@ public partial class MainWindow
         foreach (var (path, project) in targets)
         {
             token.ThrowIfCancellationRequested();
-            SetCheckProgress($"Paket sürümleri ve bağımlılıklar inceleniyor · {project.Name}");
+            SetCheckProgress(Loc.Format("LE219591B17C7", project.Name));
             try
             {
                 var tool = PackageSecurityRepair.RequiredTool(path)!.Value;
                 if (!await ToolSetupWindow.EnsureReadyAsync(this, tool, token))
                 {
-                    notes.Add(new(project.Name, $"{DevelopmentTools.Get(tool).Name} eksik · bağımlılık ağacı incelenemedi.", "project", project));
+                    notes.Add(new(project.Name, Loc.Format("L0C02E6ADCD1D", DevelopmentTools.Get(tool).Name), "project", project));
                     continue;
                 }
                 IProgress<string> progress = new Progress<string>(message =>
@@ -161,28 +161,28 @@ public partial class MainWindow
                 token.ThrowIfCancellationRequested();
                 if (plan is null)
                 {
-                    notes.Add(new(project.Name, "Kalan açıklar için doğrulanmış bir paket güncellemesi bulunamadı.", "project", project));
+                    notes.Add(new(project.Name, Loc.Text("L4F8400AA00DA"), "project", project));
                     continue;
                 }
                 if (new PackageVersionReviewWindow(project.Name, plan) { Owner = this }.ShowDialog() != true)
                 {
-                    notes.Add(new(project.Name, "Önerilen sürüm değişiklikleri atlandı.", "project", project));
+                    notes.Add(new(project.Name, Loc.Text("L0289960D53D3"), "project", project));
                     continue;
                 }
                 // Invalidate the previous report before making any on-disk changes.
                 _packageRepairTargets.Clear();
                 _checkReports.Remove(WorkspaceCheck.Packages);
-                SetCheckProgress($"Onaylanan sürümler uygulanıyor · {project.Name}");
+                SetCheckProgress(Loc.Format("LBB14B4F3A644", project.Name));
                 int fixedCount = await PackageSecurityRepair.ApplyVersionsAsync(plan,
-                    () => SetCheckProgress($"Yeniden taranıyor · {project.Name}"), token);
+                    () => SetCheckProgress(Loc.Format("L89B8260C26A9", project.Name)), token);
                 resolved += fixedCount;
-                notes.Add(new(project.Name, $"{fixedCount:N0} açık giderildi · onaylanan sürümler uygulandı", "project", project));
+                notes.Add(new(project.Name, Loc.Format("L9B0BEAD51E9F", fixedCount), "project", project));
             }
             catch (Exception ex) when (IsCheckError(ex) || ex is System.Net.Http.HttpRequestException ||
                 ex is OperationCanceledException && !token.IsCancellationRequested || ex is System.Text.DecoderFallbackException)
             {
-                string detail = ex is OperationCanceledException ? "Sürüm sorgusu zaman aşımına uğradı." : ex.Message;
-                notes.Add(new(project.Name, $"Sürüm değişikliği tamamlanamadı · {detail}", "project", project));
+                string detail = ex is OperationCanceledException ? Loc.Text("LE03F17BCF7EC") : ex.Message;
+                notes.Add(new(project.Name, Loc.Format("L659A596B78B9", detail), "project", project));
             }
         }
         await ScanWorkspacePackagesAsync(workspace, projects, null, token, resolved, notes);
@@ -197,7 +197,7 @@ public partial class MainWindow
         {
             if (_activeCheck == check)
             {
-                _checkProgress = "Durduruluyor…";
+                _checkProgress = Loc.Text("L3EA8EA87378B");
                 active.Cancel();
                 UpdateDashboard();
             }
@@ -213,11 +213,11 @@ public partial class MainWindow
         _activeCheck = check;
         string name = check switch
         {
-            WorkspaceCheck.Health => "Proje sağlığı",
-            WorkspaceCheck.Packages => "Paket güvenliği taraması",
-            WorkspaceCheck.PackageRepair => "Paket açıklarını düzelt",
-            WorkspaceCheck.PackageVersions => "Paket sürümlerini incele",
-            _ => "GitHub Actions kontrolü"
+            WorkspaceCheck.Health => Loc.Text("L2E80E71B0660"),
+            WorkspaceCheck.Packages => Loc.Text("LABA523785AA1"),
+            WorkspaceCheck.PackageRepair => Loc.Text("LB3664698ABD4"),
+            WorkspaceCheck.PackageVersions => Loc.Text("L0A495901FE1E"),
+            _ => Loc.Text("L668CF10B256C")
         };
         var operation = OperationCenter.Start(name, workspace.Config.Name,
             IsPackageUpdate(check) ? null : () =>
@@ -226,27 +226,27 @@ public partial class MainWindow
                     _ = RunWorkspaceCheckAsync(check, scan);
             });
         operation.Cancel = cancellation.Cancel;
-        SetCheckProgress("Kontrol hazırlanıyor…");
+        SetCheckProgress(Loc.Text("LF285326C6EAA"));
         try
         {
             await scan(workspace, _projects.ToArray(), cancellation.Token);
             var report = _checkReports.GetValueOrDefault(IsPackageUpdate(check) ? WorkspaceCheck.Packages : check);
-            operation.Finish(cancellation.IsCancellationRequested ? "Durduruldu" : "Tamamlandı", report.Summary);
+            operation.Finish(cancellation.IsCancellationRequested ? Loc.Text("L7C925A8624F1") : Loc.Text("L7C6F3F5F37BC"), report.Summary);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            operation.Finish("Durduruldu");
+            operation.Finish(Loc.Text("L7C925A8624F1"));
             var report = IsPackageUpdate(check) ? WorkspaceCheck.Packages : check;
             if (!_checkReports.ContainsKey(report) && string.Equals(workspace.Root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
                 _checkReports[report] = (IsPackageUpdate(check)
-                    ? "Güncelleme durduruldu. Kalan açıkları görmek için paketleri yeniden tarayın." : "Kontrol durduruldu.", []);
+                    ? Loc.Text("LBEF35BD3942E") : Loc.Text("L541D110615C2"), []);
         }
         catch (Exception ex) when (IsCheckError(ex))
         {
-            operation.Finish("Başarısız", ex.Message);
+            operation.Finish(Loc.Text("LF0873175A881"), ex.Message);
             if (string.Equals(workspace.Root, _workspace?.Root, StringComparison.OrdinalIgnoreCase))
                 _checkReports[IsPackageUpdate(check) ? WorkspaceCheck.Packages : check] =
-                    ($"Kontrol tamamlanamadı. {ex.Message}", []);
+                    (Loc.Format("LB0E8642EE9FE", ex.Message), []);
         }
         finally
         {
@@ -281,12 +281,12 @@ public partial class MainWindow
         for (int index = 0; index < projects.Length; index++)
         {
             var project = projects[index];
-            SetCheckProgress($"Proje sağlığı · {index + 1}/{projects.Length} · {project.Name}");
+            SetCheckProgress(Loc.Format("L203934CF6EB8", index + 1, projects.Length, project.Name));
             HealthResult result;
             try { result = await Task.Run(() => ProjectHealth.CheckAsync(workspace, project, token), token); }
             catch (Exception ex) when (IsCheckError(ex))
             {
-                result = new([new("Okunamadı", ex.Message)], 0, 0, 0);
+                result = new([new(Loc.Text("LEDD1397983CA"), ex.Message)], 0, 0, 0);
             }
 
             var findings = result.Findings.ToList();
@@ -302,23 +302,23 @@ public partial class MainWindow
                     _ => false
                 };
                 if (needed)
-                    findings.Add(new("Araç", $"{DevelopmentTools.Get(tool).Name} gerekli. Geliştirme araçları ekranından kurabilirsiniz."));
+                    findings.Add(new(Loc.Text("L9A9433501663"), Loc.Format("LBFD3DEA93FC1", DevelopmentTools.Get(tool).Name)));
             }
             result = result with { Findings = findings };
             reports[project.RelativePath] = result;
             if (findings.Count > 0 || result.Skipped + result.Unresolved > 0)
             {
                 string detail = findings.FirstOrDefault()?.Description ??
-                    $"{result.Skipped:N0} atlanan · {result.Unresolved:N0} çözümlenemeyen";
-                rows.Add(new(project.Name, $"{findings.Count:N0} bulgu · {detail}", "health-report", project));
+                    Loc.Format("L57B2D5ACFF9E", result.Skipped, result.Unresolved);
+                rows.Add(new(project.Name, Loc.Format("LE88B7E090C0F", findings.Count, detail), "health-report", project));
             }
         }
         token.ThrowIfCancellationRequested();
         _healthReports.Clear();
         foreach (var (path, result) in reports)
             _healthReports.Add(path, result);
-        string summary = rows.Count == 0 ? $"{projects.Length:N0} proje kontrol edildi · bulgu yok" :
-            $"{projects.Length:N0} proje kontrol edildi · {rows.Count:N0} proje incelenmeli";
+        string summary = rows.Count == 0 ? Loc.Format("L4800D3969D5E", projects.Length) :
+            Loc.Format("LC27E362B0984", projects.Length, rows.Count);
         summary += $" · {DateTime.Now:g}";
         _checkReports[WorkspaceCheck.Health] = (summary, rows.ToArray());
     }
@@ -329,7 +329,7 @@ public partial class MainWindow
         var targets = await Task.Run(() => projects.Where(PackageSecurity.IsSupported)
             .Select(project => (Project: project, Files: PackageSecurity.FindLockfiles(workspace, project))).ToArray(), token);
         var rows = targets.Where(target => target.Files.Length == 0)
-            .Select(target => new DashboardLink(target.Project.Name, "Kilit dosyası eksik · güvenlik durumu bilinmiyor",
+            .Select(target => new DashboardLink(target.Project.Name, Loc.Text("L38378EF40ECF"),
                 "project", target.Project)).ToList();
         int missing = rows.Count;
         if (versionNotes is not null)
@@ -340,8 +340,8 @@ public partial class MainWindow
         {
             token.ThrowIfCancellationRequested();
             _packageRepairTargets.Clear();
-            rows.Insert(0, new("OSV-Scanner’ı kur", $"{files.Length:N0} kilit dosyası tarama bekliyor.", "tools-osv"));
-            _checkReports[WorkspaceCheck.Packages] = ("OSV-Scanner eksik. Paket güvenliği kontrol edilmedi.", rows.ToArray());
+            rows.Insert(0, new(Loc.Text("L97BDD722A240"), Loc.Format("LB31F0C0BFE3D", files.Length), "tools-osv"));
+            _checkReports[WorkspaceCheck.Packages] = (Loc.Text("LFC60D1C3EE66"), rows.ToArray());
             return;
         }
         int completed = 0, errors = 0, empty = 0;
@@ -353,7 +353,7 @@ public partial class MainWindow
         {
             var (path, project) = files[index];
             string file = Path.GetFileName(path);
-            SetCheckProgress($"Paket güvenliği · {index + 1}/{files.Length} · {project.Name}");
+            SetCheckProgress(Loc.Format("LAE24776ECFF6", index + 1, files.Length, project.Name));
             try
             {
                 var result = await PackageSecurity.ScanAsync(path, token);
@@ -361,7 +361,7 @@ public partial class MainWindow
                 if (result.Findings.Length > 0)
                 {
                     if (tool is null)
-                        rows.Add(new(project.Name, $"{file} · bu paket yöneticisi için güncelleme elle yapılmalı", "project", project));
+                        rows.Add(new(project.Name, Loc.Format("LFC2D0429BEA2", file), "project", project));
                     else if (repairTargets?.Contains(path) == true)
                     {
                         int before = result.Findings.Length;
@@ -372,24 +372,24 @@ public partial class MainWindow
                 if (!result.HasPackages)
                 {
                     empty++;
-                    rows.Add(new(project.Name, $"{file} · taranabilir paket bulunamadı", "project", project));
+                    rows.Add(new(project.Name, Loc.Format("LCB8ED31DEC82", file), "project", project));
                     continue;
                 }
                 completed++;
                 if (result.Findings.Length == 0)
-                    rows.Add(new(project.Name, $"{file} · bilinen açık bulunmadı", "project", project));
+                    rows.Add(new(project.Name, Loc.Format("LFB785488351B", file), "project", project));
                 else if (tool is not null)
                     remainingTargets.Add(path);
                 foreach (var finding in result.Findings)
                     findings.Add((new($"{finding.Name} {finding.Version} · {project.Name}",
-                        $"{finding.Severity} · {finding.Advisory} · {path}", "external", project,
+                        $"{finding.SeverityLabel} · {finding.Advisory} · {path}", "external", project,
                         new Uri("https://osv.dev/vulnerability/" + Uri.EscapeDataString(finding.Advisory))),
                         SeverityRank(finding.Severity)));
             }
             catch (Exception ex) when (IsCheckError(ex))
             {
                 errors++;
-                rows.Add(new(project.Name, $"{file} · tarama başarısız · {ex.Message}", "project", project));
+                rows.Add(new(project.Name, Loc.Format("LDA4A513A3E80", file, ex.Message), "project", project));
             }
         }
         token.ThrowIfCancellationRequested();
@@ -397,16 +397,16 @@ public partial class MainWindow
             return;
         _packageRepairTargets.Clear();
         _packageRepairTargets.UnionWith(remainingTargets);
-        var counts = new List<string> { $"{completed:N0} kilit dosyası tarandı" };
-        if (repairTargets is null && approvedResolved is null) counts.Add($"{findings.Count:N0} açık");
+        var counts = new List<string> { Loc.Format("LFA8622C5F130", completed) };
+        if (repairTargets is null && approvedResolved is null) counts.Add(Loc.Format("LFD9AC6BEFE40", findings.Count));
         else
         {
-            counts.Add($"{resolved:N0} açık giderildi");
-            counts.Add($"{findings.Count:N0} açık kaldı");
+            counts.Add(Loc.Format("LF3D16A16472B", resolved));
+            counts.Add(Loc.Format("L3F607B1BE564", findings.Count));
         }
-        if (missing > 0) counts.Add($"{missing:N0} projede kilit dosyası eksik");
-        if (empty > 0) counts.Add($"{empty:N0} dosyada taranabilir paket yok");
-        if (errors > 0) counts.Add($"{errors:N0} tarama başarısız");
+        if (missing > 0) counts.Add(Loc.Format("L1136D546CE94", missing));
+        if (empty > 0) counts.Add(Loc.Format("LDE3D32A71656", empty));
+        if (errors > 0) counts.Add(Loc.Format("L22F24DD305AE", errors));
         counts.Add($"{DateTime.Now:g}");
         _checkReports[WorkspaceCheck.Packages] = (string.Join(" · ", counts),
             findings.OrderByDescending(finding => finding.Rank).Select(finding => finding.Link).Concat(rows).ToArray());
@@ -427,15 +427,15 @@ public partial class MainWindow
                 rows.Add(new(project.Name, $"{file} · {DevelopmentTools.Get(tool).Name} eksik", "project", project));
                 return before;
             }
-            SetCheckProgress($"Paketler güncelleniyor · {project.Name} · {file}");
+            SetCheckProgress(Loc.Format("L83E9534A4139", project.Name, file));
             var (result, detail) = await PackageSecurityRepair.RepairAsync(path, before,
-                () => SetCheckProgress($"Yeniden taranıyor · {project.Name} · {file}"), token);
+                () => SetCheckProgress(Loc.Format("L5AC8C6AC05EE", project.Name, file)), token);
             rows.Add(new(project.Name, $"{file} · {detail}", "project", project));
             return result;
         }
         catch (Exception ex) when (IsCheckError(ex))
         {
-            rows.Add(new(project.Name, $"{file} · güncelleme tamamlanamadı · {ex.Message}", "project", project));
+            rows.Add(new(project.Name, Loc.Format("L7705D41DAC36", file, ex.Message), "project", project));
             return await PackageSecurity.ScanAsync(path, token);
         }
     }
@@ -459,27 +459,27 @@ public partial class MainWindow
                 var run = await ProjectIntegrations.ReadLatestRunAsync(remote, includeJobs: false, token);
                 if (run?.Failed == true)
                     failures++;
-                rows.Add((new(project.Name, run is null ? "GitHub Actions geçmişi boş · Ayrıntıları aç" :
+                rows.Add((new(project.Name, run is null ? Loc.Text("L2BFFE1E75E20") :
                     $"{run.Status} · {run.Workflow} · {run.Branch} · {run.Started?.ToLocalTime():g}", "actions-report", project,
                     run?.Failed == true ? run.Link : null), run?.Failed == true));
             }
             catch (GitHubLoginRequiredException ex)
             {
                 errors++;
-                rows.Add((new("GitHub girişi gerekli", ex.Message, "actions-report", project), false));
+                rows.Add((new(Loc.Text("L9A2E42901DE2"), ex.Message, "actions-report", project), false));
                 break;
             }
             catch (Exception ex) when (IsCheckError(ex))
             {
                 errors++;
-                rows.Add((new(project.Name, $"Actions durumu alınamadı · {ex.Message}", "actions-report", project), false));
+                rows.Add((new(project.Name, Loc.Format("LCB5BB9490FC3", ex.Message), "actions-report", project), false));
             }
         }
         token.ThrowIfCancellationRequested();
         int completed = rows.Count - errors;
-        string summary = completed == 0 && errors == 0 ? "github.com uzak adresi olan depo bulunamadı." :
-            $"{completed:N0} depo kontrol edildi · {failures:N0} son çalıştırma başarısız" +
-            (errors > 0 ? $" · {errors:N0} sorgu tamamlanamadı" : "");
+        string summary = completed == 0 && errors == 0 ? Loc.Text("LEF0A28F83D7C") :
+            Loc.Format("LC99C62509B4F", completed, failures) +
+            (errors > 0 ? Loc.Format("LAE13D9CB13E9", errors) : "");
         _checkReports[WorkspaceCheck.Actions] = ($"{summary} · {DateTime.Now:g}",
             rows.OrderByDescending(row => row.Failed).Select(row => row.Link).ToArray());
         RememberWorkspaceActivity();

@@ -53,11 +53,12 @@ public partial class MainWindow
         DrawerEntryName.Text = Path.GetFileName(project.EntryFile) ?? "";
         DrawerEntryName.Visibility = project.EntryFile is null ? Visibility.Collapsed : Visibility.Visible;
         DrawerOpenButton.Visibility = project.EntryFile is null ? Visibility.Collapsed : Visibility.Visible;
+        DrawerVisualStudioButton.Visibility = VisualStudioInstallations.Supports(project.EntryFile) ? Visibility.Visible : Visibility.Collapsed;
         DrawerOpenButton.Content = project.Kind switch
         {
-            "Visual Studio" => "Çözümü aç",
-            ".NET / MSBuild" => "Projeyi aç",
-            _ => "Dosyayı aç"
+            "Visual Studio" => Loc.Text("L686C9A600047"),
+            ".NET / MSBuild" => Loc.Text("L439CC142CAA2"),
+            _ => Loc.Text("L9580C0E81F1F")
         };
         string description = _workspace?.DescriptionFor(project.RelativePath) ?? "";
         DrawerPurposeText.Text = description;
@@ -88,7 +89,7 @@ public partial class MainWindow
             {
                 Component = component,
                 Detail = $"{component.Role} · {component.Kind} · {Path.GetRelativePath(project.Folder, component.Folder)}",
-                Action = IsComponentLinked(component) ? "Ayrı satırı gizle" : "Ayrı satır olarak aç"
+                Action = IsComponentLinked(component) ? Loc.Text("L150C17378129") : Loc.Text("L1E9D51D99DCE")
             }).ToArray();
         DrawerComponents.ItemsSource = components;
         DrawerComponentsCard.Visibility = components.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -130,7 +131,7 @@ public partial class MainWindow
                     else
                         ShowProjectDrawer(owner, activate: false);
                 }
-                StatusText.Text = hide ? $"Gizlenen bileşen satırı: {folders.Length}" : $"Açılan bileşen satırı: {folders.Length}";
+                StatusText.Text = hide ? Loc.Format("LBB2D3A065922", folders.Length) : Loc.Format("L6F970DD00F4F", folders.Length);
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or JsonException)

@@ -10,8 +10,14 @@ public partial class MainWindow
     private const int DashboardFindingPageSize = 5;
     private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null, Uri? Link = null);
     private sealed record DashboardFinding(string Severity, string Package, string Version, string Target,
-        string Detail, ProjectEntry Project, string Identity);
-    private sealed record DashboardSeverityTile(string Severity, int Count);
+        string Detail, ProjectEntry Project, string Identity)
+    {
+        public string SeverityLabel => Loc.Label(Severity);
+    }
+    private sealed record DashboardSeverityTile(string Severity, int Count)
+    {
+        public string SeverityLabel => Loc.Label(Severity);
+    }
     private DashboardFinding[] _dashboardFindings = [];
     private string? _dashboardSeverity;
     private string? _dashboardWorkspaceRoot;
@@ -46,7 +52,7 @@ public partial class MainWindow
         }
 
         DashboardSubtitle.Text = _workspace is { } workspace
-            ? $"{workspace.Config.Name} · {DateTime.Today:D}" : "Çalışma alanı seçilmedi.";
+            ? $"{workspace.Config.Name} · {DateTime.Today:D}" : Loc.Text("L9DD744583D09");
 
         var repositories = _projects.Where(project => project.Repository is not null)
             .GroupBy(project => project.Repository, StringComparer.OrdinalIgnoreCase).ToArray();
@@ -57,25 +63,25 @@ public partial class MainWindow
         int warnings = repositories.Count(group => group.Any(HasGitWarning));
         DashboardMetrics.ItemsSource = new DashboardLink[]
         {
-            new("Tüm projeler", _projects.Count.ToString("N0"), "all"),
-            new("Git depoları", repositories.Length.ToString("N0"), GitRepositoriesKey),
-            new("Değişiklikli depolar", dirty.Length.ToString("N0"), "changed"),
-            new("Git uyarıları", warnings.ToString("N0"), "warning")
+            new(Loc.Text("L1191AFF270DA"), _projects.Count.ToString("N0"), "all"),
+            new(Loc.Text("LBBF8DEC3700C"), repositories.Length.ToString("N0"), GitRepositoriesKey),
+            new(Loc.Text("L0AE38FDAB6D0"), dirty.Length.ToString("N0"), "changed"),
+            new(Loc.Text("L087EEE8F2B23"), warnings.ToString("N0"), "warning")
         };
         DashboardDirty.ItemsSource = dirty.Take(8).Select(project => new DashboardLink(project.Name,
-            $"{project.Branch} · {project.Git.Changes ?? 0:N0} değişen dosya", "changed", project)).ToArray();
-        DashboardDirtyHint.Text = dirty.Length == 0 ? "Yerel değişiklik bulunan depo yok." :
-            dirty.Length > 8 ? $"İlk 8 depo gösteriliyor · toplam {dirty.Length:N0}" : "";
+            Loc.Format("L82E76CAC7CB5", project.Branch, project.Git.Changes ?? 0), "changed", project)).ToArray();
+        DashboardDirtyHint.Text = dirty.Length == 0 ? Loc.Text("LE4B98292FC6D") :
+            dirty.Length > 8 ? Loc.Format("L14C736BAB50C", dirty.Length) : "";
 
         var byPath = _projects.ToLookup(project => project.RelativePath, StringComparer.OrdinalIgnoreCase);
         var recent = CurrentRecent().Select(path => byPath[path].FirstOrDefault()).OfType<ProjectEntry>().Take(6)
             .Select(project => new DashboardLink(project.Name, project.DisplayPath, "recent", project)).ToArray();
         DashboardRecent.ItemsSource = recent;
-        DashboardRecentHint.Text = recent.Length == 0 ? "Henüz açılan proje yok." : "";
+        DashboardRecentHint.Text = recent.Length == 0 ? Loc.Text("L82987AA9AFC4") : "";
         var filters = (_workspace?.Config.SavedFilters ?? []).OrderBy(filter => filter.Name, StringComparer.CurrentCultureIgnoreCase)
             .Select(filter => new DashboardLink(filter.Name, _navigationNodes.GetValueOrDefault(filter.Key)?.Hint ?? filter.Query, filter.Key)).ToArray();
         DashboardFilters.ItemsSource = filters;
-        DashboardFiltersHint.Text = filters.Length == 0 ? "Görünüm menüsünden geçerli filtreyi kaydedebilirsin." : "";
+        DashboardFiltersHint.Text = filters.Length == 0 ? Loc.Text("LD0EABB0EFC33") : "";
 
         var targets = DashboardNuGetTargets();
         DateTimeOffset freshSince = DateTimeOffset.UtcNow.AddDays(-7);
@@ -93,21 +99,21 @@ public partial class MainWindow
         int unscanned = audits.Count(item => item.Snapshot is null && !item.Failed);
         int stale = audits.Count(item => item.Snapshot is { FinishedAt: var finished } && finished < freshSince);
         int completed = audits.Count(item => item.Snapshot is not null);
-        DashboardNuGetSummary.Text = _dashboardScanProgress ?? (targets.Length == 0 ? "Taranabilir .NET projesi veya çözümü yok." :
+        DashboardNuGetSummary.Text = _dashboardScanProgress ?? (targets.Length == 0 ? Loc.Text("LA4CD9FB0C449") :
             (completed == 0
-                ? incomplete > 0 ? "Tamamlanan NuGet taraması yok" : "Henüz taranmadı"
-                : $"{completed:N0}/{targets.Length:N0} hedefte kayıtlı tarama · {affected.Length:N0} hedefte bulgu") +
-            (incomplete > 0 ? $" · {incomplete:N0} hedefte tarama uyarısı" : "") +
-            (stale > 0 ? $" · {stale:N0} tarama 7 günden eski" : ""));
+                ? incomplete > 0 ? Loc.Text("L023741635AEF") : Loc.Text("LADA5F0684B79")
+                : Loc.Format("LAD8BE5D3C6F8", completed, targets.Length, affected.Length)) +
+            (incomplete > 0 ? Loc.Format("LCF48666DE9CD", incomplete) : "") +
+            (stale > 0 ? Loc.Format("L143CC4EB401E", stale) : ""));
         DashboardNuGetResults.Visibility = completed > 0 ? Visibility.Visible : Visibility.Collapsed;
-        DashboardScanButton.Content = _dashboardScan is null ? "NuGet tara" : "Durdur";
+        DashboardScanButton.Content = _dashboardScan is null ? Loc.Text("L481BC8BF56A3") : Loc.Text("L5769A8F8AECD");
         DashboardScanButton.IsEnabled = _dashboardScan is { IsCancellationRequested: false } ||
             _dashboardScan is null && !_busy && targets.Length > 0;
 
-        string FindingDetail(NuGetFinding[] findings) => $"{findings[0].Severity} · {findings[0].Package} {findings[0].Version} · {findings.Length:N0} bulgu";
+        string FindingDetail(NuGetFinding[] findings) => Loc.Format("L1CAF67C3CA52", findings[0].Severity, findings[0].Package, findings[0].Version, findings.Length);
         _dashboardFindings = affected.SelectMany(item => item.Findings.Select(finding => new DashboardFinding(
                 finding.Severity, finding.Package, finding.Version, item.Project.Name,
-                $"{finding.Severity} · {finding.Package} {finding.Version} · {finding.Project} · {finding.Advisory}",
+                $"{finding.SeverityLabel} · {finding.Package} {finding.Version} · {finding.Project} · {finding.Advisory}",
                 item.Project, FindingIdentity(finding))))
             .OrderByDescending(row => SeverityRank(row.Severity)).ThenBy(row => row.Package, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
@@ -115,28 +121,28 @@ public partial class MainWindow
             .Select(severity => new DashboardSeverityTile(severity, _dashboardFindings.Count(row => row.Severity == severity))).ToArray();
         UpdateDashboardFindingTable();
         DashboardNuGetWarnings.ItemsSource = audits.Where(item => item.Failed || item.Snapshot?.Report.Diagnostics.Count > 0)
-            .Select(item => new DashboardLink(item.Project.Name, "Tarama uyarısını incele", "nuget-report", item.Project)).ToArray();
+            .Select(item => new DashboardLink(item.Project.Name, Loc.Text("LD60FDE3FCF82"), "nuget-report", item.Project)).ToArray();
 
         var tasks = new List<DashboardLink>();
         int urgent = affected.Count(item => SeverityRank(item.Findings[0].Severity) >= 3);
         if (urgent > 0)
-            tasks.Add(new("Kritik ve yüksek NuGet bulgularını incele", $"{urgent:N0} hedef · {FindingDetail(affected[0].Findings)}",
+            tasks.Add(new(Loc.Text("LAA4CC2B13C70"), $"{urgent:N0} hedef · {FindingDetail(affected[0].Findings)}",
                 "nuget-report", affected[0].Project));
         else if (affected.Length > 0)
-            tasks.Add(new("NuGet bulgularını incele", $"{affected.Length:N0} hedefte bilinen açık bildirildi", "nuget-section"));
+            tasks.Add(new(Loc.Text("L569C53D3158B"), Loc.Format("LE6FF91A40518", affected.Length), "nuget-section"));
         if (warnings > 0)
-            tasks.Add(new("Git uyarılarını incele", $"{warnings:N0} depo okunamadı veya sahiplik uyarısı veriyor", "warning"));
+            tasks.Add(new(Loc.Text("L6B1B13683086"), Loc.Format("L08398F4CB352", warnings), "warning"));
         if (dirty.Length > 0)
-            tasks.Add(new("Yerel değişiklikleri gözden geçir", $"{dirty.Length:N0} depoda değişiklik var", "changed"));
+            tasks.Add(new(Loc.Text("L2F7C8D7CD01A"), Loc.Format("L7C99F3CF7272", dirty.Length), "changed"));
         if (unscanned + stale + incomplete > 0)
-            tasks.Add(new("NuGet taramasını tamamla veya yenile",
-                $"{unscanned:N0} taranmamış · {stale:N0} eski · {incomplete:N0} uyarılı", "nuget-section"));
+            tasks.Add(new(Loc.Text("LBFC7C8313680"),
+                Loc.Format("L54587E11E267", unscanned, stale, incomplete), "nuget-section"));
         UpdateWorkspaceChecks(ahead, tasks);
         UpdateWorkspaceActivity();
         UpdateTrackedFindings();
         DashboardTasks.ItemsSource = tasks;
-        DashboardTaskHint.Text = tasks.Count == 0 ? "Mevcut verilerde takip edilecek iş görünmüyor." :
-            "Çalışma alanının güncel durumundan oluşturuldu.";
+        DashboardTaskHint.Text = tasks.Count == 0 ? Loc.Text("L82016E4374F6") :
+            Loc.Text("L95707A46C272");
     }
 
     private void DashboardSizeChanged(object sender, SizeChangedEventArgs e)
@@ -193,13 +199,13 @@ public partial class MainWindow
         int start = _dashboardFindingPage * DashboardFindingPageSize;
         var rows = filtered.Skip(start).Take(DashboardFindingPageSize).ToArray();
         DashboardNuGet.ItemsSource = rows;
-        DashboardAllSeverities.Content = _dashboardSeverity is null ? "Tümü" : $"{_dashboardSeverity} ×";
+        DashboardAllSeverities.Content = _dashboardSeverity is null ? Loc.Text("LF43A65AD8268") : $"{Loc.Label(_dashboardSeverity)} ×";
         DashboardFindingEmpty.Text = query.Length > 0 || _dashboardSeverity is not null
-            ? "Bu filtreyle eşleşen bulgu yok." : "Kayıtlı raporlarda bilinen açık bulunmuyor.";
+            ? Loc.Text("L4F46AE91D736") : Loc.Text("L031C8F247D62");
         DashboardFindingEmpty.Visibility = filtered.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
         DashboardFindingFooter.Visibility = filtered.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        DashboardFindingCount.Text = lastPage == 0 ? $"{filtered.Length:N0} bulgu" :
-            $"{start + 1:N0}–{start + rows.Length:N0} / {filtered.Length:N0} bulgu";
+        DashboardFindingCount.Text = lastPage == 0 ? Loc.Format("L41A8C91CFFC6", filtered.Length) :
+            Loc.Format("LE29C2153C6C4", start + 1, start + rows.Length, filtered.Length);
         DashboardFindingPager.Visibility = lastPage > 0 ? Visibility.Visible : Visibility.Collapsed;
         DashboardPreviousFindings.IsEnabled = _dashboardFindingPage > 0;
         DashboardNextFindings.IsEnabled = _dashboardFindingPage < lastPage;
@@ -305,7 +311,7 @@ public partial class MainWindow
         if (_dashboardScan is { } running)
         {
             running.Cancel();
-            _dashboardScanProgress = "NuGet taraması durduruluyor…";
+            _dashboardScanProgress = Loc.Text("L414CC7F90CB2");
             UpdateDashboard();
             return;
         }
@@ -323,7 +329,7 @@ public partial class MainWindow
                 if (!string.Equals(_workspace?.Root, workspace.Root, StringComparison.OrdinalIgnoreCase))
                     break;
                 var project = targets[i];
-                _dashboardScanProgress = $"NuGet taranıyor · {i + 1}/{targets.Length} · {project.Name}";
+                _dashboardScanProgress = Loc.Format("L559D47250C41", i + 1, targets.Length, project.Name);
                 UpdateDashboard();
                 if (GetNuGetState(project) is { } state)
                     await state.ScanAsync(project, scan.Token);

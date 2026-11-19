@@ -2,37 +2,37 @@
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
-                 Title="Uzak depo hedefi" Width="610" SizeToContent="Height" ResizeMode="NoResize"
+                 Title="{DynamicResource L722F696A44AA}" Width="610" SizeToContent="Height" ResizeMode="NoResize"
                  ShowInTaskbar="False" WindowStartupLocation="CenterOwner" Loaded="WindowLoaded" Closed="WindowClosed">
     <StackPanel Margin="20">
-        <TextBlock Text="Uzak depo hedefini seç" FontSize="21" FontWeight="SemiBold"/>
+        <TextBlock Text="{DynamicResource L2E4E4F6F2C0F}" FontSize="21" FontWeight="SemiBold"/>
         <TextBlock x:Name="ProjectHeading" Margin="0,4,0,14" Foreground="{DynamicResource Muted}"/>
         <Border Background="{DynamicResource Canvas}" BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                 CornerRadius="8" Padding="12">
             <StackPanel>
                 <TextBlock Text="GitHub" FontWeight="SemiBold"/>
-                <TextBlock Text="Hesabındaki ve organizasyonlarındaki depoları kullan." TextWrapping="Wrap"
+                <TextBlock Text="{DynamicResource L4BE8B1CD97E6}" TextWrapping="Wrap"
                            Foreground="{DynamicResource Muted}" Margin="0,4,0,9"/>
                 <WrapPanel>
-                    <Button Content="Var olan depoyu seç…" Click="ChooseGitHubClick" Padding="8,4" Margin="0,0,7,0"/>
-                    <Button x:Name="CreateGitHubButton" Content="Yeni depo oluştur…" Click="CreateGitHubClick" Padding="8,4"
+                    <Button Content="{DynamicResource L8C2CDA97FE2D}" Click="ChooseGitHubClick" Padding="8,4" Margin="0,0,7,0"/>
+                    <Button x:Name="CreateGitHubButton" Content="{DynamicResource L2A327CE1FFCF}" Click="CreateGitHubClick" Padding="8,4"
                             ToolTipService.ShowOnDisabled="True"/>
                 </WrapPanel>
             </StackPanel>
         </Border>
         <Label Content="Bilinen sunucular" Target="{Binding ElementName=KnownTargets}" Padding="0,12,0,4"/>
         <ComboBox x:Name="KnownTargets" DisplayMemberPath="Address" SelectionChanged="KnownTargetChanged" IsEnabled="False"
-                  AutomationProperties.Name="Bilinen Git sunucuları"/>
+                  AutomationProperties.Name="{DynamicResource LB7FD0BC8E040}"/>
         <TextBlock x:Name="DiscoveryStatus" Foreground="{DynamicResource Muted}" Margin="0,4,0,4" TextWrapping="Wrap"/>
-        <Label Content="Uzak depo adresi" Target="{Binding ElementName=UrlInput}" Padding="0,8,0,4"/>
-        <TextBox x:Name="UrlInput" TextChanged="InputChanged" AutomationProperties.Name="Uzak depo adresi"/>
-        <TextBlock Text="Sunucuyu seçip depo yolunu ekleyin veya tam adresi yazın." Foreground="{DynamicResource Muted}" Margin="0,4,0,0"/>
-        <Label Content="Bağlantı adı" Target="{Binding ElementName=NameInput}" Padding="0,8,0,4"/>
-        <TextBox x:Name="NameInput" MaxLength="64" TextChanged="InputChanged" AutomationProperties.Name="Bağlantı adı"/>
+        <Label Content="{DynamicResource LB4EA12AF20ED}" Target="{Binding ElementName=UrlInput}" Padding="0,8,0,4"/>
+        <TextBox x:Name="UrlInput" TextChanged="InputChanged" AutomationProperties.Name="{DynamicResource LB4EA12AF20ED}"/>
+        <TextBlock Text="{DynamicResource L24965580E684}" Foreground="{DynamicResource Muted}" Margin="0,4,0,0"/>
+        <Label Content="{DynamicResource L9006CE1450A2}" Target="{Binding ElementName=NameInput}" Padding="0,8,0,4"/>
+        <TextBox x:Name="NameInput" MaxLength="64" TextChanged="InputChanged" AutomationProperties.Name="{DynamicResource L9006CE1450A2}"/>
         <TextBlock x:Name="InputStatus" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <Button x:Name="AddButton" Content="Uzak depoyu bağla" Click="AddClick" IsDefault="True" IsEnabled="False" Padding="8,4"/>
-            <Button x:Name="CancelButton" Content="Vazgeç" IsCancel="True" Margin="7,0,0,0" Padding="8,4"/>
+            <Button x:Name="AddButton" Content="{DynamicResource LA1D67B926747}" Click="AddClick" IsDefault="True" IsEnabled="False" Padding="8,4"/>
+            <Button x:Name="CancelButton" Content="{DynamicResource L39A8D28C1C6B}" IsCancel="True" Margin="7,0,0,0" Padding="8,4"/>
         </StackPanel>
     </StackPanel>
 </dx:ThemedWindow>

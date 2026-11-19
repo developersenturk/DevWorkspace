@@ -43,7 +43,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     public Workspace SaveProjectFilter(SavedProjectFilter filter) => EditSavedFilters(filters =>
     {
         if (filters.Any(existing => existing.Id != filter.Id && existing.Name.Equals(filter.Name, StringComparison.OrdinalIgnoreCase)))
-            throw new IOException("Bu adda bir filtre zaten var. Filtre listesini yenileyin.");
+            throw new IOException(Loc.Text("L01B0A518F631"));
         return [.. filters.Where(existing => existing.Id != filter.Id), filter];
     });
 
@@ -60,7 +60,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     {
         string[] valid = paths.Select(NormalizeLink).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (valid.Any(path => Directory.Exists(path) && IsWorkspaceAncestor(path)))
-            throw new IOException("Çalışma alanının kendisi veya üst klasörü proje olarak bağlanamaz.");
+            throw new IOException(Loc.Text("LB541BFBAF25F"));
         return EditLinks(existing => existing.Concat(valid).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
     }
 
@@ -86,11 +86,11 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     public static string NormalizeLink(string path)
     {
         if (!Path.IsPathFullyQualified(path))
-            throw new IOException("Proje için tam dosya veya klasör yolu gerekli.");
+            throw new IOException(Loc.Text("L8F037A3DBD7A"));
         string fullPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         if ((!Directory.Exists(fullPath) && (!File.Exists(fullPath) || !WorkspaceScanner.IsProjectFile(fullPath))) ||
             File.GetAttributes(fullPath).HasFlag(FileAttributes.ReparsePoint))
-            throw new IOException($"Bu yol bağlanamıyor. Bir proje klasörü veya çözüm dosyası seçin. {fullPath}");
+            throw new IOException(Loc.Format("LA2C8625BA82B", fullPath));
         return fullPath;
     }
 
@@ -104,7 +104,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             if (preferences is null)
             {
                 if (document["projectPreferences"] is not null)
-                    throw new InvalidDataException("Proje tercihleri geçersiz.");
+                    throw new InvalidDataException(Loc.Text("L361810EEF8E2"));
                 preferences = new JsonObject();
                 document["projectPreferences"] = preferences;
             }
@@ -150,12 +150,12 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             Config.ScanExclusions.Contains(name, StringComparer.OrdinalIgnoreCase) ||
             name.Equals(".git", StringComparison.OrdinalIgnoreCase))
         {
-            throw new IOException("Bu ad çalışma alanı klasörü için kullanılamaz.");
+            throw new IOException(Loc.Text("LFBBF1AFED0D3"));
         }
 
         string path = Path.Combine(parent, name);
         if (File.Exists(path) || Directory.Exists(path))
-            throw new IOException($"Bu ad zaten kullanılıyor. {name}");
+            throw new IOException(Loc.Format("L259A1C6BDF94", name));
     }
 
     internal static string ExplorerFolderPath(string path) => path.Replace('/', '\\');
@@ -219,7 +219,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
         var current = WithCurrentConfig(document);
         string? parent = Path.GetDirectoryName(path);
         if (!string.Equals(parent, Path.GetDirectoryName(sibling), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Yalnızca aynı konumdaki klasörlerin sırası değiştirilebilir.");
+            throw new IOException(Loc.Text("L5A185516A735"));
         current.ExistingExplorerFolder(path);
         current.ExistingExplorerFolder(sibling);
         bool root = string.IsNullOrEmpty(parent);
@@ -229,20 +229,20 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
         order.RemoveAll(item => SameProjectPath(item, path));
         int target = order.FindIndex(item => SameProjectPath(item, sibling));
         if (target < 0)
-            throw new IOException("Klasör sırası değişti. Tekrar deneyin.");
+            throw new IOException(Loc.Text("L8E0BF87B61D2"));
         order.Insert(before ? target : target + 1, path);
         document[root ? "folders" : "explorerSubfolders"] = JsonSerializer.SerializeToNode(order);
     });
 
     private Workspace WithCurrentConfig(JsonObject document) => this with
     {
-        Config = document.Deserialize<WorkspaceConfig>(JsonOptions) ?? throw new InvalidDataException("Çalışma alanı ayarları geçersiz.")
+        Config = document.Deserialize<WorkspaceConfig>(JsonOptions) ?? throw new InvalidDataException(Loc.Text("L6225C7ABCFF5"))
     };
 
     private string ExistingExplorerFolder(string relativePath)
     {
         if (!IsExplorerFolderPath(relativePath))
-            throw new IOException("Geçersiz klasör yolu.");
+            throw new IOException(Loc.Text("L974D64E66988"));
 
         string directory = Root;
         foreach (string part in ExplorerFolderPath(relativePath).Split('\\'))
@@ -250,7 +250,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             directory = Path.Combine(directory, part);
             if (!Directory.Exists(directory) || (File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0 ||
                 part.Equals(".git", StringComparison.OrdinalIgnoreCase) || Config.ScanExclusions.Contains(part, StringComparer.OrdinalIgnoreCase))
-                throw new IOException("Klasör çalışma alanında bulunamadı.");
+                throw new IOException(Loc.Text("L4E2F4749BF5C"));
         }
         return directory;
     }
@@ -259,7 +259,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     {
         if (folders.Any(folder => !IsSimpleName(folder.Name)) ||
             folders.Select(folder => folder.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != folders.Count)
-            throw new IOException("Klasör adları geçerli ve birbirinden farklı olmalı.");
+            throw new IOException(Loc.Text("LF2F40E874599"));
 
         return EditConfig(document =>
         {
@@ -285,7 +285,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             if (descriptions is null)
             {
                 if (document["projectDescriptions"] is not null)
-                    throw new InvalidDataException("Proje açıklamaları geçersiz.");
+                    throw new InvalidDataException(Loc.Text("L4A833327AE2E"));
                 descriptions = new JsonObject();
                 document["projectDescriptions"] = descriptions;
             }
@@ -306,17 +306,17 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     {
         string? original = File.Exists(configPath) ? File.ReadAllText(configPath) : null;
         var document = (original is null ? JsonSerializer.SerializeToNode(Config, JsonOptions) : JsonNode.Parse(original))
-            as JsonObject ?? throw new InvalidDataException("Çalışma alanı ayarları geçersiz.");
+            as JsonObject ?? throw new InvalidDataException(Loc.Text("L6225C7ABCFF5"));
         update(document);
 
         WorkspaceConfig config = document.Deserialize<WorkspaceConfig>(JsonOptions)
-            ?? throw new InvalidDataException("Çalışma alanı ayarları geçersiz.");
+            ?? throw new InvalidDataException(Loc.Text("L6225C7ABCFF5"));
         string temporaryPath = Path.Combine(Root, $".devworkspace-{Guid.NewGuid():N}.tmp");
         try
         {
             File.WriteAllText(temporaryPath, document.ToJsonString(EditJsonOptions) + Environment.NewLine);
             if (original is not null && File.ReadAllText(configPath) != original)
-                throw new IOException("Çalışma alanı ayarları değişti. Tekrar deneyin.");
+                throw new IOException(Loc.Text("L0BAB8552159E"));
             File.Move(temporaryPath, configPath, overwrite: original is not null);
         }
         finally
@@ -334,7 +334,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
         return WithConfigLock<string?>(root, configPath =>
         {
             if (previous is not null && (!File.Exists(configPath) || !File.ReadAllBytes(configPath).AsSpan().SequenceEqual(previous)))
-                throw new IOException("Hedef çalışma alanının ayarları değişti. İçe aktarmayı tekrar başlatın.");
+                throw new IOException(Loc.Text("L8E8E50DDE17F"));
 
             string temporaryPath = Path.Combine(root, $".devworkspace-{Guid.NewGuid():N}.tmp");
             try
@@ -371,7 +371,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
             try { locked = mutex.WaitOne(TimeSpan.FromSeconds(3)); }
             catch (AbandonedMutexException) { locked = true; }
             if (!locked)
-                throw new IOException("Çalışma alanı ayarları başka bir pencerede kaydediliyor.");
+                throw new IOException(Loc.Text("L51EB7749BA61"));
 
             return action(configPath);
         }
@@ -389,7 +389,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
     {
         string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
         if (!Directory.Exists(root))
-            throw new DirectoryNotFoundException("Seçilen klasör bulunamadı.");
+            throw new DirectoryNotFoundException(Loc.Text("LA691869B5335"));
 
         string configPath = Path.Combine(root, ConfigFileName);
         if (File.Exists(configPath))
@@ -441,7 +441,7 @@ internal sealed record Workspace(string Root, WorkspaceConfig Config)
                 || filter.Query is null) == true
             || config.SavedFilters?.Select(filter => filter.Id).Distinct().Count() != config.SavedFilters?.Length)
         {
-            throw new InvalidDataException($"{ConfigFileName} geçerli bir çalışma alanı tanımı içermiyor.");
+            throw new InvalidDataException(Loc.Format("L9DE562C30F64", ConfigFileName));
         }
 
         return config;

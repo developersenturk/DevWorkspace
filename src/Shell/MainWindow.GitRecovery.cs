@@ -16,7 +16,7 @@ public partial class MainWindow
         if (_busy)
             return false;
 
-        var picker = new OpenFolderDialog { Title = "Eşitlenen veya harici Git yedek klasörünü seçin" };
+        var picker = new OpenFolderDialog { Title = Loc.Text("LFAF73D90210C") };
         if (Directory.Exists(_session.GitRecoveryFolder))
             picker.InitialDirectory = _session.GitRecoveryFolder!;
         if (picker.ShowDialog(this) != true)
@@ -27,7 +27,7 @@ public partial class MainWindow
         if (relative == "." || (!Path.IsPathRooted(relative) && relative != ".." &&
             !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)))
         {
-            StatusText.Text = "Git yedeği için DevWorkspace ayar klasörünün dışında bir konum seçin.";
+            StatusText.Text = Loc.Text("L023CFEB7A7F9");
             return false;
         }
 
@@ -47,7 +47,7 @@ public partial class MainWindow
             _session.GitRecoveryFolder = folder;
             _session.Save();
             GitRecoveryFolderMenu.ToolTip = Path.Combine(folder, GitRecovery.FileName);
-            StatusText.Text = $"Git yedeği kaydedildi · {Path.Combine(folder, GitRecovery.FileName)}";
+            StatusText.Text = Loc.Format("LE12A642BC15F", Path.Combine(folder, GitRecovery.FileName));
             return true;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -56,7 +56,7 @@ public partial class MainWindow
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            StatusText.Text = "Git yedek klasörü ayarlanamadı. " + ex.Message;
+            StatusText.Text = Loc.Text("LC7DC0C42633A") + ex.Message;
             return false;
         }
         finally
@@ -83,7 +83,7 @@ public partial class MainWindow
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            StatusText.Text = "Git kurtarma kaydı okunamadı. " + ex.Message;
+            StatusText.Text = Loc.Text("L9B1064CF604F") + ex.Message;
             return;
         }
         finally

@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-                 Title="Git geçmişi" Width="880" Height="530" MinWidth="520" MinHeight="360" WindowStartupLocation="CenterOwner"
+                 Title="{DynamicResource L8C9C5A963356}" Width="880" Height="530" MinWidth="520" MinHeight="360" WindowStartupLocation="CenterOwner"
                  ShowInTaskbar="False" Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="HistoryLoaded" Closed="HistoryClosed">
     <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
@@ -13,12 +13,12 @@
             <TextBlock x:Name="HistoryTitle" FontSize="20" FontWeight="SemiBold"/>
             <TextBlock x:Name="RepositoryPath" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
-            <dxg:GridControl x:Name="HistoryGrid" Grid.Row="1" AutoGenerateColumns="None" AutomationProperties.Name="Git commit geçmişi">
+            <dxg:GridControl x:Name="HistoryGrid" Grid.Row="1" AutoGenerateColumns="None" AutomationProperties.Name="{DynamicResource L13CB0059FD53}">
                 <dxg:GridControl.Columns>
                     <dxg:GridColumn Header="COMMIT" FieldName="Hash" Width="92"/>
-                    <dxg:GridColumn Header="TARİH" FieldName="Date" Width="108"/>
-                    <dxg:GridColumn Header="YAZAR" FieldName="Author" Width="145"/>
-                    <dxg:GridColumn Header="MESAJ" FieldName="Subject" Width="490" MinWidth="135"/>
+                    <dxg:GridColumn Header="{DynamicResource LF47943753384}" FieldName="Date" Width="108"/>
+                    <dxg:GridColumn Header="{DynamicResource LC2C05FBA24B2}" FieldName="Author" Width="145"/>
+                    <dxg:GridColumn Header="{DynamicResource L270D52363DD8}" FieldName="Subject" Width="490" MinWidth="135"/>
                 </dxg:GridControl.Columns>
                 <dxg:GridControl.View>
                     <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -26,8 +26,8 @@
                 </dxg:GridControl.View>
             </dxg:GridControl>
         <DockPanel Grid.Row="2" Margin="0,8,0,0">
-            <Button DockPanel.Dock="Right" Content="Kapat" IsCancel="True" Margin="8,0,0,0"/>
-            <TextBlock x:Name="HistoryStatus" Text="Git geçmişi okunuyor…" Foreground="{DynamicResource Muted}"
+            <Button DockPanel.Dock="Right" Content="{DynamicResource L7B31A9FC4816}" IsCancel="True" Margin="8,0,0,0"/>
+            <TextBlock x:Name="HistoryStatus" Text="{DynamicResource LE233711F15C1}" Foreground="{DynamicResource Muted}"
                        VerticalAlignment="Center" TextWrapping="Wrap"/>
         </DockPanel>
     </Grid>

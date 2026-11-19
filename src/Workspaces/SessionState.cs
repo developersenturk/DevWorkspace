@@ -22,6 +22,8 @@ internal sealed record WorkbenchLayout(
 
 internal sealed class SessionState
 {
+    public string Language { get; set; } = "tr";
+    public Dictionary<string, string> VisualStudioPreferences { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public bool DarkTheme { get; set; }
     public string? ThemeName { get; set; }
     public string? LastWorkspace { get; set; }
@@ -34,15 +36,19 @@ internal sealed class SessionState
     internal static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DevWorkspace", "session.json");
 
-    public static SessionState Load()
+    public static SessionState Load() => LoadFrom(FilePath);
+
+    internal static SessionState LoadFrom(string path)
     {
         try
         {
-            if (File.Exists(FilePath) && JsonSerializer.Deserialize<SessionState>(File.ReadAllText(FilePath)) is { } state)
+            if (File.Exists(path) && JsonSerializer.Deserialize<SessionState>(File.ReadAllText(path)) is { } state)
             {
                 state.Workspaces = new(state.Workspaces ?? [], StringComparer.OrdinalIgnoreCase);
                 state.SavedLayouts = new(state.SavedLayouts ?? [], StringComparer.OrdinalIgnoreCase);
                 state.NuGetScans = new(state.NuGetScans ?? [], StringComparer.OrdinalIgnoreCase);
+                state.Language = Loc.NormalizeLanguage(state.Language);
+                state.VisualStudioPreferences = new(state.VisualStudioPreferences ?? [], StringComparer.OrdinalIgnoreCase);
                 return state;
             }
         }
@@ -82,17 +88,19 @@ internal sealed class SessionState
     public void RememberFindings(string root, TrackedFinding[] findings) =>
         Workspaces[root] = For(root) with { TrackedFindings = findings };
 
-    public void Save()
+    public void Save() => SaveTo(FilePath);
+
+    internal bool SaveTo(string path)
     {
-        string path = FilePath;
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(temporary, JsonSerializer.Serialize(this));
             File.Move(temporary, path, overwrite: true);
+            return true;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
         finally
         {
             try { File.Delete(temporary); }

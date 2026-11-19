@@ -9,20 +9,20 @@ internal enum DevelopmentTool { Git, Node, DotNet, Flutter, GitHub, Docker, Osv,
 internal sealed record ToolDefinition(DevelopmentTool Id, string Name, string Use, string Command, string? Package, Uri Guide);
 
 internal sealed class ToolMissingException(ToolDefinition tool)
-    : IOException($"{tool.Name} bulunamadı. Geliştirme araçları ekranından kurabilirsiniz.");
+    : IOException(Loc.Format("LEFC47095556B", tool.Name));
 
 internal static class DevelopmentTools
 {
     internal static readonly IReadOnlyList<ToolDefinition> Catalog =
     [
-        new(DevelopmentTool.Git, "Git", "Depo durumu, dallar ve Git işlemleri", "git.exe", "Git.Git", new("https://git-scm.com/install/windows")),
-        new(DevelopmentTool.Node, "Node.js LTS ve npm", "JavaScript proje komutları", "node.exe", "OpenJS.NodeJS.LTS", new("https://nodejs.org/en/download")),
-        new(DevelopmentTool.DotNet, ".NET SDK", ".NET proje komutları, sağlık ve NuGet taraması", "dotnet.exe", "Microsoft.DotNet.SDK.10", new("https://dotnet.microsoft.com/download")),
-        new(DevelopmentTool.Flutter, "Flutter SDK", "Flutter proje komutları", "flutter.bat", null, new("https://docs.flutter.dev/install/manual")),
-        new(DevelopmentTool.GitHub, "GitHub CLI", "GitHub depoları ve GitHub Actions sonuçları", "gh.exe", "GitHub.cli", new("https://cli.github.com/")),
-        new(DevelopmentTool.Docker, "Docker Desktop", "Docker Compose servisleri", "docker.exe", "Docker.DockerDesktop", new("https://docs.docker.com/desktop/setup/install/windows-install/")),
-        new(DevelopmentTool.Osv, "OSV-Scanner", "JavaScript ve Flutter paket güvenliği", "osv-scanner.exe", "Google.OSVScanner", new("https://google.github.io/osv-scanner/installation/")),
-        new(DevelopmentTool.Editor, "Visual Studio Code", "Proje klasörünü düzenleyicide açma", "Code.exe", "Microsoft.VisualStudioCode", new("https://code.visualstudio.com/download"))
+        new(DevelopmentTool.Git, "Git", Loc.Text("L141D1EC787B7"), "git.exe", "Git.Git", new("https://git-scm.com/install/windows")),
+        new(DevelopmentTool.Node, Loc.Text("LA20DC1B45F78"), Loc.Text("LADB55E6B6244"), "node.exe", "OpenJS.NodeJS.LTS", new("https://nodejs.org/en/download")),
+        new(DevelopmentTool.DotNet, ".NET SDK", Loc.Text("L392454B853DA"), "dotnet.exe", "Microsoft.DotNet.SDK.10", new("https://dotnet.microsoft.com/download")),
+        new(DevelopmentTool.Flutter, "Flutter SDK", Loc.Text("L060BFCC9E4C9"), "flutter.bat", null, new("https://docs.flutter.dev/install/manual")),
+        new(DevelopmentTool.GitHub, "GitHub CLI", Loc.Text("L4633A6F7DE3E"), "gh.exe", "GitHub.cli", new("https://cli.github.com/")),
+        new(DevelopmentTool.Docker, "Docker Desktop", Loc.Text("L7F41B5F91080"), "docker.exe", "Docker.DockerDesktop", new("https://docs.docker.com/desktop/setup/install/windows-install/")),
+        new(DevelopmentTool.Osv, "OSV-Scanner", Loc.Text("L6CA8C48EC0AB"), "osv-scanner.exe", "Google.OSVScanner", new("https://google.github.io/osv-scanner/installation/")),
+        new(DevelopmentTool.Editor, "Visual Studio Code", Loc.Text("L4325936B2E64"), "Code.exe", "Microsoft.VisualStudioCode", new("https://code.visualstudio.com/download"))
     ];
 
     internal static string ToolsFolder => Path.Combine(
@@ -105,7 +105,7 @@ internal static class DevelopmentTools
             return true;
 
         var info = ProjectTools.CreateCaptureInfo(executable, Environment.SystemDirectory, ["--list-sdks"]);
-        var (code, output, _) = await ProjectTools.CaptureAsync(info, ".NET SDK kontrolü", 10, token);
+        var (code, output, _) = await ProjectTools.CaptureAsync(info, Loc.Text("LE43DDB121A20"), 10, token);
         return code == 0 && !string.IsNullOrWhiteSpace(output);
     }
 
@@ -123,21 +123,21 @@ internal static class DevelopmentTools
         }
         else
         {
-            string winget = FindWinget() ?? throw new IOException("WinGet bulunamadı. Windows App Installer’ı yükleyin veya resmi kurulum sayfasını açın.");
+            string winget = FindWinget() ?? throw new IOException(Loc.Text("LCDCDD32D6A84"));
             var arguments = new List<string> { "install", "--id", definition.Package!, "--exact", "--source", "winget",
                 "--no-upgrade", "--disable-interactivity" };
             if (acceptAgreements)
                 arguments.AddRange(["--accept-source-agreements", "--accept-package-agreements"]);
             var info = ProjectTools.CreateCaptureInfo(winget, Environment.SystemDirectory, arguments);
-            progress.Report($"{definition.Name} WinGet üzerinden kuruluyor…");
+            progress.Report(Loc.Format("L7E12A0A571FC", definition.Name));
             var (code, output, error) = await ProjectTools.CaptureAsync(info, definition.Name + " kurulumu", 1800, token);
             RefreshPaths();
             if (!await IsReadyAsync(tool, token))
             {
                 string detail = string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim();
                 if (code != 0)
-                    throw new IOException($"Kurulum tamamlanamadı (0x{code:X8}). {detail[^Math.Min(detail.Length, 700)..]}");
-                throw new IOException("Kurulum tamamlandı ancak araç doğrulanamadı. Kurulum sayfasını açabilir veya yeniden kontrol edebilirsiniz.");
+                    throw new IOException(Loc.Format("L51E6EE6F0608", code, detail[^Math.Min(detail.Length, 700)..]));
+                throw new IOException(Loc.Text("LDE806EED8580"));
             }
         }
         RefreshPaths();

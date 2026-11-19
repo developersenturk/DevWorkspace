@@ -8,7 +8,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
 {
     private sealed record Option(ProjectCommand? Command)
     {
-        public string Label => Command is null ? "Projeyi IDE’de aç" : $"{Command.Name} · {Command.Display}";
+        public string Label => Command is null ? Loc.Text("L913A7BCCDD79") : $"{Command.Name} · {Command.Display}";
     }
 
     private sealed record Step(LaunchStep Value, string Label);
@@ -29,7 +29,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         _projects = projects;
         _saved = saved;
         _save = save;
-        Title = "Çalışma profilleri";
+        Title = Loc.Text("LC12C038CF0C7");
         Width = 800;
         Height = 470;
         MinWidth = 620;
@@ -49,13 +49,13 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         };
         _project.SelectedIndex = 0;
         var body = new DockPanel { Margin = new(12) };
-        AddDocked(body, Row(Label("Kayıtlı profil"), _profiles, Button("Yeni profil", () => { _profiles.SelectedIndex = -1; Load(null); }),
-            Button("Sil", Delete)), Dock.Top);
-        AddDocked(body, Row(Label("Profil adı"), _name), Dock.Top);
-        AddDocked(body, Row(Label("Proje"), _project, _command, Button("Adım ekle", AddStep)), Dock.Top);
+        AddDocked(body, Row(Label(Loc.Text("LDF05DDAFD346")), _profiles, Button(Loc.Text("LA7BB8F9DCEB5"), () => { _profiles.SelectedIndex = -1; Load(null); }),
+            Button(Loc.Text("LF698E9B40F9F"), Delete)), Dock.Top);
+        AddDocked(body, Row(Label(Loc.Text("LD9A085BAB7E5")), _name), Dock.Top);
+        AddDocked(body, Row(Label(Loc.Text("L7B321D627CB1")), _project, _command, Button(Loc.Text("L150474518D2F"), AddStep)), Dock.Top);
         AddDocked(body, _status, Dock.Bottom);
-        AddDocked(body, Row(Button("Seçili adımı çıkar", RemoveStep), Button("Kaydet", Save),
-            Button("Profili başlat", Run)), Dock.Bottom);
+        AddDocked(body, Row(Button(Loc.Text("L8C9EFC5978DA"), RemoveStep), Button(Loc.Text("LC1FE2ECDFF02"), Save),
+            Button(Loc.Text("L6F66590C9715"), Run)), Dock.Bottom);
         body.Children.Add(_steps);
         Content = body;
         _profiles.SelectedIndex = 0;
@@ -95,7 +95,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         {
             string projectName = _projects.FirstOrDefault(project =>
                 project.RelativePath.Equals(step.Project, StringComparison.OrdinalIgnoreCase))?.Name ?? step.Project;
-            _draft.Add(new(step, $"{projectName} · {step.Command?.Name ?? "Projeyi IDE’de aç"}"));
+            _draft.Add(new(step, $"{projectName} · {step.Command?.Name ?? Loc.Text("L913A7BCCDD79")}"));
         }
         RefreshSteps();
         _status.Text = "";
@@ -125,13 +125,13 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         string name = _name.Text.Trim();
         if (name.Length == 0 || _draft.Count == 0)
         {
-            _status.Text = "Profil adı yazın ve en az bir adım ekleyin.";
+            _status.Text = Loc.Text("LDA8AE81676F9");
             return null;
         }
         if (_saved.Any(item => !ReferenceEquals(item, _profiles.SelectedItem) &&
             item.Name.Equals(name, StringComparison.CurrentCultureIgnoreCase)))
         {
-            _status.Text = "Bu profil adı zaten kullanılıyor.";
+            _status.Text = Loc.Text("L41A9143D6D12");
             return null;
         }
         return new(name, _draft.Select(row => row.Value).ToArray());
@@ -142,7 +142,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         if (ReadDraft() is not { } profile)
             return;
         Persist([.. _saved.Where(item => !ReferenceEquals(item, _profiles.SelectedItem)), profile], profile);
-        _status.Text = "Profil kaydedildi.";
+        _status.Text = Loc.Text("L736252ABF24A");
     }
 
     private void Delete()

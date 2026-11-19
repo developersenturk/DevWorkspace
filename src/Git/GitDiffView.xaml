@@ -41,14 +41,14 @@
         <TextBlock x:Name="Notice" DockPanel.Dock="Top" Foreground="{DynamicResource Muted}" Background="{DynamicResource PanelSoft}"
                    TextWrapping="Wrap" Padding="9,5" Visibility="Collapsed"/>
         <dxg:GridControl x:Name="DiffGrid" Background="{DynamicResource Canvas}" DataAreaBackground="{DynamicResource Canvas}" BorderThickness="0"
-                         AutoGenerateColumns="None" AutomationProperties.Name="Yan yana dosya karşılaştırması">
+                         AutoGenerateColumns="None" AutomationProperties.Name="{DynamicResource LCDD952539B50}">
             <dxg:GridControl.Columns>
-                <dxg:GridColumn x:Name="BeforeColumn" FieldName="BeforeText" Header="Önce" Width="*">
+                <dxg:GridColumn x:Name="BeforeColumn" FieldName="BeforeText" Header="{DynamicResource LC9809CB12580}" Width="*">
                     <dxg:GridColumn.CellTemplate>
                         <DataTemplate><ContentControl Content="{Binding RowData.Row.BeforeCell}" ContentTemplate="{StaticResource DiffLine}"/></DataTemplate>
                     </dxg:GridColumn.CellTemplate>
                 </dxg:GridColumn>
-                <dxg:GridColumn x:Name="AfterColumn" FieldName="AfterText" Header="Sonra" Width="*">
+                <dxg:GridColumn x:Name="AfterColumn" FieldName="AfterText" Header="{DynamicResource L765EB2F15309}" Width="*">
                     <dxg:GridColumn.CellTemplate>
                         <DataTemplate><ContentControl Content="{Binding RowData.Row.AfterCell}" ContentTemplate="{StaticResource DiffLine}"/></DataTemplate>
                     </dxg:GridColumn.CellTemplate>

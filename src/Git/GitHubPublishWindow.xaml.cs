@@ -25,17 +25,17 @@ public partial class GitHubPublishWindow : ThemedWindow
         _git = git;
         _expected = expected;
         InitializeComponent();
-        BranchDescription.Text = $"{expected.Branch} dalındaki commit’ler yeni GitHub deposuna gönderilecek.";
+        BranchDescription.Text = Loc.Format("LBAF0DAB21C6F", expected.Branch);
         RepositoryName.Text = Regex.Replace(suggestedName[..Math.Min(suggestedName.Length, 100)], "[^A-Za-z0-9_.-]", "-");
     }
 
     private void NameChanged(object sender, RoutedEventArgs e) => UpdateActions();
     private void OwnerChanged(object sender, RoutedEventArgs e) => UpdateActions();
     private async void WindowLoaded(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub hesabı kontrol ediliyor…", ReadAccountAsync);
+        await RunAsync(Loc.Text("L0AE0978610F5"), ReadAccountAsync);
 
     private async void RetryClick(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub hesabı kontrol ediliyor…", ReadAccountAsync);
+        await RunAsync(Loc.Text("L0AE0978610F5"), ReadAccountAsync);
 
     private async void InstallClick(object sender, RoutedEventArgs e) =>
         await RunAsync("GitHub CLI kuruluyor…", async () =>
@@ -51,19 +51,19 @@ public partial class GitHubPublishWindow : ThemedWindow
         RepositoryOwner.ItemsSource = null;
         string account = await GitHubCli.ReadAccountAsync(CancellationToken.None);
         if (!Regex.IsMatch(account, @"\A[A-Za-z0-9][A-Za-z0-9-]{0,38}\z"))
-            throw new IOException("GitHub hesap adı doğrulanamadı.");
+            throw new IOException(Loc.Text("LB9355E9BC2E7"));
 
         string[] organizations;
         try
         {
             organizations = await GitHubCli.ReadOrganizationsAsync(CancellationToken.None);
-            Status.Text = organizations.Length == 0 ? $"GitHub hesabı: {account} · Bu oturumda görünür organizasyon yok."
-                : $"GitHub hesabı: {account}";
+            Status.Text = organizations.Length == 0 ? Loc.Format("LD1010F993F3E", account)
+                : Loc.Format("L9D9E8EBB43BD", account);
         }
         catch (IOException ex) when (ex is not (GitHubCliMissingException or GitHubLoginRequiredException))
         {
             organizations = [];
-            Status.Text = $"Organizasyonlar alınamadı. Kişisel hesabı kullanabilir veya tekrar deneyebilirsiniz. {ex.Message}";
+            Status.Text = Loc.Format("L620C51047598", ex.Message);
             RetryButton.Visibility = Visibility.Visible;
         }
 
@@ -74,10 +74,10 @@ public partial class GitHubPublishWindow : ThemedWindow
     }
 
     private async void LoginClick(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub giriş kodu alınıyor…", () => SignInAsync(false));
+        await RunAsync(Loc.Text("L332073CC27FA"), () => SignInAsync(false));
 
     private async void WorkflowPermissionClick(object sender, RoutedEventArgs e) =>
-        await RunAsync("GitHub Actions izni için onay kodu alınıyor…", () => SignInAsync(true));
+        await RunAsync(Loc.Text("L3CF24D68A8B7"), () => SignInAsync(true));
 
     private async Task SignInAsync(bool authorizeWorkflows)
     {
@@ -90,18 +90,18 @@ public partial class GitHubPublishWindow : ThemedWindow
                 return;
             DeviceCode.Text = code;
             DevicePanel.Visibility = Visibility.Visible;
-            Status.Text = "Tarayıcıda bu kodu girip GitHub girişini onaylayın.";
+            Status.Text = Loc.Text("LA5FC7022AE90");
         });
         try
         {
             if (authorizeWorkflows)
             {
                 if (!string.Equals(_account, await GitHubCli.ReadAccountAsync(cancellation.Token), StringComparison.OrdinalIgnoreCase))
-                    throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+                    throw new IOException(Loc.Text("L398AA24E6615"));
                 await GitHubCli.AuthorizeWorkflowsAsync(progress, cancellation.Token);
                 await GitHubCli.VerifyWorkflowPermissionAsync(cancellation.Token);
                 _workflowPermissionRequired = false;
-                Status.Text = "GitHub Actions izni alındı. Gönderimi yeniden deneyin.";
+                Status.Text = Loc.Text("LD15E88EA1950");
             }
             else
             {
@@ -128,14 +128,14 @@ public partial class GitHubPublishWindow : ThemedWindow
         bool isPrivate = PrivateRepository.IsChecked == true;
         var url = RepositoryUrl ?? owner.RepositoryUrl(name);
         if (!isPrivate && !RepositoryCreated &&
-            MessageBox.Show(this, $"{owner.Login}/{name} herkese açık olacak. {_expected.Branch} dalındaki commit’ler gönderilsin mi?",
-                "Herkese açık depo", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+            MessageBox.Show(this, Loc.Format("L08C4742FA57D", owner.Login, name, _expected.Branch),
+                Loc.Text("L0C57CDE78FE5"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 
-        await RunAsync(RepositoryCreated ? "İlk push yeniden deneniyor…" : "GitHub deposu oluşturuluyor…", async () =>
+        await RunAsync(RepositoryCreated ? Loc.Text("LD310635F609B") : Loc.Text("LC7122CA9D4EF"), async () =>
         {
             if (RepositoryCreated && !string.Equals(account, await GitHubCli.ReadAccountAsync(CancellationToken.None), StringComparison.OrdinalIgnoreCase))
-                throw new IOException("Etkin GitHub hesabı değişti. Yayımlama penceresini yeniden açın.");
+                throw new IOException(Loc.Text("L398AA24E6615"));
             await _git.VerifyGitHubPublishPermissionAsync(_expected, CancellationToken.None);
             if (!RepositoryCreated)
             {
@@ -143,10 +143,10 @@ public partial class GitHubPublishWindow : ThemedWindow
                 await GitHubCli.CreateRepositoryAsync(account, owner, name, isPrivate, CancellationToken.None);
                 RepositoryUrl = url;
             }
-            Status.Text = $"Depo oluşturuldu. {_expected.Branch} dalı gönderiliyor…";
+            Status.Text = Loc.Format("L3CD9FA718B19", _expected.Branch);
             await _git.PublishToGitHubAsync(_expected, url, CancellationToken.None);
             Published = true;
-            Status.Text = $"GitHub’a gönderildi. {url}";
+            Status.Text = Loc.Format("LF01624E2345E", url);
         });
     }
 
@@ -173,18 +173,18 @@ public partial class GitHubPublishWindow : ThemedWindow
         }
         catch (OperationCanceledException)
         {
-            Status.Text = "GitHub girişi iptal edildi.";
+            Status.Text = Loc.Text("L69B68B59862C");
             if (!_workflowPermissionRequired)
                 LoginButton.Visibility = Visibility.Visible;
         }
         catch (GitHubWorkflowPermissionException ex)
         {
             _workflowPermissionRequired = true;
-            Status.Text = RepositoryCreated ? $"İlk push tamamlanmadı. {ex.Message}" : ex.Message;
+            Status.Text = RepositoryCreated ? Loc.Format("LA7559CC89F66", ex.Message) : ex.Message;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
         {
-            Status.Text = RepositoryCreated ? $"İlk push tamamlanmadı. {ex.Message}" : ex.Message;
+            Status.Text = RepositoryCreated ? Loc.Format("LA7559CC89F66", ex.Message) : ex.Message;
             if (_account is null)
                 RetryButton.Visibility = Visibility.Visible;
         }
@@ -212,11 +212,11 @@ public partial class GitHubPublishWindow : ThemedWindow
         Publish.IsEnabled = !_busy && !_workflowPermissionRequired && _account is not null && !Published && owner is not null &&
             (RepositoryCreated || Regex.IsMatch(name, @"\A[A-Za-z0-9_.-]{1,100}\z") &&
                 name is not ("." or "..") && !name.EndsWith(".git", StringComparison.OrdinalIgnoreCase));
-        Publish.Content = RepositoryCreated ? "Push’u yeniden dene" : "Oluştur ve push et";
+        Publish.Content = RepositoryCreated ? Loc.Text("LA67EA82419AF") : Loc.Text("L88C147DB2E07");
         Publish.Visibility = Published ? Visibility.Collapsed : Visibility.Visible;
         OpenRepository.Visibility = RepositoryCreated ? Visibility.Visible : Visibility.Collapsed;
         OpenRepository.IsEnabled = !_busy;
-        CloseButton.Content = _loginCancellation is null ? "Kapat" : "Girişi iptal et";
+        CloseButton.Content = _loginCancellation is null ? Loc.Text("L7B31A9FC4816") : Loc.Text("LCFE11711548C");
         CloseButton.IsEnabled = !_busy || _loginCancellation is not null;
     }
 

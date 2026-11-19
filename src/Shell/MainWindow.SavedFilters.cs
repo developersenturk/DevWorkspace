@@ -9,27 +9,27 @@ public partial class MainWindow
     private async void SaveFilterClick(object sender, RoutedEventArgs e)
     {
         if (_busy || _savingPreference || _workspace is not { } workspace ||
-            AskName("Proje filtresini kaydet", "Filtre adı") is not { } name)
+            AskName(Loc.Text("L1D7C076D8EF3"), Loc.Text("L15135E6F0406")) is not { } name)
             return;
 
         var existing = workspace.Config.SavedFilters?.FirstOrDefault(filter => filter.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (existing is not null && MessageBox.Show(this, $"“{name}” filtresi güncellensin mi?", "Kayıtlı filtre",
+        if (existing is not null && MessageBox.Show(this, Loc.Format("L06765E8FAF22", name), Loc.Text("L74BEF2FB3D1E"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 
         var filter = new SavedProjectFilter(existing?.Id ?? Guid.NewGuid(), name,
             CurrentProjectFilter?.Navigation ?? SelectedNavigationKey, SearchBox.Text.Trim());
-        await UpdateProjectFiltersAsync(workspace, () => workspace.SaveProjectFilter(filter), filter.Key, $"Filtre kaydedildi · {name}");
+        await UpdateProjectFiltersAsync(workspace, () => workspace.SaveProjectFilter(filter), filter.Key, Loc.Format("LE126166B179F", name));
     }
 
     private async void RemoveFilterClick(object sender, RoutedEventArgs e)
     {
         if (_busy || _savingPreference || _workspace is not { } workspace || CurrentProjectFilter is not { } filter ||
-            MessageBox.Show(this, $"“{filter.Name}” filtresi silinsin mi?", "Kayıtlı filtre",
+            MessageBox.Show(this, $"“{filter.Name}” filtresi silinsin mi?", Loc.Text("L74BEF2FB3D1E"),
                 MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 
-        await UpdateProjectFiltersAsync(workspace, () => workspace.RemoveProjectFilter(filter.Id), filter.Navigation, "Kayıtlı filtre silindi.");
+        await UpdateProjectFiltersAsync(workspace, () => workspace.RemoveProjectFilter(filter.Id), filter.Navigation, Loc.Text("LB5C5D2450A8A"));
     }
 
     private async Task UpdateProjectFiltersAsync(Workspace workspace, Func<Workspace> update, string key, string status)

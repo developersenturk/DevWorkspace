@@ -98,7 +98,7 @@ internal static partial class PackageSecurityRepair
                     var proposed = group.SelectMany(item => item.Pins.Select(pin => new PackageVersionChange(
                         pin.Name, item.Current, item.Targets[Math.Min(round, item.Targets.Length - 1)], pin.Start, pin.Length,
                         pin.Prefix + pin.Current))).ToArray();
-                    progress?.Invoke($"Paket çözümü deneniyor · {string.Join(", ", proposed.DistinctBy(change => change.Name).Select(change => change.Name))}");
+                    progress?.Invoke(Loc.Format("L01644CB9C27E", string.Join(", ", proposed.DistinctBy(change => change.Name).Select(change => change.Name))));
                     foreach (var (path, bytes) in copies)
                         RestoreFile(path, bytes);
                     HashSet<(string Name, string Advisory)> cleared;
@@ -181,7 +181,7 @@ internal static partial class PackageSecurityRepair
             "pnpm-lock.yaml" => CreatePnpmInfo(folder, ["list", "--lockfile-only", "--depth", "Infinity", "--json"]),
             _ => CreateFlutterInfo(folder, ["pub", "deps", "--json"])
         };
-        var (code, output, _) = await ProjectTools.CaptureAsync(info, "Bağımlılık ağacı", 35, token);
+        var (code, output, _) = await ProjectTools.CaptureAsync(info, Loc.Text("L40A31C4111B3"), 35, token);
         if (code != 0)
             return [];
         using var json = JsonDocument.Parse(output, new JsonDocumentOptions { MaxDepth = 256 });

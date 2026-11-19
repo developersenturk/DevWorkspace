@@ -27,9 +27,9 @@ public partial class GitRemotesWindow : ThemedWindow
             return;
 
         string address = remote.Url is null ? "" : $"\n{remote.Url}";
-        string tracking = _trackingRemote == remote.Name ? "\nEtkin dalın bu depoyla olan takibi de kaldırılacak." : "";
-        if (MessageBox.Show(this, $"{remote.Name}{address}\n\nBu uzak depo bağlantısı yerel projeden kaldırılsın mı?{tracking}",
-            "Bağlantıyı kaldır", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+        string tracking = _trackingRemote == remote.Name ? Loc.Text("LD5F08BDFBFFA") : "";
+        if (MessageBox.Show(this, Loc.Format("LB520C5864090", remote.Name, address, tracking),
+            Loc.Text("L11F80F8CF5B1"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
             return;
 
         RemoteToRemove = remote;

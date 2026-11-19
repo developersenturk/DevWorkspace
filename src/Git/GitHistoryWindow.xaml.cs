@@ -12,8 +12,8 @@ public partial class GitHistoryWindow : ThemedWindow
     internal GitHistoryWindow(ProjectEntry project)
     {
         InitializeComponent();
-        _repository = project.Repository ?? throw new ArgumentException("Git deposu bulunamadı.");
-        HistoryTitle.Text = project.Name + " · Git geçmişi";
+        _repository = project.Repository ?? throw new ArgumentException(Loc.Text("L4B1E1C5AFA51"));
+        HistoryTitle.Text = project.Name + Loc.Text("L66646057146E");
         RepositoryPath.Text = _repository;
     }
 
@@ -25,8 +25,8 @@ public partial class GitHistoryWindow : ThemedWindow
             if (_closing.IsCancellationRequested)
                 return;
             HistoryGrid.ItemsSource = commits;
-            HistoryStatus.Text = commits.Count == 0 ? "Bu depoda henüz commit yok." :
-                $"{commits.Count:N0} commit · Geçerli dalın en son 100 kaydı";
+            HistoryStatus.Text = commits.Count == 0 ? Loc.Text("L1F13C04EE6C0") :
+                Loc.Format("L27D1D06ECACC", commits.Count);
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)

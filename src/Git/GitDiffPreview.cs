@@ -65,7 +65,7 @@ internal sealed record GitDiffPreview(IReadOnlyList<GitDiffRow> Rows, string Mes
                 int newStart = int.Parse(hunk.Groups[2].Value, CultureInfo.InvariantCulture);
                 if (oldStart > before || newStart > after)
                 {
-                    var gap = new GitDiffLine(null, "⋯  Değişmeyen satırlar", GitDiffTone.Gap);
+                    var gap = new GitDiffLine(null, Loc.Text("L635ACE2C1EAB"), GitDiffTone.Gap);
                     rows.Add(new(gap, gap));
                 }
                 before = oldStart;
@@ -101,8 +101,8 @@ internal sealed record GitDiffPreview(IReadOnlyList<GitDiffRow> Rows, string Mes
         FlushChanges();
 
         if (message.Length == 0)
-            message = rows.Count == 0 ? (binary ? "İkili dosyaların metin farkı gösterilemiyor." : "Bu dosya için metin farkı bulunamadı.") :
-                noFinalNewline ? "Sürümlerden en az birinde dosya sonunda satır sonu yok." : "";
+            message = rows.Count == 0 ? (binary ? Loc.Text("LCEDA091946C8") : Loc.Text("L66EEE780E3A5")) :
+                noFinalNewline ? Loc.Text("L851A81D4C139") : "";
         return new(rows, message);
     }
 }

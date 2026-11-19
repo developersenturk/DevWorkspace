@@ -20,10 +20,10 @@ public partial class GitRecoveryWindow : ThemedWindow
     internal GitRecoveryWindow(GitRecoveryEntry[] missing)
     {
         InitializeComponent();
-        Repositories.ItemsSource = missing.Select(entry => new RecoveryRow(entry, "Klasör eksik")).ToArray();
+        Repositories.ItemsSource = missing.Select(entry => new RecoveryRow(entry, Loc.Text("L4620345397EF"))).ToArray();
         Repositories.SelectAll();
-        RecoveryStatus.Text = missing.Length == 0 ? "Kayıtlı depolar arasında eksik klasör bulunamadı." :
-            "Seçimi değiştirmek için Ctrl ile satırlara tıklayın.";
+        RecoveryStatus.Text = missing.Length == 0 ? Loc.Text("L4D97FAED8152") :
+            Loc.Text("L94E08840916C");
     }
 
     private void SelectionChanged(object sender, RoutedEventArgs e)
@@ -45,11 +45,11 @@ public partial class GitRecoveryWindow : ThemedWindow
                 var row = rows[index];
                 if (!selected.Contains(row))
                     continue;
-                RecoveryStatus.Text = $"Klonlanıyor… {Path.GetFileName(row.Entry.Folder)}";
+                RecoveryStatus.Text = Loc.Format("LDE8993D1230F", Path.GetFileName(row.Entry.Folder));
                 try
                 {
                     await Task.Run(() => GitRecovery.RestoreAsync(row.Entry, CancellationToken.None));
-                    rows[index] = row with { Status = "Geri yüklendi" };
+                    rows[index] = row with { Status = Loc.Text("L9C445D9C1402") };
                     Restored++;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException or NotSupportedException)
@@ -59,7 +59,7 @@ public partial class GitRecoveryWindow : ThemedWindow
                 Repositories.ItemsSource = rows.ToArray();
             }
             _finished = true;
-            RecoveryStatus.Text = $"{Restored} depo geri yüklendi. {selected.Count - Restored} depo geri yüklenemedi.";
+            RecoveryStatus.Text = Loc.Format("L05422351D607", Restored, selected.Count - Restored);
         }
         finally
         {

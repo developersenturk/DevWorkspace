@@ -22,17 +22,17 @@ public partial class MainWindow
 
         ProjectPickerAction[] actions =
         [
-            new("Klasörü aç", "folder explorer", project => Directory.Exists(project.Folder),
+            new(Loc.Text("LD6F2F6CAD078"), "folder explorer", project => Directory.Exists(project.Folder),
                 project => OpenPath(project.Folder)),
-            new("Terminal aç", "terminal powershell shell", project => Directory.Exists(project.Folder), OpenProjectTerminal),
-            new("Git değişiklikleri", "git diff değişiklik", project => project.Repository is not null, OpenProjectDiff),
-            new("NuGet bulguları", "nuget paket güvenlik", ProjectIntegrations.HasNuGet,
+            new(Loc.Text("LBB7B6CAB404A"), "terminal powershell shell", project => Directory.Exists(project.Folder), OpenProjectTerminal),
+            new(Loc.Text("L921C51B9B96F"), Loc.Text("L6803927FF1B5"), project => project.Repository is not null, OpenProjectDiff),
+            new(Loc.Text("L5A51D4E247E1"), Loc.Text("LEA41BD08C428"), ProjectIntegrations.HasNuGet,
                 project => ShowProjectTools(ProjectToolView.NuGet, project)),
-            new("Proje işlemleri", "build test run derle çalıştır", project => Directory.Exists(project.Folder),
+            new(Loc.Text("L7CB1799388E1"), Loc.Text("L383B9BE87E31"), project => Directory.Exists(project.Folder),
                 project => ShowProjectTools(ProjectToolView.Commands, project)),
-            new("Proje ortamı", "ortam environment sdk", project => Directory.Exists(project.Folder), OpenProjectEnvironment)
+            new(Loc.Text("L7FC6DAB5A259"), "ortam environment sdk", project => Directory.Exists(project.Folder), OpenProjectEnvironment)
         ];
-        var picker = new ProjectPickerWindow(_projects, CurrentRecent(), "Komut paleti", "Uygula", actions: actions) { Owner = this };
+        var picker = new ProjectPickerWindow(_projects, CurrentRecent(), Loc.Text("L5007727F9FD2"), Loc.Text("L08A24723D591"), actions: actions) { Owner = this };
         if (picker.ShowDialog() == true && picker.Chosen is { } project)
         {
             SearchBox.Text = "";
@@ -68,10 +68,15 @@ public partial class MainWindow
             view.OpenFirstChange();
     }
 
-    private void OpenProject(ProjectEntry project)
+    private async void OpenProject(ProjectEntry project) => await OpenProjectAsync(project);
+
+    private async Task OpenProjectAsync(ProjectEntry project)
     {
         string path = project.Kind is "Visual Studio" or ".NET / MSBuild" ? project.EntryFile ?? project.Folder : project.Folder;
-        if (OpenPath(path, offerEditor: true))
+        string? workspaceRoot = _workspace?.Root;
+        bool opened = VisualStudioInstallations.Supports(path)
+            ? await OpenVisualStudioAsync(path) : OpenPath(path, offerEditor: true);
+        if (opened && _workspace?.Root == workspaceRoot)
         {
             if (_workspace is { } workspace && IsSolution(path))
                 _session.RememberSolution(workspace.Root, path);
@@ -120,7 +125,7 @@ public partial class MainWindow
         LastSolutionButton.ToolTip = path;
     }
 
-    private void LastSolutionClick(object sender, RoutedEventArgs e)
+    private async void LastSolutionClick(object sender, RoutedEventArgs e)
     {
         if (_busy || LastSolutionPath() is not { } path)
             return;
@@ -129,7 +134,7 @@ public partial class MainWindow
         if (project is not null)
             OpenProject(project);
         else
-            OpenPath(path, offerEditor: true);
+            await OpenVisualStudioAsync(path);
     }
 
     private async void FavoriteClick(object sender, RoutedEventArgs e) =>
@@ -217,14 +222,14 @@ public partial class MainWindow
             }
             StatusText.Text = bulkGroup switch
             {
-                null => "Proje tercihleri kaydedildi.",
-                "" => $"{paths.Length} proje grubundan çıkarıldı.",
-                _ => $"{paths.Length} proje “{bulkGroup}” grubuna eklendi."
+                null => Loc.Text("L1FA8903CD005"),
+                "" => Loc.Format("L6DB3911F405A", paths.Length),
+                _ => Loc.Format("LA1827DE5B277", paths.Length, bulkGroup)
             };
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            StatusText.Text = $"Proje tercihleri kaydedilemedi. {ex.Message}";
+            StatusText.Text = Loc.Format("LE7D441804ADF", ex.Message);
         }
         finally
         {
@@ -241,7 +246,7 @@ public partial class MainWindow
             return;
 
         var choices = _projects.Where(project => !project.Folder.Equals(left.Folder, StringComparison.OrdinalIgnoreCase));
-        var picker = new ProjectPickerWindow(choices, CurrentRecent(), $"Karşılaştır · {left.Name}", "Karşılaştır", left) { Owner = this };
+        var picker = new ProjectPickerWindow(choices, CurrentRecent(), Loc.Format("L9375D8FC658C", left.Name), Loc.Text("LD356DEEDAC55"), left) { Owner = this };
         if (picker.ShowDialog() == true && picker.Chosen is { } right)
             new ComparisonWindow(workspace, left, right) { Owner = this }.ShowDialog();
     }

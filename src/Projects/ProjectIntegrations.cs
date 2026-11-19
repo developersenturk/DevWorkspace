@@ -6,7 +6,11 @@ using System.Text.RegularExpressions;
 namespace DevWorkspace;
 
 internal sealed record NuGetFinding(string Package, string Version, string Severity, string Scope,
-    string Project, string Framework, string Advisory);
+    string Project, string Framework, string Advisory)
+{
+    [System.Text.Json.Serialization.JsonIgnore] public string SeverityLabel => Loc.Label(Severity);
+    [System.Text.Json.Serialization.JsonIgnore] public string ScopeLabel => Loc.Label(Scope);
+}
 
 internal sealed record NuGetReport(IReadOnlyList<NuGetFinding> Findings, IReadOnlyList<string> Diagnostics);
 
@@ -30,12 +34,12 @@ internal static class ProjectIntegrations
         IProgress<string>? progress = null)
     {
         if (!HasNuGet(project))
-            throw new IOException("NuGet taraması için bir .NET çözümü veya projesi gerekli.");
+            throw new IOException(Loc.Text("LF1279A7DB44D"));
 
         string folder = project.Folder;
         string sdk = await RunAsync("dotnet.exe", ".NET SDK", folder, ["--version"], token);
         if (!int.TryParse(sdk.Trim().Split('.')[0], out int major) || major < 7)
-            throw new IOException("Bu tarama için JSON raporu destekleyen .NET 7 veya daha yeni bir SDK gerekli.");
+            throw new IOException(Loc.Text("L4FC0BA18598D"));
 
         string[] arguments = major >= 10
             ? ["package", "list", "--project", project.EntryFile!, "--no-restore"]
@@ -46,15 +50,15 @@ internal static class ProjectIntegrations
         }
         catch (NuGetRestoreRequiredException)
         {
-            progress?.Report("Eksik NuGet paket bilgileri geri yükleniyor…");
-            await RunAsync("dotnet.exe", "NuGet paketlerini geri yükleme", folder, ["restore", project.EntryFile!], token, 300);
-            progress?.Report("Geri yükleme tamamlandı. Güvenlik taraması yeniden çalışıyor…");
+            progress?.Report(Loc.Text("L13453F3C4385"));
+            await RunAsync("dotnet.exe", Loc.Text("LBC03A4F3E2E8"), folder, ["restore", project.EntryFile!], token, 300);
+            progress?.Report(Loc.Text("L95D207EB82C3"));
             return await AuditAsync();
         }
 
         async Task<NuGetReport> AuditAsync()
         {
-            var (output, error) = await RunCaptureAsync("dotnet.exe", "NuGet taraması", folder,
+            var (output, error) = await RunCaptureAsync("dotnet.exe", Loc.Text("L6A8DDDA55E3B"), folder,
                 [.. arguments, "--vulnerable", "--include-transitive", "--format", "json", "--output-version", "1"], token, 120,
                 nuGetAudit: true);
             return ParseNuGetReport(output, error);
@@ -67,7 +71,7 @@ internal static class ProjectIntegrations
         JsonElement root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object ||
             !root.TryGetProperty("projects", out var projects) || projects.ValueKind != JsonValueKind.Array)
-            throw new IOException("NuGet taramasından geçerli bir proje raporu alınamadı.");
+            throw new IOException(Loc.Text("LAFD27A183B6F"));
 
         var findings = new List<NuGetFinding>();
         var diagnostics = new List<string>();
@@ -96,7 +100,7 @@ internal static class ProjectIntegrations
             }
         }
         if (projects.GetArrayLength() == 0)
-            diagnostics.Add("NuGet raporunda taranmış proje bulunamadı.");
+            diagnostics.Add(Loc.Text("L7293ACCFB071"));
         return new(findings.Distinct().ToArray(), diagnostics.Distinct().ToArray());
     }
 
@@ -112,7 +116,7 @@ internal static class ProjectIntegrations
     public static async Task<(ActionsRun? Run, bool HasWorkflow)> GetActionsOverviewAsync(ProjectEntry project, CancellationToken token)
     {
         string githubRepository = await FindGitHubRepositoryAsync(project, token)
-            ?? throw new IOException("Bu Git deposunda bir github.com uzak adresi bulunamadı.");
+            ?? throw new IOException(Loc.Text("LA5F3A9F6E76D"));
         var run = await ReadLatestRunAsync(githubRepository, includeJobs: true, token);
         if (run is not null)
             return (run, true);
@@ -158,7 +162,7 @@ internal static class ProjectIntegrations
         }
         catch (Exception ex) when (ex is IOException or JsonException or Win32Exception)
         {
-            return run with { FailureDetails = "Başarısız adımlar alınamadı. Ayrıntıları GitHub’da açabilirsiniz." };
+            return run with { FailureDetails = Loc.Text("L1755EA114F0E") };
         }
     }
 
@@ -190,10 +194,10 @@ internal static class ProjectIntegrations
         string conclusion = Value(run, "conclusion");
         string label = (status == "completed" ? conclusion : status) switch
         {
-            "success" => "Başarılı", "failure" => "Başarısız", "timed_out" => "Zaman aşımı",
-            "cancelled" => "İptal edildi", "skipped" => "Atlandı", "in_progress" => "Çalışıyor",
-            "queued" or "requested" or "pending" => "Sırada", "waiting" => "Bekliyor",
-            "" or "completed" => "Tamamlandı", var other => other
+            "success" => Loc.Text("L59C1C2FCFD11"), "failure" => Loc.Text("LF0873175A881"), "timed_out" => Loc.Text("LF87DDA747BE8"),
+            "cancelled" => Loc.Text("LDBD417DA03E1"), "skipped" => Loc.Text("L594B1254C47D"), "in_progress" => Loc.Text("LAF7DA0BB4DFC"),
+            "queued" or "requested" or "pending" => Loc.Text("L41D1408114E4"), "waiting" => Loc.Text("L9025B4AF025A"),
+            "" or "completed" => Loc.Text("L7C6F3F5F37BC"), var other => other
         };
         Uri? link = Uri.TryCreate(Value(run, "url"), UriKind.Absolute, out var address) &&
             address.Scheme == Uri.UriSchemeHttps && address.Host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
@@ -216,8 +220,8 @@ internal static class ProjectIntegrations
                     .Select(step => Value(step, "name")).Where(name => name.Length > 0).ToArray();
                 return steps.Length == 0 ? Value(job, "name") : $"{Value(job, "name")} · {string.Join(", ", steps)}";
             }).Where(name => name.Length > 0).ToArray();
-        return failed.Length == 0 ? "" : "Başarısız işler ve adımlar" + Environment.NewLine +
-            string.Join(Environment.NewLine, failed.Take(5)) + (failed.Length > 5 ? $"\n+{failed.Length - 5} iş" : "");
+        return failed.Length == 0 ? "" : Loc.Text("L4881D9C41177") + Environment.NewLine +
+            string.Join(Environment.NewLine, failed.Take(5)) + (failed.Length > 5 ? Loc.Format("L244F31A3A389", failed.Length - 5) : "");
     }
 
     public static async Task<IReadOnlyList<ComposeService>> ReadComposeAsync(ProjectEntry project, CancellationToken token)
@@ -250,7 +254,7 @@ internal static class ProjectIntegrations
         return services.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Distinct(StringComparer.Ordinal)
             .Select(name => new ComposeService(name, states.TryGetValue(name, out var found)
-                ? string.Join(" · ", found.Distinct()) : "Başlatılmadı")).ToArray();
+                ? string.Join(" · ", found.Distinct()) : Loc.Text("LC66F7706C755"))).ToArray();
 
         void AddContainer(JsonElement item)
         {
@@ -259,9 +263,9 @@ internal static class ProjectIntegrations
                 states[service] = list = [];
             list.Add((Value(item, "State"), Value(item, "Health")) switch
             {
-                ("running", "unhealthy") => "Sağlıksız", ("running", "starting") => "Hazırlanıyor",
-                ("running", _) => "Çalışıyor", ("restarting", _) => "Yeniden başlıyor", ("paused", _) => "Duraklatıldı",
-                ("created", _) => "Oluşturuldu", ("exited" or "dead", _) => "Durdu", (var state, _) => state
+                ("running", "unhealthy") => Loc.Text("LC48184564D7B"), ("running", "starting") => Loc.Text("L431EA0AC13F5"),
+                ("running", _) => Loc.Text("LAF7DA0BB4DFC"), ("restarting", _) => Loc.Text("LCD7238E18134"), ("paused", _) => Loc.Text("L49730237C2A7"),
+                ("created", _) => Loc.Text("LE1D51EB61DD8"), ("exited" or "dead", _) => Loc.Text("L3AAB47317CD1"), (var state, _) => state
             });
         }
     }
@@ -284,7 +288,7 @@ internal static class ProjectIntegrations
     private static void EnsureCompose(ProjectEntry project)
     {
         if (!HasCompose(project))
-            throw new IOException("Bu proje klasöründe Docker Compose dosyası bulunamadı.");
+            throw new IOException(Loc.Text("LA15A8309C883"));
     }
 
     private static async Task<string> RunAsync(string executable, string label, string folder, string[] arguments,
@@ -306,16 +310,16 @@ internal static class ProjectIntegrations
             {
                 string rawDetail = string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim();
                 string detail = nuGetAudit ? NuGetFailureDetail(output) ?? rawDetail : rawDetail;
-                string message = $"{label} tamamlanamadı (kod {code}). {detail[..Math.Min(detail.Length, 1800)]}";
+                string message = Loc.Format("LC35F59D732BE", label, code, detail[..Math.Min(detail.Length, 1800)]);
                 if (nuGetAudit && (NeedsNuGetRestore(detail) || NeedsNuGetRestore(error)))
-                    throw new NuGetRestoreRequiredException("NuGet taraması için gerekli paket bilgileri bulunamadı. " + detail);
+                    throw new NuGetRestoreRequiredException(Loc.Text("L9F1ECC2CF9BE") + detail);
                 throw new IOException(message);
             }
             return (output, error);
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode is 2 or 3 && Directory.Exists(folder))
         {
-            throw new IOException($"{label} bulunamadı. Aracın kurulu ve PATH üzerinde olduğundan emin olun.", ex);
+            throw new IOException(Loc.Format("L69952802DB49", label), ex);
         }
     }
 

@@ -17,9 +17,9 @@ internal sealed record GitWorkbenchState(GitStatus Status, string IndexSnapshot,
             ? upstream : new GitDestination(remote, head, false)).ToArray() : [];
 
     public string? PullBlockReason =>
-        Status.HeadRef is null || Status.CommitId is null ? "Pull için commit içeren bir dalda olmalısınız." :
-        Upstream is null || !Remotes.Contains(Upstream.Remote, StringComparer.Ordinal) ? "Pull için dalın bir uzak dalı takip etmesi gerekir." :
-        InProgress ?? (Status.State != GitState.Clean ? "Pull için çalışma ağacındaki değişiklikleri önce kaydedin." : null);
+        Status.HeadRef is null || Status.CommitId is null ? Loc.Text("L96062EB87933") :
+        Upstream is null || !Remotes.Contains(Upstream.Remote, StringComparer.Ordinal) ? Loc.Text("LF0F4123F42AD") :
+        InProgress ?? (Status.State != GitState.Clean ? Loc.Text("L52F4F7F1C3A4") : null);
 }
 
 internal sealed record GitRemote(string Name, string? Url);
@@ -38,8 +38,8 @@ internal sealed record GitReference(string FullName, bool Current, string Upstre
     public bool IsLocalBranch => FullName.StartsWith("refs/heads/", StringComparison.Ordinal);
     public bool IsRemoteBranch => FullName.StartsWith("refs/remotes/", StringComparison.Ordinal);
     public string Name => FullName[(FullName.IndexOf('/', "refs/".Length) + 1)..];
-    public string Label => $"{Name} · {(IsLocalBranch ? Current ? "Etkin dal" : "Yerel dal" :
-        FullName.StartsWith("refs/tags/", StringComparison.Ordinal) ? "Etiket" : "Uzak dal")}";
+    public string Label => $"{Name} · {(IsLocalBranch ? Current ? Loc.Text("LBB89803B1C8E") : Loc.Text("LFBE18D229D96") :
+        FullName.StartsWith("refs/tags/", StringComparison.Ordinal) ? Loc.Text("LBC91FCE11D6F") : Loc.Text("L8B6E2F28A044"))}";
 }
 
 internal sealed record GitReferenceComparison(string Before, string After, string[] Files);
@@ -59,24 +59,24 @@ internal sealed class GitWorkbench(string repository)
     internal async Task SwitchBranchAsync(GitReference branch, CancellationToken token)
     {
         if (!branch.IsLocalBranch && !branch.IsRemoteBranch)
-            throw new IOException("Geçmek için yerel veya uzak bir dal seçin.");
+            throw new IOException(Loc.Text("LF58E9F554E2C"));
         var state = await ReadAsync(token);
         if (state.InProgress is string operation)
             throw new IOException(operation);
         if (state.Status.State != GitState.Clean)
-            throw new IOException("Dal değiştirmeden önce değişiklikleri commit edin veya geçici kaydedin.");
+            throw new IOException(Loc.Text("LFE7BE8F9D1AE"));
 
         if (branch.IsRemoteBranch)
         {
             GitReference[] refs = await ReadReferencesAsync(token);
             if (!refs.Any(item => item.FullName == branch.FullName))
-                throw new IOException("Bu uzak dal artık listede yok. Dalları yenileyip yeniden deneyin.");
+                throw new IOException(Loc.Text("LE97D575CCD05"));
 
             var tracking = refs.Where(item => item.IsLocalBranch && item.Upstream == branch.FullName).ToArray();
             if (tracking.Any(item => item.Current))
                 return;
             if (tracking.Length > 1)
-                throw new IOException("Birden fazla yerel dal bu uzak dalı takip ediyor. Yerel dallardan birini seçin.");
+                throw new IOException(Loc.Text("L00EE8D28EAE9"));
             if (tracking.Length == 0)
             {
                 await RunAsync(["switch", "--no-recurse-submodules", "--track", "--", branch.FullName], token, 120);
@@ -139,7 +139,7 @@ internal sealed class GitWorkbench(string repository)
         Task<GitDestination?> upstream = ReadUpstreamAsync(status.HeadRef, token);
         await Task.WhenAll(currentIndex, inProgress, upstream);
         if (before != await currentIndex)
-            throw new IOException("Hazırlanan dosyalar okunurken değişti. Listeyi yenileyin.");
+            throw new IOException(Loc.Text("L72DD994AD86E"));
         return new(status, before, await inProgress, await upstream, status.Remotes?.ToArray() ?? []);
     }
 
@@ -186,14 +186,14 @@ internal sealed class GitWorkbench(string repository)
         await VerifyStashOperationAsync(expected, token);
         string output = await RunAsync(["stash", "push", "--include-untracked"], token, 120);
         if (output.Trim().Equals("No local changes to save", StringComparison.Ordinal))
-            throw new IOException("Geçici kaydedilecek değişiklik bulunamadı.");
+            throw new IOException(Loc.Text("LA2BD88C56B66"));
     }
 
     internal async Task ApplyStashAsync(GitStatus expected, GitStash stash, CancellationToken token)
     {
         await VerifyStashOperationAsync(expected, token);
         if (!(await ReadStashesAsync(token)).Any(entry => entry.CommitId == stash.CommitId))
-            throw new IOException("Bu geçici kayıt artık listede yok. Güncel kayıtları kontrol edin.");
+            throw new IOException(Loc.Text("L79240C796D9C"));
 
         try
         {
@@ -201,7 +201,7 @@ internal sealed class GitWorkbench(string repository)
         }
         catch (IOException ex)
         {
-            throw new IOException($"Geçici kayıt listede duruyor. Çalışma dosyalarını ve olası çakışmaları kontrol edin. {ex.Message}", ex);
+            throw new IOException(Loc.Format("L8A4A66C5368A", ex.Message), ex);
         }
     }
 
@@ -210,7 +210,7 @@ internal sealed class GitWorkbench(string repository)
         await VerifyRepositoryAsync(token);
         if (!Regex.IsMatch(stash.Selector, @"\Astash@\{[0-9]+\}\z") ||
             !(await ReadStashesAsync(token)).Any(entry => entry.Selector == stash.Selector && entry.CommitId == stash.CommitId))
-            throw new IOException("Geçici kayıt listesi değişti. Silmek istediğiniz kaydı yeniden seçin.");
+            throw new IOException(Loc.Text("L81F792A34483"));
 
         await RunAsync(["stash", "drop", stash.Selector], token);
     }
@@ -219,7 +219,7 @@ internal sealed class GitWorkbench(string repository)
     {
         await VerifyHeadAsync(expected, token);
         if (expected.CommitId is null)
-            throw new IOException("Geçici kayıtlar için önce ilk commit’i oluşturun.");
+            throw new IOException(Loc.Text("LF3DA06510B8E"));
         if (await ReadOperationAsync(token) is string operation)
             throw new IOException(operation);
     }
@@ -227,14 +227,14 @@ internal sealed class GitWorkbench(string repository)
     public async Task CommitAsync(GitWorkbenchState expected, string message, CancellationToken token)
     {
         if (string.IsNullOrWhiteSpace(message) || string.IsNullOrEmpty(expected.IndexSnapshot))
-            throw new IOException("Commit mesajı yazın ve en az bir dosya hazırlayın.");
+            throw new IOException(Loc.Text("LB11587FA5128"));
         if (expected.Status.HeadRef is null)
-            throw new IOException("Commit için bir dala geçin.");
+            throw new IOException(Loc.Text("L5A65C4666D81"));
         if (await ReadOperationAsync(token) is string operation)
             throw new IOException(operation);
         await VerifyHeadAsync(expected.Status, token);
         if (!string.Equals(await ReadIndexAsync(token), expected.IndexSnapshot, StringComparison.Ordinal))
-            throw new IOException("Hazırlanan değişiklikler başka bir işlem tarafından güncellendi. Listeyi inceleyip yeniden deneyin.");
+            throw new IOException(Loc.Text("L3066594ED50B"));
 
         await RunAsync(["commit", "-m", message], token, 120);
     }
@@ -243,7 +243,7 @@ internal sealed class GitWorkbench(string repository)
     {
         await VerifyHeadAsync(expected, token);
         if (expected.HeadRef is null || expected.CommitId is null)
-            throw new IOException("Yayımlamak için commit içeren bir dal gerekli.");
+            throw new IOException(Loc.Text("L452C71AED3AB"));
         if (await ReadOperationAsync(token) is string operation)
             throw new IOException(operation);
     }
@@ -303,7 +303,7 @@ internal sealed class GitWorkbench(string repository)
     internal async Task AddRemoteAsync(string name, string url, CancellationToken token)
     {
         if (!IsSupportedRemoteName(name) || !IsSupportedRemoteUrl(url))
-            throw new IOException("Geçerli bir uzak depo adı ve SSH veya HTTP(S) adresi girin.");
+            throw new IOException(Loc.Text("LEC9ED15321CD"));
 
         await VerifyRepositoryAsync(token);
         await RunAsync(["remote", "add", "--", name, url], token);
@@ -322,7 +322,7 @@ internal sealed class GitWorkbench(string repository)
         await VerifyRepositoryAsync(token);
         if (!(await ReadRemoteNamesAsync(token)).Contains(remote.Name, StringComparer.Ordinal) ||
             await ReadRemoteAsync(remote.Name, token) != remote)
-            throw new IOException("Uzak depo bağlantısı değişti. Listeyi kontrol edip yeniden deneyin.");
+            throw new IOException(Loc.Text("LED7F74DDCCBB"));
 
         await RunAsync(["remote", "remove", "--", remote.Name], token);
     }
@@ -360,7 +360,7 @@ internal sealed class GitWorkbench(string repository)
         }
         string pushUrl = (await RunAsync(["remote", "get-url", "--push", "--all", "--", name], token)).Trim();
         if (!string.Equals(pushUrl, url, StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Uzak depo adresi değişti. Git panelindeki hedefi kontrol edin.");
+            throw new IOException(Loc.Text("LF8152BF89C5A"));
 
         await ConfigureGitHubCredentialAsync(url, GitHubCli.CredentialHelper(), token);
 
@@ -374,26 +374,26 @@ internal sealed class GitWorkbench(string repository)
     {
         await VerifyHeadAsync(expected, token);
         if (expected.CommitId is not string commit)
-            throw new IOException("Uzak dal oluşturmak için önce bir commit oluşturun.");
+            throw new IOException(Loc.Text("L36448E23DEE2"));
         if (await ReadOperationAsync(token) is string operation)
             throw new IOException(operation);
         if (branch.Length == 0 || branch.StartsWith('-') || branch == "HEAD")
-            throw new IOException("Geçerli bir dal adı girin.");
+            throw new IOException(Loc.Text("L5D19269D5A6B"));
         if (!(await ReadRemoteNamesAsync(token)).Contains(remote, StringComparer.Ordinal))
-            throw new IOException("Seçilen uzak depo artık yapılandırılmamış.");
+            throw new IOException(Loc.Text("LD54F64B56788"));
 
         string reference = $"refs/heads/{branch}";
         await RunAsync(["check-ref-format", reference], token);
         string urls = await RunAsync(["remote", "get-url", "--push", "--all", "--", remote], token);
         if (urls.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Length != 1)
-            throw new IOException("Uzak dal oluşturmak için tek push adresi olan bir uzak depo seçin.");
+            throw new IOException(Loc.Text("L82F4A8F10F03"));
 
         var (code, output, error) = await GitProjectOperations.RunAsync(repository,
             ["-c", $"remote.{remote}.mirror=false", "push", "--porcelain", "--no-follow-tags",
                 "--recurse-submodules=no", $"--force-with-lease={reference}:", "--", remote, $"{commit}:{reference}"], token, 300, promptForSsh: true);
         if (output.Split('\n').Any(line => line.StartsWith("=\t", StringComparison.Ordinal)) ||
             output.Contains("(stale info)", StringComparison.Ordinal))
-            throw new IOException($"{remote}/{branch} dalı zaten var.");
+            throw new IOException(Loc.Format("LE7A4FC8E24BC", remote, branch));
         if (code != 0)
             throw new IOException(ErrorText(string.IsNullOrWhiteSpace(error) ? output : error));
     }
@@ -420,22 +420,22 @@ internal sealed class GitWorkbench(string repository)
     public async Task PushAsync(GitWorkbenchState expected, GitDestination destination, CancellationToken token)
     {
         if (expected.Status.HeadRef is not string head || expected.Status.CommitId is not string commit)
-            throw new IOException("Push için dalda en az bir commit olmalı.");
+            throw new IOException(Loc.Text("LCCABC8F50926"));
         await VerifyHeadAsync(expected.Status, token);
         if (await ReadUpstreamAsync(head, token) != expected.Upstream)
-            throw new IOException("Takip edilen dal değişti. Güncel hedefi inceleyip yeniden deneyin.");
+            throw new IOException(Loc.Text("LB0E324E547AC"));
         if (destination.SetUpstream)
         {
             if (expected.Upstream is not null || destination.Ref != head ||
                 !expected.Remotes.Contains(destination.Remote, StringComparer.Ordinal))
-                throw new IOException("İlk push için geçerli bir uzak depo seçin.");
+                throw new IOException(Loc.Text("L3C1412802613"));
         }
         else if (destination != expected.Upstream && destination.Ref != head)
-            throw new IOException("Takip edilen uzak dal seçili değil.");
+            throw new IOException(Loc.Text("L16187D35C92F"));
 
         string[] remotes = (await RunAsync(["remote"], token)).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
         if (!remotes.Contains(destination.Remote, StringComparer.Ordinal))
-            throw new IOException("Uzak depo artık yapılandırılmamış.");
+            throw new IOException(Loc.Text("LA041C78774D6"));
 
         string[] tracking = destination.SetUpstream ? ["--set-upstream"] : [];
         string source = destination.SetUpstream ? head : commit;
@@ -452,7 +452,7 @@ internal sealed class GitWorkbench(string repository)
         if (detail.Contains("without `workflow` scope", StringComparison.OrdinalIgnoreCase))
             return new GitHubWorkflowPermissionException();
         if (detail.Contains("remote: Repository not found", StringComparison.OrdinalIgnoreCase))
-            detail = $"Uzak depo bulunamadı veya bu hesapla erişilemiyor. Depo adresini ve hesabı kontrol edin.\n{detail}";
+            detail = Loc.Format("L3FE8B751CF53", detail);
         return new IOException(detail);
     }
 
@@ -460,7 +460,7 @@ internal sealed class GitWorkbench(string repository)
     {
         await VerifyRepositoryAsync(token);
         if ((await ReadRemoteAsync(remote, token)).Url is null)
-            throw new IOException("Seçilen uzak deponun adresi bulunamadı.");
+            throw new IOException(Loc.Text("LC6CA468EB420"));
         await RunAsync(["fetch", "--no-recurse-submodules", "--", remote], token, 300, promptForSsh: true);
     }
 
@@ -472,7 +472,7 @@ internal sealed class GitWorkbench(string repository)
         GitWorkbenchState current = await ReadAsync(token);
         if (current.Status.HeadRef != expected.Status.HeadRef || current.Status.CommitId != expected.Status.CommitId ||
             current.Upstream != expected.Upstream)
-            throw new IOException("Etkin dal, commit veya takip hedefi değişti. Güncel durumu inceleyip yeniden deneyin.");
+            throw new IOException(Loc.Text("L4788F7C20E75"));
         if (current.PullBlockReason is string reason)
             throw new IOException(reason);
 
@@ -500,7 +500,7 @@ internal sealed class GitWorkbench(string repository)
             throw new IOException(ErrorText(branchError + "\n" + commitError));
         if ((branchCode == 0 ? head.Trim() : null) != expected.HeadRef ||
             (commitCode == 0 ? commit.Trim() : null) != expected.CommitId)
-            throw new IOException("Etkin dal veya commit değişti. Güncel listeyi inceleyip yeniden deneyin.");
+            throw new IOException(Loc.Text("L1AC3BB8893F2"));
     }
 
     private async Task VerifyRepositoryAsync(CancellationToken token)
@@ -508,7 +508,7 @@ internal sealed class GitWorkbench(string repository)
         string top = (await RunAsync(["rev-parse", "--show-toplevel"], token)).TrimEnd('\r', '\n');
         if (!Path.TrimEndingDirectorySeparator(Path.GetFullPath(top)).Equals(
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(repository)), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Git deposunun kök klasörü değişti.");
+            throw new IOException(Loc.Text("L29397C8B904F"));
     }
 
     private Task<string> ReadIndexAsync(CancellationToken token) =>
@@ -520,7 +520,7 @@ internal sealed class GitWorkbench(string repository)
         string gitDirectory = (await RunAsync(["rev-parse", "--absolute-git-dir"], token)).TrimEnd('\r', '\n');
         string[] markers = ["MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-apply", "rebase-merge", "sequencer"];
         return markers.Any(marker => Path.Exists(Path.Combine(gitDirectory, marker)))
-            ? "Depoda devam eden bir Git işlemi var. Önce bu işlemi tamamlayın." : null;
+            ? Loc.Text("L647365F5F27C") : null;
     }
 
     internal async Task<GitDestination?> ReadUpstreamAsync(string? head, CancellationToken token)
@@ -563,11 +563,11 @@ internal sealed class GitWorkbench(string repository)
     private static string ErrorText(string error)
     {
         if (error.Contains("REMOTE HOST IDENTIFICATION HAS CHANGED", StringComparison.OrdinalIgnoreCase))
-            return "SSH sunucusunun kayıtlı anahtarı değişmiş. Sunucu yöneticisinden yeni parmak izini doğrulayın.";
+            return Loc.Text("L19ED35F344B8");
         if (error.Contains("Host key verification failed", StringComparison.OrdinalIgnoreCase))
-            return "SSH sunucu anahtarı doğrulanamadı. Sunucu parmak izini güvenilir bir kaynaktan doğrulayıp SSH bağlantısını bir kez onaylayın.";
+            return Loc.Text("L1A01AD3F04E5");
 
         string message = Regex.Replace(error.Trim(), @"(https?://)[^\s/@]+@", "$1", RegexOptions.IgnoreCase);
-        return message.Length == 0 ? "Git işlemi tamamlanamadı." : message;
+        return message.Length == 0 ? Loc.Text("LD3363EE2C187") : message;
     }
 }

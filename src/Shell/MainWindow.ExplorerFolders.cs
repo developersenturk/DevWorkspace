@@ -89,7 +89,7 @@ public partial class MainWindow
             menu.Items.Add(command);
         }
 
-        Add(item.IsFolderSection ? "Yeni klasör…" : "Yeni alt klasör…", () => BeginExplorerEdit(item, rename: false));
+        Add(item.IsFolderSection ? Loc.Text("L9965C7388A0A") : Loc.Text("L40EDE421B8B0"), () => BeginExplorerEdit(item, rename: false));
         if (item.FolderPath is { } path)
         {
             string folder = Path.Combine(workspace.Root, path);
@@ -100,31 +100,31 @@ public partial class MainWindow
                 : OrderedFolderChildren(_folderChildren.GetValueOrDefault(parent) ?? []).ToArray();
             int index = Array.FindIndex(siblings, sibling => sibling.Equals(path, StringComparison.OrdinalIgnoreCase));
             menu.Items.Add(new Separator());
-            Add("Görünen adı değiştir…", () => BeginExplorerEdit(item, rename: true));
-            Add("Yukarı taşı", () => MoveExplorerFolder(path, siblings, index, -1), index > 0);
-            Add("Aşağı taşı", () => MoveExplorerFolder(path, siblings, index, 1), index >= 0 && index < siblings.Length - 1);
-            Add("Gezgin’den gizle", () => ChangeExplorerFolder(workspace => workspace.SetExplorerFolderHidden(path, true), "Klasör gizlendi."));
+            Add(Loc.Text("L8D6DB04381D4"), () => BeginExplorerEdit(item, rename: true));
+            Add(Loc.Text("L6820B3BD2486"), () => MoveExplorerFolder(path, siblings, index, -1), index > 0);
+            Add(Loc.Text("L9B1BE60F99F3"), () => MoveExplorerFolder(path, siblings, index, 1), index >= 0 && index < siblings.Length - 1);
+            Add(Loc.Text("L6FDD2C3F0393"), () => ChangeExplorerFolder(workspace => workspace.SetExplorerFolderHidden(path, true), Loc.Text("LDC9F639333AD")));
             menu.Items.Add(new Separator());
-            Add("Dosya Gezgini’nde aç", () => OpenPath(folder), Directory.Exists(folder));
-            Add("Yolu kopyala", () => CopyExplorerFolderPath(folder));
+            Add(Loc.Text("L37E690A92E5C"), () => OpenPath(folder), Directory.Exists(folder));
+            Add(Loc.Text("L72C32847EB3E"), () => CopyExplorerFolderPath(folder));
         }
         else
         {
-            var hidden = new MenuItem { Header = "Gizli klasörler", IsEnabled = _folders.Any(folder => !folder.IsVisible) };
+            var hidden = new MenuItem { Header = Loc.Text("LE74226DEA03F"), IsEnabled = _folders.Any(folder => !folder.IsVisible) };
             foreach (WorkspaceFolder folder in _folders.Where(folder => !folder.IsVisible))
             {
-                var show = new MenuItem { Header = folder.Name, ToolTip = $"Yeniden göster · {folder.Label}" };
+                var show = new MenuItem { Header = folder.Name, ToolTip = Loc.Format("LE9F2852778E4", folder.Label) };
                 show.Click += (_, _) =>
                 {
                     if (_workspace?.Root == workspace.Root)
-                        ChangeExplorerFolder(current => current.SetExplorerFolderHidden(folder.Name, false), "Klasör yeniden gösteriliyor.");
+                        ChangeExplorerFolder(current => current.SetExplorerFolderHidden(folder.Name, false), Loc.Text("L44E6B7941652"));
                 };
                 hidden.Items.Add(show);
             }
             menu.Items.Add(hidden);
             menu.Items.Add(new Separator());
-            Add("Çalışma alanını aç", () => OpenPath(workspace.Root));
-            Add("Yolu kopyala", () => CopyExplorerFolderPath(workspace.Root));
+            Add(Loc.Text("L47E1F9FB8C0D"), () => OpenPath(workspace.Root));
+            Add(Loc.Text("L72C32847EB3E"), () => CopyExplorerFolderPath(workspace.Root));
         }
 
         _explorerContextMenu = menu;
@@ -134,7 +134,7 @@ public partial class MainWindow
 
     private void MoveExplorerFolder(string path, string[] siblings, int index, int offset) =>
         ChangeExplorerFolder(workspace => workspace.MoveExplorerFolder(path, siblings[index + offset], offset < 0, siblings),
-            "Klasör sırası güncellendi.");
+            Loc.Text("L71858DF0B5A0"));
 
     private async void ChangeExplorerFolder(Func<Workspace, Workspace> change, string success)
     {
@@ -145,7 +145,7 @@ public partial class MainWindow
     private void CopyExplorerFolderPath(string path)
     {
         try { Clipboard.SetText(path); }
-        catch (ExternalException) { StatusText.Text = "Panoya erişilemedi. Tekrar deneyin."; }
+        catch (ExternalException) { StatusText.Text = Loc.Text("L27388BFE0C95"); }
     }
 
     private void BeginExplorerEdit(NavigationItem item, bool rename)
@@ -157,7 +157,7 @@ public partial class MainWindow
         if (!rename)
         {
             string parent = item.FolderPath is { } path ? Path.Combine(workspace.Root, path) : workspace.Root;
-            const string defaultName = "Yeni klasör";
+            string defaultName = Loc.Text("L8D62DD79B534");
             name = defaultName;
             for (int i = 2; Directory.Exists(Path.Combine(parent, name)) || File.Exists(Path.Combine(parent, name)); i++)
                 name = $"{defaultName} ({i})";
@@ -213,7 +213,7 @@ public partial class MainWindow
         string name = (text ?? "").Trim();
         if (!edit.Rename && name.Length == 0)
         {
-            StatusText.Text = "Klasör için bir ad yazın.";
+            StatusText.Text = Loc.Text("LE506D5B94E13");
             return;
         }
 
@@ -242,20 +242,20 @@ public partial class MainWindow
                 Navigation.ScrollIntoView(node);
         }
         Navigation.Focus();
-        StatusText.Text = edit.Rename ? "Görünen ad güncellendi." : "Klasör oluşturuldu.";
+        StatusText.Text = edit.Rename ? Loc.Text("L27A279B6608A") : Loc.Text("LA2073F3DB266");
     }
 
     private async Task<string?> SaveExplorerChangeAsync(Func<Workspace, Workspace> change, Action? beforeRefresh = null)
     {
         if (_workspace is not { } workspace || _busy || _savingExplorerFolder)
-            return "Çalışma alanı hazır değil. Tekrar deneyin.";
+            return Loc.Text("LBC58F9B58E8B");
 
         _savingExplorerFolder = true;
         try
         {
             Workspace updated = await Task.Run(() => change(workspace));
             if (_closing.IsCancellationRequested || _workspace?.Root != workspace.Root)
-                return "Çalışma alanı değişti.";
+                return Loc.Text("L5385865DCF72");
 
             _workspace = updated;
             beforeRefresh?.Invoke();

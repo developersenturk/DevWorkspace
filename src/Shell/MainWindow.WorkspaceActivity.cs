@@ -58,10 +58,10 @@ public partial class MainWindow
                 if (project.Repository is { } repository && seen.Add(repository))
                 {
                     if (current.Git.TryGetValue(repository, out string? status) && git.GetValueOrDefault(repository) != status)
-                        changes.Add(new(project.Name, $"Git durumu güncellendi · {project.Branch} · {project.Git.Label}", "git-workbench", project));
+                        changes.Add(new(project.Name, Loc.Format("L5950094AF2AC", project.Branch, project.Git.Label), "git-workbench", project));
                     if (current.FailedActions.TryGetValue(repository, out string? run) && actions.GetValueOrDefault(repository) != run &&
                         Uri.TryCreate(run, UriKind.Absolute, out var link))
-                        changes.Add(new(project.Name, "Yeni başarısız GitHub Actions çalıştırması", "external", project, link));
+                        changes.Add(new(project.Name, Loc.Text("L0156E2796E86"), "external", project, link));
                 }
             }
             foreach (var project in DashboardNuGetTargets())
@@ -75,7 +75,7 @@ public partial class MainWindow
             }
         }
         DashboardActivityRows.ItemsSource = changes;
-        DashboardActivityHint.Text = baseline is null ? "Karşılaştırma için mevcut durum kaydediliyor." :
-            changes.Count == 0 ? "Yeni Git durumu, NuGet bulgusu veya kayıtlı Actions hatası yok." : $"{changes.Count:N0} değişiklik";
+        DashboardActivityHint.Text = baseline is null ? Loc.Text("LA3819789E580") :
+            changes.Count == 0 ? Loc.Text("L960B3960EFC4") : Loc.Format("L2060BE33CBD4", changes.Count);
     }
 }

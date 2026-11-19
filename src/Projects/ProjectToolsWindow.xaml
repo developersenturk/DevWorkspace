@@ -3,7 +3,7 @@
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
                  xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
-                 Title="Proje işlemleri" Width="850" Height="565"
+                 Title="{DynamicResource L7CB1799388E1}" Width="850" Height="565"
                  MinWidth="620" MinHeight="405" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
                  Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
                  FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="WindowLoaded" Closed="WindowClosed">
@@ -11,61 +11,61 @@
     <Grid Margin="14">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <DockPanel Margin="3,0,0,11">
-            <Button Content="Geliştirme araçları…" DockPanel.Dock="Right" Click="DevelopmentToolsClick" Margin="8,0,0,0"/>
+            <Button Content="{DynamicResource LF69B046E069D}" DockPanel.Dock="Right" Click="DevelopmentToolsClick" Margin="8,0,0,0"/>
             <StackPanel>
                 <TextBlock x:Name="ProjectNameText" FontSize="20" FontWeight="SemiBold"/>
                 <TextBlock x:Name="ProjectFolderText" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
         </DockPanel>
         <dx:DXTabControl x:Name="ToolTabs" Grid.Row="1" SelectionChanged="ToolTabChanged">
-            <dx:DXTabItem Header="Komutlar">
+            <dx:DXTabItem Header="{DynamicResource L2B70D6557D73}">
                 <Grid Margin="11">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/><RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <DockPanel>
-                        <Button x:Name="TerminalButton" DockPanel.Dock="Right" Content="Terminali aç" Click="TerminalClick" Margin="6,0,0,0"/>
-                        <Button x:Name="StopButton" DockPanel.Dock="Right" Content="Durdur" Click="StopClick" IsEnabled="False" Margin="6,0,0,0"/>
-                        <Button x:Name="RunButton" DockPanel.Dock="Right" Content="Çalıştır" Click="RunClick" Style="{StaticResource Primary}"
+                        <Button x:Name="TerminalButton" DockPanel.Dock="Right" Content="{DynamicResource L2319B15D68BB}" Click="TerminalClick" Margin="6,0,0,0"/>
+                        <Button x:Name="StopButton" DockPanel.Dock="Right" Content="{DynamicResource L5769A8F8AECD}" Click="StopClick" IsEnabled="False" Margin="6,0,0,0"/>
+                        <Button x:Name="RunButton" DockPanel.Dock="Right" Content="{DynamicResource L79EF801FF99F}" Click="RunClick" Style="{StaticResource Primary}"
                                 IsEnabled="False" Margin="6,0,0,0"/>
                         <ComboBox x:Name="CommandPicker" DisplayMemberPath="Label" MinHeight="32" VerticalContentAlignment="Center"
-                                  SelectionChanged="CommandChanged" AutomationProperties.Name="Proje komutu"/>
+                                  SelectionChanged="CommandChanged" AutomationProperties.Name="{DynamicResource LB5BDF174B0C0}"/>
                     </DockPanel>
                     <TextBlock x:Name="CommandPreview" Grid.Row="1" Foreground="{DynamicResource Muted}" FontFamily="Consolas"
                                FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="1,7,0,7"/>
-                    <Expander Header="Özel komut ekle veya düzenle" Grid.Row="2" Margin="0,0,0,8">
+                    <Expander Header="{DynamicResource LFF839DC0366E}" Grid.Row="2" Margin="0,0,0,8">
                         <Grid Margin="0,7,0,0">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1.3*"/><ColumnDefinition Width="1.9*"/>
                                 <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <StackPanel Margin="0,0,6,0"><TextBlock Text="Ad" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandName" MaxLength="80" Height="30"/></StackPanel>
-                            <StackPanel Grid.Column="1" Margin="0,0,6,0"><TextBlock Text="Çalıştırılabilir dosya" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandExecutable" Height="30"/></StackPanel>
-                            <StackPanel Grid.Column="2"><TextBlock Text="Bağımsız değişkenler" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandArguments" Height="30"/></StackPanel>
-                            <Button Grid.Column="3" Content="Kaydet" Click="SaveCommandClick" VerticalAlignment="Bottom" Margin="6,0,0,0"/>
-                            <Button x:Name="RemoveCommandButton" Grid.Column="4" Content="Kaldır" Click="RemoveCommandClick" IsEnabled="False"
+                            <StackPanel Margin="0,0,6,0"><TextBlock Text="{DynamicResource L1D97C9FEC35A}" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandName" MaxLength="80" Height="30"/></StackPanel>
+                            <StackPanel Grid.Column="1" Margin="0,0,6,0"><TextBlock Text="{DynamicResource L154865370CB5}" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandExecutable" Height="30"/></StackPanel>
+                            <StackPanel Grid.Column="2"><TextBlock Text="{DynamicResource L61E235519AEC}" Style="{StaticResource SmallLabel}"/><TextBox x:Name="CommandArguments" Height="30"/></StackPanel>
+                            <Button Grid.Column="3" Content="{DynamicResource LC1FE2ECDFF02}" Click="SaveCommandClick" VerticalAlignment="Bottom" Margin="6,0,0,0"/>
+                            <Button x:Name="RemoveCommandButton" Grid.Column="4" Content="{DynamicResource LB88019AA289E}" Click="RemoveCommandClick" IsEnabled="False"
                                     VerticalAlignment="Bottom" Margin="6,0,0,0"/>
                         </Grid>
                     </Expander>
                     <TextBox x:Name="CommandOutput" Grid.Row="3" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
                              Background="{DynamicResource PanelSoft}" TextWrapping="NoWrap"
-                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Komut çıktısı"/>
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="{DynamicResource L08A21C02FD7C}"/>
                     <TextBlock x:Name="CommandStatus" Grid.Row="4" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="1,7,0,0"
-                               Text="Bir komut seçin veya kendi komutunuzu kaydedin."/>
+                               Text="{DynamicResource L39D36AFD432A}"/>
                 </Grid>
             </dx:DXTabItem>
-            <dx:DXTabItem x:Name="HealthTab" Header="Sağlık kontrolü">
+            <dx:DXTabItem x:Name="HealthTab" Header="{DynamicResource LA28B52C659C7}">
                 <Grid Margin="11">
                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
-                        <Button x:Name="HealthRefresh" DockPanel.Dock="Right" Content="Yeniden kontrol et" Click="HealthRefreshClick" Margin="7,0,0,0"/>
+                        <Button x:Name="HealthRefresh" DockPanel.Dock="Right" Content="{DynamicResource LBC74ADD79F8B}" Click="HealthRefreshClick" Margin="7,0,0,0"/>
                         <TextBlock x:Name="HealthSummary" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"/>
                     </DockPanel>
                     <dxg:GridControl x:Name="HealthGrid" AutoGenerateColumns="None" Grid.Row="1" CurrentItemChanged="HealthSelectionChanged"
-                                     AutomationProperties.Name="Sağlık kontrolü bulguları">
+                                     AutomationProperties.Name="{DynamicResource L163CC6A23964}">
                         <dxg:GridControl.Columns>
-                            <dxg:GridColumn Header="DURUM" FieldName="Severity" Width="100"/>
-                            <dxg:GridColumn Header="BULGU" FieldName="Description" Width="390"/>
-                            <dxg:GridColumn Header="KAYNAK DOSYA" FieldName="File" Width="265"/>
+                            <dxg:GridColumn Header="{DynamicResource L0BD7591945A2}" FieldName="Severity" Width="100"/>
+                            <dxg:GridColumn Header="{DynamicResource L8755890FBAB2}" FieldName="Description" Width="390"/>
+                            <dxg:GridColumn Header="{DynamicResource L344CB5797FBE}" FieldName="File" Width="265"/>
                         </dxg:GridControl.Columns>
                         <dxg:GridControl.View>
                             <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -79,22 +79,22 @@
                         </dxg:GridControl.View>
                     </dxg:GridControl>
                     <DockPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button x:Name="OpenHealthFileButton" DockPanel.Dock="Right" Content="Kaynak dosyayı aç" Click="OpenHealthFileClick"
+                        <Button x:Name="OpenHealthFileButton" DockPanel.Dock="Right" Content="{DynamicResource LC1791E67B31E}" Click="OpenHealthFileClick"
                                 IsEnabled="False" Margin="8,0,0,0"/>
-                        <Button x:Name="HealthNuGetButton" DockPanel.Dock="Right" Content="NuGet güvenliği"
+                        <Button x:Name="HealthNuGetButton" DockPanel.Dock="Right" Content="{DynamicResource L4E3928A63F29}"
                                 Click="HealthNuGetClick" Margin="8,0,0,0"/>
-                        <TextBlock Text="Diskteki dosyalar ve çözümlenebilen başvurular kontrol edilir." VerticalAlignment="Center"
+                        <TextBlock Text="{DynamicResource L475F78E52E91}" VerticalAlignment="Center"
                                    Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/>
                     </DockPanel>
                 </Grid>
             </dx:DXTabItem>
-            <dx:DXTabItem x:Name="NuGetTab" Header="NuGet güvenliği">
+            <dx:DXTabItem x:Name="NuGetTab" Header="{DynamicResource L4E3928A63F29}">
                 <Grid Margin="11">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <DockPanel Margin="0,0,0,8">
-                        <Button x:Name="NuGetScanButton" DockPanel.Dock="Right" Content="Güvenlik açıklarını kontrol et"
+                        <Button x:Name="NuGetScanButton" DockPanel.Dock="Right" Content="{DynamicResource L64440B17BFE0}"
                                 Style="{StaticResource Primary}" Click="NuGetScanClick" Margin="7,0,0,0"
                                 IsEnabled="{Binding CanScan, FallbackValue=False}"/>
                         <StackPanel VerticalAlignment="Center">
@@ -105,14 +105,14 @@
                         </StackPanel>
                     </DockPanel>
                     <dxg:GridControl x:Name="NuGetGrid" AutoGenerateColumns="None" Grid.Row="1" CurrentItemChanged="NuGetSelectionChanged" ItemsSource="{Binding Report.Findings}"
-                                     AutomationProperties.Name="NuGet güvenlik bulguları">
+                                     AutomationProperties.Name="{DynamicResource LC0CBA1DCE706}">
                         <dxg:GridControl.Columns>
-                            <dxg:GridColumn Header="Paket" FieldName="Package" Width="268" MinWidth="120"/>
-                            <dxg:GridColumn Header="Sürüm" FieldName="Version" Width="74" MinWidth="55"/>
-                            <dxg:GridColumn Header="Önem" FieldName="Severity" Width="82"/>
-                            <dxg:GridColumn Header="Bağımlılık" FieldName="Scope" Width="88"/>
-                            <dxg:GridColumn Header="Proje" FieldName="Project" Width="146" MinWidth="80"/>
-                            <dxg:GridColumn Header="Hedef" FieldName="Framework" Width="80" MinWidth="55"/>
+                            <dxg:GridColumn Header="{DynamicResource LB58BD16905D2}" FieldName="Package" Width="268" MinWidth="120"/>
+                            <dxg:GridColumn Header="{DynamicResource LA0119B888C42}" FieldName="Version" Width="74" MinWidth="55"/>
+                            <dxg:GridColumn Header="{DynamicResource L5C8735BBE78C}" FieldName="SeverityLabel" Width="82"/>
+                            <dxg:GridColumn Header="{DynamicResource L00BFE22C2A13}" FieldName="ScopeLabel" Width="88"/>
+                            <dxg:GridColumn Header="{DynamicResource L7B321D627CB1}" FieldName="Project" Width="146" MinWidth="80"/>
+                            <dxg:GridColumn Header="{DynamicResource LA3973F7CD7C0}" FieldName="Framework" Width="80" MinWidth="55"/>
                         </dxg:GridControl.Columns>
                         <dxg:GridControl.View>
                             <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -120,7 +120,7 @@
                         </dxg:GridControl.View>
                     </dxg:GridControl>
                     <DockPanel Grid.Row="2" Margin="0,8,0,0">
-                        <Button x:Name="NuGetAdvisoryButton" DockPanel.Dock="Right" Content="Açık kaydını aç" IsEnabled="False"
+                        <Button x:Name="NuGetAdvisoryButton" DockPanel.Dock="Right" Content="{DynamicResource L21A074B09CE8}" IsEnabled="False"
                                 Click="NuGetAdvisoryClick" VerticalAlignment="Center" Margin="7,0,0,0"/>
                         <TextBlock x:Name="NuGetDetails" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"
                                    VerticalAlignment="Center" Text="{Binding ShortDetails}" ToolTip="{Binding Details}"/>
@@ -131,28 +131,28 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="13">
                     <DockPanel Margin="0,0,0,14">
-                        <Button x:Name="ActionsRefreshButton" DockPanel.Dock="Right" Content="Yenile" Click="ActionsRefreshClick" Margin="7,0,0,0"/>
-                        <TextBlock Text="Son iş akışı çalışması" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button x:Name="ActionsRefreshButton" DockPanel.Dock="Right" Content="{DynamicResource L63CD725787A8}" Click="ActionsRefreshClick" Margin="7,0,0,0"/>
+                        <TextBlock Text="{DynamicResource LD68C24B57617}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     </DockPanel>
                     <TextBlock x:Name="ActionsStatus" TextWrapping="Wrap" Foreground="{DynamicResource Muted}"/>
                     <WrapPanel Margin="0,8,0,0">
-                        <Button x:Name="ActionsInstallButton" Content="GitHub CLI’ı kur" Click="ActionsInstallClick"
+                        <Button x:Name="ActionsInstallButton" Content="{DynamicResource L773AB66B96E7}" Click="ActionsInstallClick"
                                 Visibility="Collapsed" Style="{StaticResource Primary}" Margin="0,0,7,5"/>
-                        <Button x:Name="ActionsGuideButton" Content="Kurulum kılavuzu" Click="ActionsGuideClick"
+                        <Button x:Name="ActionsGuideButton" Content="{DynamicResource L005D2BDEB299}" Click="ActionsGuideClick"
                                 Visibility="Collapsed" Margin="0,0,7,5"/>
-                        <Button x:Name="ActionsLoginButton" Content="GitHub’a giriş yap" Click="ActionsLoginClick"
+                        <Button x:Name="ActionsLoginButton" Content="{DynamicResource L6E01F85E977F}" Click="ActionsLoginClick"
                                 Visibility="Collapsed" Style="{StaticResource Primary}" Margin="0,0,7,5"/>
-                        <Button x:Name="ActionsCancelLoginButton" Content="Girişi iptal et" Click="ActionsCancelLoginClick"
+                        <Button x:Name="ActionsCancelLoginButton" Content="{DynamicResource LCFE11711548C}" Click="ActionsCancelLoginClick"
                                 Visibility="Collapsed" Margin="0,0,7,5"/>
                     </WrapPanel>
                     <StackPanel x:Name="ActionsDevicePanel" Visibility="Collapsed" Margin="0,5,0,0">
-                        <TextBlock Text="GitHub sayfasına aşağıdaki tek kullanımlık kodu girin ve erişimi onaylayın."
+                        <TextBlock Text="{DynamicResource L1F0915DC904A}"
                                    TextWrapping="Wrap" Foreground="{DynamicResource Muted}"/>
                         <WrapPanel Margin="0,7,0,0">
                             <TextBox x:Name="ActionsDeviceCode" IsReadOnly="True" FontFamily="Consolas" FontWeight="SemiBold"
                                      MinWidth="115" VerticalContentAlignment="Center" Margin="0,0,7,0"
-                                     AutomationProperties.Name="Tek kullanımlık GitHub giriş kodu"/>
-                            <Button Content="GitHub giriş sayfasını aç" Click="ActionsDevicePageClick"/>
+                                     AutomationProperties.Name="{DynamicResource LB4C4483DA329}"/>
+                            <Button Content="{DynamicResource LA10497579718}" Click="ActionsDevicePageClick"/>
                         </WrapPanel>
                     </StackPanel>
                     <Border x:Name="ActionsResult" Visibility="Collapsed" BorderBrush="{DynamicResource Divider}"
@@ -162,32 +162,32 @@
                             <TextBlock x:Name="ActionsTitle" TextWrapping="Wrap" Margin="0,5,0,0"/>
                             <TextBlock x:Name="ActionsMetadata" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,4,0,9"/>
                             <TextBlock x:Name="ActionsFailures" TextWrapping="Wrap" Margin="0,0,0,9" Visibility="Collapsed"/>
-                            <Button x:Name="ActionsOpenButton" Content="Çalışmayı ve logları GitHub’da aç" HorizontalAlignment="Left"
+                            <Button x:Name="ActionsOpenButton" Content="{DynamicResource LD5D9D9380C7C}" HorizontalAlignment="Left"
                                     Click="ActionsOpenClick"/>
                         </StackPanel>
                     </Border>
                     <Border x:Name="WorkflowPanel" Visibility="Collapsed" BorderBrush="{DynamicResource Divider}"
                             BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,12,0,0">
                         <StackPanel>
-                            <TextBlock Text=".NET derleme ve test iş akışı" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock Text="{DynamicResource LAACEE65189E3}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
                             <TextBlock x:Name="WorkflowStatus" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,5,0,8"
                                        AutomationProperties.LiveSetting="Polite"/>
                             <WrapPanel>
-                                <Button x:Name="WorkflowPreviewButton" Content="İş akışını önizle" Click="WorkflowPreviewClick"
+                                <Button x:Name="WorkflowPreviewButton" Content="{DynamicResource L0EAAC8DC1A13}" Click="WorkflowPreviewClick"
                                         Style="{StaticResource Primary}" Margin="0,0,7,5"/>
-                                <Button x:Name="WorkflowFileButton" Content="İş akışı dosyasını aç" Click="WorkflowFileClick"
+                                <Button x:Name="WorkflowFileButton" Content="{DynamicResource L2CDBC509933C}" Click="WorkflowFileClick"
                                         Visibility="Collapsed" Margin="0,0,7,5"/>
-                                <Button x:Name="WorkflowGitButton" Content="Git işlemlerine geç" Click="WorkflowGitClick"
+                                <Button x:Name="WorkflowGitButton" Content="{DynamicResource L7EB924692A1B}" Click="WorkflowGitClick"
                                         Visibility="Collapsed" Margin="0,0,7,5"/>
                             </WrapPanel>
                             <StackPanel x:Name="WorkflowPreviewPanel" Visibility="Collapsed" Margin="0,6,0,0">
                                 <TextBlock x:Name="WorkflowTargetText" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                <Button x:Name="WorkflowCreateButton" Content="İş akışı dosyasını oluştur" Click="WorkflowCreateClick"
+                                <Button x:Name="WorkflowCreateButton" Content="{DynamicResource LDFB75FB4EE35}" Click="WorkflowCreateClick"
                                         Style="{StaticResource Primary}" Background="{DynamicResource BadgeAccentSurface}"
                                         Foreground="{DynamicResource BadgeAccentText}" HorizontalAlignment="Left" Margin="0,0,0,8"/>
                                 <TextBox x:Name="WorkflowPreviewText" IsReadOnly="True" FontFamily="Consolas" FontSize="12"
                                          Height="190" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
-                                         AutomationProperties.Name="GitHub Actions YAML önizlemesi"/>
+                                         AutomationProperties.Name="{DynamicResource L522B61A3326D}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -200,16 +200,16 @@
                         <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <WrapPanel Margin="0,0,0,7">
-                        <Button x:Name="ComposeRefreshButton" Content="Yenile" Click="ComposeRefreshClick" Margin="0,0,7,0"/>
-                        <Button x:Name="ComposeStartButton" Content="Başlat" Click="ComposeStartClick" IsEnabled="False" Margin="0,0,7,0"/>
-                        <Button x:Name="ComposeStopButton" Content="Durdur" Click="ComposeStopClick" IsEnabled="False" Margin="0,0,7,0"/>
-                        <Button x:Name="ComposeLogsButton" Content="Logları göster" Click="ComposeLogsClick" IsEnabled="False"/>
+                        <Button x:Name="ComposeRefreshButton" Content="{DynamicResource L63CD725787A8}" Click="ComposeRefreshClick" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeStartButton" Content="{DynamicResource L24FA59605DE5}" Click="ComposeStartClick" IsEnabled="False" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeStopButton" Content="{DynamicResource L5769A8F8AECD}" Click="ComposeStopClick" IsEnabled="False" Margin="0,0,7,0"/>
+                        <Button x:Name="ComposeLogsButton" Content="{DynamicResource LFCD84D55FF5A}" Click="ComposeLogsClick" IsEnabled="False"/>
                     </WrapPanel>
                     <dxg:GridControl x:Name="ComposeGrid" AutoGenerateColumns="None" Grid.Row="1" MaxHeight="160" CurrentItemChanged="ComposeSelectionChanged"
-                                     AutomationProperties.Name="Docker Compose servisleri">
+                                     AutomationProperties.Name="{DynamicResource L7F41B5F91080}">
                         <dxg:GridControl.Columns>
-                            <dxg:GridColumn Header="Servis" FieldName="Name" Width="300"/>
-                            <dxg:GridColumn Header="Durum" FieldName="Status" Width="300"/>
+                            <dxg:GridColumn Header="{DynamicResource LB16FE556BE8C}" FieldName="Name" Width="300"/>
+                            <dxg:GridColumn Header="{DynamicResource L8BD057388E28}" FieldName="Status" Width="300"/>
                         </dxg:GridControl.Columns>
                         <dxg:GridControl.View>
                             <dxg:TableView AutoWidth="True" AllowEditing="False" NavigationStyle="Row" ShowGroupPanel="False"
@@ -218,7 +218,7 @@
                     </dxg:GridControl>
                     <TextBox x:Name="ComposeOutput" Grid.Row="2" Margin="0,8,0,0" IsReadOnly="True" FontFamily="Consolas"
                              FontSize="12" Background="{DynamicResource PanelSoft}" TextWrapping="NoWrap"
-                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Seçili servisin logları"/>
+                             HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="{DynamicResource LBCDE5250862F}"/>
                     <TextBlock x:Name="ComposeStatus" Grid.Row="3" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" Margin="0,7,0,0"/>
                 </Grid>
             </dx:DXTabItem>

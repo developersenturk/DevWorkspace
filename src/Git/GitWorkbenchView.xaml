@@ -104,74 +104,74 @@
             <DockPanel Margin="0,6,0,0">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="4,0,0,0">
                     <Button x:Name="FetchButton" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE896;}"
-                            Click="FetchClick" IsEnabled="False" ToolTip="Fetch · Uzak değişiklikleri al" AutomationProperties.Name="Fetch"/>
+                            Click="FetchClick" IsEnabled="False" ToolTip="{DynamicResource L5434B2AD0F2B}" AutomationProperties.Name="Fetch"/>
                     <Button x:Name="PullButton" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE74B;}"
                             Click="PullClick" IsEnabled="False" ToolTip="Pull" AutomationProperties.Name="Pull"/>
                     <Button x:Name="PushButton" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE74A;}"
                             Click="PushClick" IsEnabled="False" ToolTip="Push" AutomationProperties.Name="Push"/>
                     <Button x:Name="RefreshButton" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE72C;}"
-                            Click="RefreshClick" ToolTip="Yenile" AutomationProperties.Name="Yenile"/>
+                            Click="RefreshClick" ToolTip="{DynamicResource L63CD725787A8}" AutomationProperties.Name="{DynamicResource L63CD725787A8}"/>
                     <Button x:Name="MoreButton" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE712;}"
-                            Click="OpenActionMenu" ToolTip="Diğer Git işlemleri" AutomationProperties.Name="Diğer Git işlemleri">
+                            Click="OpenActionMenu" ToolTip="{DynamicResource L788512902684}" AutomationProperties.Name="{DynamicResource L788512902684}">
                         <Button.ContextMenu>
                             <ContextMenu>
-                                <MenuItem x:Name="AddRemoteItem" Header="Uzak depo ekle…" Click="AddRemoteClick"/>
-                                <MenuItem x:Name="ManageRemotesItem" Header="Uzak depoları yönet…" Click="ManageRemotesClick"/>
-                                <MenuItem x:Name="PublishMenuItem" Header="GitHub’da yayımla…" Click="PublishClick"/>
-                                <MenuItem x:Name="PushSelectedItem" Header="Tek uzak depoya gönder"
+                                <MenuItem x:Name="AddRemoteItem" Header="{DynamicResource L72BD54B2A9F8}" Click="AddRemoteClick"/>
+                                <MenuItem x:Name="ManageRemotesItem" Header="{DynamicResource L104E13DAB317}" Click="ManageRemotesClick"/>
+                                <MenuItem x:Name="PublishMenuItem" Header="{DynamicResource L57F889172928}" Click="PublishClick"/>
+                                <MenuItem x:Name="PushSelectedItem" Header="{DynamicResource L254AEF848DE2}"
                                           Visibility="Collapsed"/>
                                 <Separator/>
-                                <MenuItem x:Name="HistoryButton" Header="Git geçmişi" Click="HistoryClick" Icon="{local:MenuGlyph &#xE81C;}"/>
-                                <MenuItem Header="Dallar ve etiketler…" Click="ReferencesClick"/>
-                                <MenuItem x:Name="DiffButton" Header="Seçili dosyanın farkını aç" Click="DiffClick" IsEnabled="False"/>
+                                <MenuItem x:Name="HistoryButton" Header="{DynamicResource L8C9C5A963356}" Click="HistoryClick" Icon="{local:MenuGlyph &#xE81C;}"/>
+                                <MenuItem Header="{DynamicResource L89245D66A841}" Click="ReferencesClick"/>
+                                <MenuItem x:Name="DiffButton" Header="{DynamicResource L725FC78D5E65}" Click="DiffClick" IsEnabled="False"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
                 </StackPanel>
                 <Button x:Name="BranchButton" Click="OpenActionMenu" Padding="7,3" HorizontalContentAlignment="Stretch"
-                        ToolTip="Yerel veya uzak dala geç" AutomationProperties.Name="Git dalı seç">
+                        ToolTip="{DynamicResource L068F507BBF94}" AutomationProperties.Name="{DynamicResource LA108D8CC38D6}">
                     <Button.ContextMenu>
                         <ContextMenu Opened="BranchMenuOpened" MaxHeight="420"/>
                     </Button.ContextMenu>
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe MDL2 Assets" FontSize="10"
                                    Margin="5,0,0,0" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="BranchName" Text="Dal okunuyor…" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="BranchName" Text="{DynamicResource LB5D3117F5311}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Button>
             </DockPanel>
             <TextBlock x:Name="BranchStatus" Foreground="{DynamicResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis"
                        ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="2,4,0,7"/>
             <DockPanel x:Name="FetchRemoteRow" Margin="0,0,0,6" Visibility="Collapsed">
-                <TextBlock DockPanel.Dock="Left" Text="Fetch hedefi" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock DockPanel.Dock="Left" Text="{DynamicResource LC473DD3B059A}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <dxe:ComboBoxEdit x:Name="FetchRemote" DisplayMember="Name" IsTextEditable="False"
-                                  EditValueChanged="FetchRemoteChanged" AutomationProperties.Name="Fetch için uzak depo"/>
+                                  EditValueChanged="FetchRemoteChanged" AutomationProperties.Name="{DynamicResource L0D833351BC2A}"/>
             </DockPanel>
             <dxe:TextEdit x:Name="CommitMessage" Height="66" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                          MaxLength="4096" NullText="Commit mesajı (gerekli)" ShowNullTextForEmptyValue="True" EditValueChanged="CommitMessageChanged"
-                          AutomationProperties.Name="Commit mesajı"/>
+                          MaxLength="4096" NullText="{DynamicResource L8EE1EA014085}" ShowNullTextForEmptyValue="True" EditValueChanged="CommitMessageChanged"
+                          AutomationProperties.Name="{DynamicResource L11C0B60765A4}"/>
             <WrapPanel Margin="0,5,0,0">
-                <Button x:Name="CommitButton" Content="Hazırlananları commit et" Click="CommitClick" IsEnabled="False" Padding="8,3"/>
+                <Button x:Name="CommitButton" Content="{DynamicResource L45A779D7FD19}" Click="CommitClick" IsEnabled="False" Padding="8,3"/>
                 <Button x:Name="CommitMenuButton" Content="{local:MenuGlyph &#xE70D;}" Click="OpenActionMenu" Width="28" Margin="1,0,5,0"
-                        ToolTip="Commit seçenekleri" AutomationProperties.Name="Commit seçenekleri">
+                        ToolTip="{DynamicResource L77A6ADB62666}" AutomationProperties.Name="{DynamicResource L77A6ADB62666}">
                     <Button.ContextMenu>
                         <ContextMenu>
-                            <MenuItem x:Name="CommitMenuItem" Header="Hazırlananları commit et" Click="CommitClick"/>
-                            <MenuItem x:Name="CommitPushMenuItem" Header="Commit et ve gönder" Click="CommitPushClick"/>
+                            <MenuItem x:Name="CommitMenuItem" Header="{DynamicResource L45A779D7FD19}" Click="CommitClick"/>
+                            <MenuItem x:Name="CommitPushMenuItem" Header="{DynamicResource L8418000C8F8E}" Click="CommitPushClick"/>
                             <Separator/>
-                            <MenuItem x:Name="SaveStashMenuItem" Header="Tümünü geçici kaydet" Click="SaveStashClick"
+                            <MenuItem x:Name="SaveStashMenuItem" Header="{DynamicResource L54221F592243}" Click="SaveStashClick"
                                       IsEnabled="False" ToolTipService.ShowOnDisabled="True"/>
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
-                <Button x:Name="PublishButton" Content="GitHub’da yayımla…" Click="PublishClick" Padding="8,3"
+                <Button x:Name="PublishButton" Content="{DynamicResource L57F889172928}" Click="PublishClick" Padding="8,3"
                         IsEnabled="False" Visibility="Collapsed" ToolTipService.ShowOnDisabled="True"/>
             </WrapPanel>
             <Border Height="1" Background="{DynamicResource Divider}" Margin="0,9,0,4"/>
         </StackPanel>
         <DockPanel DockPanel.Dock="Bottom" Margin="0,3,0,0">
             <Button DockPanel.Dock="Right" Content="{local:MenuGlyph &#xE711;}" Height="24" Width="24" Margin="5,0,0,0"
-                    Click="DismissStatusClick" ToolTip="Mesajı kapat" AutomationProperties.Name="Git durum mesajını kapat">
+                    Click="DismissStatusClick" ToolTip="{DynamicResource L8AC0CAA9E704}" AutomationProperties.Name="{DynamicResource L87ED7F9DED95}">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource GitToolButton}">
                         <Style.Triggers>
@@ -193,52 +193,52 @@
             </Grid.RowDefinitions>
             <DockPanel>
                 <Button x:Name="UnstageButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE738;}"
-                        Click="FileActionClick" IsEnabled="False" ToolTip="Hazırlamayı kaldır" AutomationProperties.Name="Hazırlamayı kaldır"/>
+                        Click="FileActionClick" IsEnabled="False" ToolTip="{DynamicResource LA9899DD9E891}" AutomationProperties.Name="{DynamicResource LA9899DD9E891}"/>
                 <ToggleButton x:Name="StagedSection" Style="{StaticResource GitSectionHeader}" IsChecked="True" Click="ToggleSectionClick">
-                    <TextBlock x:Name="StagedTitle" Text="Hazırlananlar" Foreground="{DynamicResource Ink}"/>
+                    <TextBlock x:Name="StagedTitle" Text="{DynamicResource L6305F6C5B5B8}" Foreground="{DynamicResource Ink}"/>
                 </ToggleButton>
             </DockPanel>
-            <TextBlock x:Name="StagedEmpty" Grid.Row="1" Text="Hazırlanmış değişiklik yok." Margin="23,3,0,7"
+            <TextBlock x:Name="StagedEmpty" Grid.Row="1" Text="{DynamicResource L4B3F644B1D83}" Margin="23,3,0,7"
                        Foreground="{DynamicResource Muted}" Visibility="Collapsed"/>
             <dxe:ListBoxEdit x:Name="StagedFiles" Grid.Row="1" ItemTemplate="{StaticResource FileRow}" Visibility="Collapsed"
                              ItemContainerStyle="{StaticResource GitFileContainer}" ShowBorder="False" Background="Transparent"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                             SelectedIndexChanged="FileSelectionChanged" PreviewKeyDown="FileMenuKey" AutomationProperties.Name="Hazırlanan dosyalar"/>
+                             SelectedIndexChanged="FileSelectionChanged" PreviewKeyDown="FileMenuKey" AutomationProperties.Name="{DynamicResource LFC177AB33AFF}"/>
             <DockPanel Grid.Row="2" Margin="0,4,0,0">
                 <Button x:Name="StageAllButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}"
-                        Click="StageAllClick" IsEnabled="False" ToolTip="Tümünü hazırla" AutomationProperties.Name="Tümünü hazırla">
+                        Click="StageAllClick" IsEnabled="False" ToolTip="{DynamicResource L4DAE76448375}" AutomationProperties.Name="{DynamicResource L4DAE76448375}">
                     <Path Width="16" Height="14" Stroke="{DynamicResource Ink}" StrokeThickness="1.3"
                           Data="M 2,8 L 10,8 M 6,4 L 6,12 M 10,4 L 16,4 M 13,1 L 13,7"/>
                 </Button>
                 <Button x:Name="FileAction" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE710;}"
-                        Click="FileActionClick" IsEnabled="False" ToolTip="Seçilileri hazırla" AutomationProperties.Name="Seçilileri hazırla"/>
+                        Click="FileActionClick" IsEnabled="False" ToolTip="{DynamicResource L0F72090B9A51}" AutomationProperties.Name="{DynamicResource L0F72090B9A51}"/>
                 <ToggleButton x:Name="WorkingSection" Style="{StaticResource GitSectionHeader}" IsChecked="True" Click="ToggleSectionClick">
-                    <TextBlock x:Name="WorkingTitle" Text="Değişiklikler" Foreground="{DynamicResource Ink}"/>
+                    <TextBlock x:Name="WorkingTitle" Text="{DynamicResource L015C1B0968C6}" Foreground="{DynamicResource Ink}"/>
                 </ToggleButton>
             </DockPanel>
-            <TextBlock x:Name="WorkingEmpty" Grid.Row="3" Text="Hazırlanmamış değişiklik yok." Margin="23,3,0,7"
+            <TextBlock x:Name="WorkingEmpty" Grid.Row="3" Text="{DynamicResource L68215615BBA1}" Margin="23,3,0,7"
                        Foreground="{DynamicResource Muted}" Visibility="Collapsed"/>
             <dxe:ListBoxEdit x:Name="WorkingFiles" Grid.Row="3" ItemTemplate="{StaticResource FileRow}" Visibility="Collapsed"
                              ItemContainerStyle="{StaticResource GitFileContainer}" ShowBorder="False" Background="Transparent"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionMode="Extended"
-                             EditValueChanged="FileSelectionChanged" PreviewKeyDown="FileMenuKey" AutomationProperties.Name="Değişiklikler"/>
+                             EditValueChanged="FileSelectionChanged" PreviewKeyDown="FileMenuKey" AutomationProperties.Name="{DynamicResource L015C1B0968C6}"/>
             <DockPanel Grid.Row="4" Margin="0,4,0,0">
                 <Button x:Name="SaveStashButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE710;}"
-                        Click="SaveStashClick" IsEnabled="False" AutomationProperties.Name="Tümünü geçici kaydet"/>
+                        Click="SaveStashClick" IsEnabled="False" AutomationProperties.Name="{DynamicResource L54221F592243}"/>
                 <Button x:Name="ApplyStashButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE7A7;}"
-                        Click="ApplyStashClick" IsEnabled="False" ToolTip="Seçili kaydı geri uygula" AutomationProperties.Name="Seçili kaydı geri uygula"/>
+                        Click="ApplyStashClick" IsEnabled="False" ToolTip="{DynamicResource LA9C3AB9AF911}" AutomationProperties.Name="{DynamicResource LA9C3AB9AF911}"/>
                 <Button x:Name="DropStashButton" DockPanel.Dock="Right" Style="{StaticResource GitToolButton}" Content="{local:MenuGlyph &#xE74D;}"
-                        Click="DropStashClick" IsEnabled="False" ToolTip="Seçili geçici kaydı sil" AutomationProperties.Name="Seçili geçici kaydı sil"/>
+                        Click="DropStashClick" IsEnabled="False" ToolTip="{DynamicResource LC72AE7130464}" AutomationProperties.Name="{DynamicResource LC72AE7130464}"/>
                 <ToggleButton x:Name="StashSection" Style="{StaticResource GitSectionHeader}" IsChecked="False" Click="ToggleSectionClick">
-                    <TextBlock x:Name="StashTitle" Text="Geçici kayıtlar" Foreground="{DynamicResource Ink}"/>
+                    <TextBlock x:Name="StashTitle" Text="{DynamicResource L7BF92BD00BEB}" Foreground="{DynamicResource Ink}"/>
                 </ToggleButton>
             </DockPanel>
-            <TextBlock x:Name="StashEmpty" Grid.Row="5" Text="Geçici kayıt yok." Margin="23,3,0,7"
+            <TextBlock x:Name="StashEmpty" Grid.Row="5" Text="{DynamicResource L781AF62B5E01}" Margin="23,3,0,7"
                        Foreground="{DynamicResource Muted}" Visibility="Collapsed"/>
             <dxe:ListBoxEdit x:Name="StashList" Grid.Row="5" ItemContainerStyle="{StaticResource GitFileContainer}"
                              ShowBorder="False" Background="Transparent" Visibility="Collapsed"
                              ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedIndexChanged="StashSelectionChanged"
-                             AutomationProperties.Name="Geçici kayıtlar">
+                             AutomationProperties.Name="{DynamicResource L7BF92BD00BEB}">
                 <dxe:ListBoxEdit.ItemTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding Label}" ToolTip="{Binding Detail}" TextTrimming="CharacterEllipsis"
