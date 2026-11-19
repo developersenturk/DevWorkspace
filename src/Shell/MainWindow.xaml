@@ -746,8 +746,6 @@
                                     <WrapPanel Margin="0,0,0,8">
                                         <Button x:Name="DrawerOpenButton" Content="{DynamicResource L439CC142CAA2}" Click="DrawerOpenProjectClick"
                                                 Style="{StaticResource DrawerPrimary}"/>
-                                        <Button x:Name="DrawerVisualStudioButton" Content="{DynamicResource VisualStudioChange}"
-                                                Click="DrawerVisualStudioClick" Style="{StaticResource DrawerAction}" Visibility="Collapsed"/>
                                         <Button x:Name="DrawerOpenFolderButton" Content="{DynamicResource LD6F2F6CAD078}" Click="DrawerOpenFolderClick"/>
                                         <Button x:Name="DrawerGitButton" Content="{DynamicResource LD11171088FD5}" Click="DrawerGitClick"
                                                 Style="{StaticResource DrawerAction}"/>

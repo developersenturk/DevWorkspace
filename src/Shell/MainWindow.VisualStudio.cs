@@ -68,8 +68,4 @@ public partial class MainWindow
         }
     }
 
-    private void DrawerVisualStudioClick(object sender, RoutedEventArgs e)
-    {
-        if (_drawerProject is { } project) ChangeProjectVisualStudio(project);
-    }
 }

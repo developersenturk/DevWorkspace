@@ -53,7 +53,6 @@ public partial class MainWindow
         DrawerEntryName.Text = Path.GetFileName(project.EntryFile) ?? "";
         DrawerEntryName.Visibility = project.EntryFile is null ? Visibility.Collapsed : Visibility.Visible;
         DrawerOpenButton.Visibility = project.EntryFile is null ? Visibility.Collapsed : Visibility.Visible;
-        DrawerVisualStudioButton.Visibility = VisualStudioInstallations.Supports(project.EntryFile) ? Visibility.Visible : Visibility.Collapsed;
         DrawerOpenButton.Content = project.Kind switch
         {
             "Visual Studio" => Loc.Text("L686C9A600047"),
