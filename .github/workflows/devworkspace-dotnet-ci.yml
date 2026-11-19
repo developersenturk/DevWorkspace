@@ -37,3 +37,5 @@ jobs:
         run: dotnet run --project tests/AppUpdates/AppUpdates.csproj --configuration Debug
       - name: Verify release center
         run: dotnet run --project tests/ReleaseCenter/ReleaseCenter.csproj --configuration Debug
+      - name: Verify localization and release project context
+        run: dotnet run --project tests/Localization/Localization.csproj --configuration Debug

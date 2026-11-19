@@ -16,7 +16,7 @@
    <Button DockPanel.Dock="Right" Content="{DynamicResource ReleaseOpenLogs}" Click="OpenLogsClick" VerticalAlignment="Center"/>
    <Button x:Name="ConnectionButton" DockPanel.Dock="Right" Content="{DynamicResource ReleaseConnection}" Click="ConnectionClick" VerticalAlignment="Center" Margin="0,0,8,0"/>
    <StackPanel><TextBlock Text="{DynamicResource ReleaseTitle}" FontSize="24" FontWeight="SemiBold"/>
-    <TextBlock Text="{DynamicResource ReleaseSubtitle}" Foreground="{DynamicResource Muted}" Margin="0,4,0,0"/>
+    <TextBlock x:Name="ContextCaption" Text="{DynamicResource ReleaseSelectContext}" Foreground="{DynamicResource Muted}" Margin="0,4,12,0" TextWrapping="Wrap"/>
    </StackPanel>
   </DockPanel>
   <TabControl x:Name="Tabs" Grid.Row="1" SelectionChanged="TabChanged">
@@ -27,28 +27,20 @@
       <Grid x:Name="FormPanel">
        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
        <StackPanel>
-        <Label Content="{DynamicResource ReleaseProject}" Target="{Binding ElementName=ProjectFile}" Padding="0,0,0,5"/>
-        <DockPanel><Button DockPanel.Dock="Right" Content="{DynamicResource ReleaseBrowse}" Click="BrowseClick" Margin="8,0,0,0"/>
-         <TextBox x:Name="ProjectFile" IsReadOnly="True" AutomationProperties.Name="{DynamicResource ReleaseProject}" VerticalContentAlignment="Center"/>
-        </DockPanel>
-        <Label Content="{DynamicResource ReleaseRepository}" Target="{Binding ElementName=Repository}" Padding="0,12,0,5"/>
-        <TextBox x:Name="Repository" AutomationProperties.Name="{DynamicResource ReleaseRepository}"/>
-        <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-         <StackPanel><Label Content="{DynamicResource ReleaseAppId}" Target="{Binding ElementName=AppId}" Padding="0,0,0,5"/>
-          <TextBox x:Name="AppId" AutomationProperties.Name="{DynamicResource ReleaseAppId}" ToolTip="{DynamicResource ReleaseIdHint}"/>
-         </StackPanel>
-         <StackPanel Grid.Column="2"><Label Content="{DynamicResource ReleaseVersion}" Target="{Binding ElementName=VersionNumber}" Padding="0,0,0,5"/>
-          <TextBox x:Name="VersionNumber" AutomationProperties.Name="{DynamicResource ReleaseVersion}"/>
-         </StackPanel>
-        </Grid>
+        <Label Content="{DynamicResource ReleaseVersion}" Target="{Binding ElementName=VersionNumber}" Padding="0,0,0,5"/>
+        <TextBox x:Name="VersionNumber" AutomationProperties.Name="{DynamicResource ReleaseVersion}"/>
         <WrapPanel Margin="0,10,0,0"><Button Content="{DynamicResource ReleaseNextVersion}" Click="NextVersionClick" Margin="0,0,8,0"/>
          <Button Content="{DynamicResource ReleaseSaveProfile}" Click="SaveProfileClick"/>
         </WrapPanel>
         <TextBlock Text="{DynamicResource ReleasePackageHint}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,12,0,0"/>
         <Expander Header="{DynamicResource ReleaseSource}" Margin="0,16,0,0">
          <StackPanel Margin="0,8,0,0">
-          <Label Content="{DynamicResource ReleaseProfiles}" Target="{Binding ElementName=Profiles}" Padding="0,0,0,5"/>
-          <ComboBox x:Name="Profiles" DisplayMemberPath="Repository" SelectionChanged="ProfileChanged" AutomationProperties.Name="{DynamicResource ReleaseProfiles}"/>
+          <Label Content="{DynamicResource ReleaseProject}" Target="{Binding ElementName=ProjectFile}" Padding="0,0,0,5"/>
+          <TextBox x:Name="ProjectFile" IsReadOnly="True" AutomationProperties.Name="{DynamicResource ReleaseProject}"/>
+          <Label Content="{DynamicResource ReleaseRepository}" Target="{Binding ElementName=Repository}" Padding="0,12,0,5"/>
+          <TextBox x:Name="Repository" IsReadOnly="True" AutomationProperties.Name="{DynamicResource ReleaseRepository}"/>
+          <Label Content="{DynamicResource ReleaseAppId}" Target="{Binding ElementName=AppId}" Padding="0,12,0,5"/>
+          <TextBox x:Name="AppId" IsReadOnly="True" AutomationProperties.Name="{DynamicResource ReleaseAppId}" ToolTip="{DynamicResource ReleaseIdHint}"/>
           <Label Content="{DynamicResource ReleaseTests}" Target="{Binding ElementName=TestProjects}" Padding="0,12,0,5"/>
           <TextBox x:Name="TestProjects" Height="80" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="{DynamicResource ReleaseTests}"/>
           <TextBlock Text="{DynamicResource ReleaseTestsHint}" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,6,0,12"/>

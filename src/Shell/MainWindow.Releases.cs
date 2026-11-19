@@ -7,17 +7,15 @@ public partial class MainWindow
 {
     private ReleaseCenterWindow? _releaseCenter;
 
-    private void ReleaseCenterClick(object sender, RoutedEventArgs e)
+    private async void OpenProjectReleaseCenter(string projectFile)
     {
-        if (_releaseCenter is not null) { _releaseCenter.Activate(); return; }
-        string? project = (ProjectGrid.SelectedItem as ProjectEntry)?.EntryFile;
-        if (project is null || !project.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+        if (_releaseCenter is not null)
         {
-            string? root = (ProjectGrid.SelectedItem as ProjectEntry)?.Repository ?? _workspace?.Root;
-            project = root is null ? null : new[] { Path.Combine(root, "src"), root }.Where(Directory.Exists)
-                .SelectMany(d => Directory.GetFiles(d, "*.csproj")).FirstOrDefault();
+            _releaseCenter.Activate();
+            await _releaseCenter.SelectProjectAsync(projectFile);
+            return;
         }
-        _releaseCenter = new ReleaseCenterWindow(project) { Owner = this };
+        _releaseCenter = new ReleaseCenterWindow(projectFile) { Owner = this };
         _releaseCenter.Closed += (_, _) => _releaseCenter = null;
         _releaseCenter.Show();
     }

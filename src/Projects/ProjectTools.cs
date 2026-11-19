@@ -55,6 +55,14 @@ internal static class ProjectTools
     public static bool IsDotNetEntry(string path) =>
         Path.GetExtension(path).ToLowerInvariant() is ".sln" or ".slnx" or ".csproj" or ".vbproj" or ".fsproj";
 
+    internal static IReadOnlyList<string> FindReleaseProjects(string? entry)
+    {
+        if (entry is null || !File.Exists(entry)) return [];
+        if (Path.GetExtension(entry).Equals(".csproj", StringComparison.OrdinalIgnoreCase)) return [Path.GetFullPath(entry)];
+        if (Path.GetExtension(entry).ToLowerInvariant() is not (".sln" or ".slnx")) return [];
+        return FindRunnableProjects(entry).Where(path => Path.GetExtension(path).Equals(".csproj", StringComparison.OrdinalIgnoreCase)).ToArray();
+    }
+
     private static IReadOnlyList<string> FindRunnableProjects(string entry)
     {
         try

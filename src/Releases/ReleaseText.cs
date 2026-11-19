@@ -7,6 +7,8 @@ internal static class ReleaseText
     internal static readonly Dictionary<string, (string Tr, string En)> Messages = new()
     {
         ["Title"] = ("Yayın Merkezi", "Release Center"),
+        ["UnsupportedContext"] = ("Bu yayın akışı bir .csproj uygulaması veya uygulama içeren .sln/.slnx çözümü gerektirir.", "This publishing workflow requires a .csproj application or a .sln/.slnx solution containing one."),
+        ["SelectContext"] = ("Proje listesinden bir projeye sağ tıklayıp Yayın Merkezi'ni açın.", "Right-click a project in the project list and open Release Center."),
         ["Connection"] = ("GitHub bağlantısı…", "GitHub connection…"),
         ["Subtitle"] = ("Paket hazırla, doğrula ve GitHub üzerinden dağıt.", "Build, verify and distribute through GitHub."),
         ["PrepareTab"] = ("Hazırla ve yayımla", "Prepare and publish"),
@@ -71,7 +73,7 @@ internal static class ReleaseText
         ["NoPackage"] = ("Henüz paket seçilmedi. Önce paket hazırlayın veya geçmişten seçin.", "No package selected. Build a package or select one from history."),
         ["Stop"] = ("İşlemi durdur", "Stop operation"),
         ["Log"] = ("İşlem çıktısı", "Operation output"),
-        ["Ready"] = ("Hazır. Bir proje seçin veya kayıtlı profili kullanın.", "Ready. Choose a project or use a saved profile."),
+        ["Ready"] = ("Hazır. Seçilen projenin yayın işlemlerini buradan yönetebilirsiniz.", "Ready. Manage releases for the selected project here."),
         ["ToolsHint"] = ("Araçları kurmak için Yardım → Geliştirme araçları menüsünü kullanın.", "To install tools, use Help → Development tools."),
         ["StopFirst"] = ("Önce devam eden işlemi durdurun veya tamamlanmasını bekleyin.", "Stop the current operation or wait for it to finish first."),
         ["OtherOperation"] = ("Dosya başka bir işlem tarafından kullanılıyor. Diğer Yayın Merkezi işleminin tamamlanmasını bekleyip tekrar deneyin.", "A file is in use by another process. Wait for the other Release Center operation to finish and retry."),

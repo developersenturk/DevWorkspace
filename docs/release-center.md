@@ -1,11 +1,11 @@
 # Yayın Merkezi / Release Center
 
-**Git → Yayın Merkezi** veya **Pencereler → Yayın Merkezi** menüsünden açılır. Arayüz Türkçe ve İngilizcedir.
+Proje listesinde ilgili projeye **sağ tık → Yayın Merkezi** ile açılır. Arayüz Türkçe ve İngilizcedir. Pencere seçilen projeye bağlıdır; üst menülerde bağımsız giriş bulunmaz.
 
 ## İlk kullanım
 
-1. **Gözat** ile uygulamanın `.csproj` dosyasını seçin. `origin` adresinden GitHub deposu, proje dosyasından uygulama kimliği ve sürüm doldurulur. Depo GitHub üzerinde olmalıdır.
-2. Mevcut Velopack uygulama kimliğini koruyun. **Sonraki yama**, GitHub'daki kararlı sürümleri ve formdaki sürümü dikkate alır. Profiller proje başına saklanır; **Kaynak ve profil → Kayıtlı projeler** alanından değiştirilir.
+1. Yayınlayacağınız proje satırına sağ tıklayıp **Yayın Merkezi** seçin. `.csproj` doğrudan kullanılır. `.sln`/`.slnx` içindeki tek uygulama otomatik belirlenir; birden fazla uygulama varsa aynı menünün altında çözümün uygulamaları listelenir. Aynı depodaki ilgisiz bir proje seçilmez. Depo GitHub üzerinde olmalıdır.
+2. Proje, depo ve uygulama kimliği arka planda doldurulur; `origin` her proje değişiminde yeniden okunur. Bu bilgiler **Kaynak ve profil** altında salt okunur olarak incelenebilir. Aynı projenin kayıtlı profili varsa kimlik, notlar ve tercihler geri yüklenir; başka projenin son kullanılan profili devralınmaz. Sürüm, kaynak sürümünden eski kalacak şekilde geri yüklenmez. **Sonraki yama**, GitHub'daki kararlı sürümleri ve formdaki sürümü dikkate alır. **Profili kaydet** seçilen projeye ait tercihleri saklar.
 3. **GitHub bağlantısı** mevcut hesap/kurulum penceresini açar. Git, .NET SDK ve GitHub CLI gerekir; eksik araçlar **Yardım → Geliştirme araçları** üzerinden kurulabilir. Kimlik doğrulama GitHub CLI tarafından yönetilir; Yayın Merkezi token istemez veya saklamaz.
 4. **Ön kontrol** araçları, oturum açmış hesabı, deponun origin eşleşmesini ve kaynak durumunu gösterir.
 
@@ -30,7 +30,7 @@
 
 ## Geçmiş ve hatadan dönme
 
-**Yerel paket geçmişi**, tamamlanan paketleri gösterir. **Seçili paketi kullan**, yüklemeye kaldığınız yerden devam etmek için paketin proje/depo/kimlik/sürümünü forma geri yükler. Yerel dosyalar, uzak taslak ve GitHub kontrolleri ayrı ayrı denetlenebilir. Taslak yükleme başarılıysa sürüm notları paket klasöründe saklanır.
+**Yerel paket geçmişi**, seçilen proje dosyası ve GitHub deposu için tamamlanan paketleri gösterir. **Seçili paketi kullan**, yüklemeye kaldığınız yerden devam etmek için paketin kimlik/sürüm/notlarını forma geri yükler. Başka projeye sağ tıklayıp Yayın Merkezi seçildiğinde açık pencere o projeye geçer. Ayrılırken notlar ve tercihler proje profiline otomatik kaydedilir; döndüğünüzde kendi profili geri yüklenir. Eski paket ve istatistikler yeni projeye taşınmaz. Devam eden işlem varsa proje değişimi engellenir ve önce işlemi tamamlamanız veya durdurmanız istenir. Yerel dosyalar, uzak taslak ve GitHub kontrolleri ayrı ayrı denetlenebilir.
 
 **İşlemi durdur**, çalışan alt süreç ağacını iptal eder. Uzak sunucuya ulaşmış bir dosya kalabilir; sonraki deneme uzak durumu yeniden okur. İşlem sürerken pencerenin kapatılması ve uygulama güncellemesi için yeniden başlatılması engellenir. Aynı bilgisayardaki iki uygulama kopyası aynı Yayın Merkezi işlemini eşzamanlı yürütemez. İşlem çıktısı hem bu pencerede hem mevcut İşlem Merkezi'nde gösterilir; uzun çıktı bellekte sınırlandırılır. Disk kayıtları tam tutulur. Otomatik dosya temizliği yapılmaz.
 

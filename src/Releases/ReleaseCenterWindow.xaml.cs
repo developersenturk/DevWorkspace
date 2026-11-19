@@ -14,7 +14,7 @@ namespace DevWorkspace;
 
 public partial class ReleaseCenterWindow : ThemedWindow
 {
-    private readonly ReleaseStore _store = new();
+    private readonly ReleaseStore _store;
     private readonly StringBuilder _pending = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(125) };
     private readonly string? _initialProject;
@@ -22,15 +22,17 @@ public partial class ReleaseCenterWindow : ThemedWindow
     private ReleasePackage? _package;
     private RemoteRelease[] _releases = [];
     private string? _statsRepository;
-    private bool _loadingProfile;
     private Action<string>? _activeLog;
     internal bool IsWorking => _operation is not null;
 
-    internal ReleaseCenterWindow(string? project = null)
+    internal ReleaseCenterWindow(string? project = null) : this(project, new ReleaseStore()) { }
+
+    internal ReleaseCenterWindow(string? project, ReleaseStore store)
     {
+        _store = store;
         InitializeComponent();
         _initialProject = project;
-        ApplyProfile(_store.LoadProfile());
+        ApplyProfile(new());
         try { RefreshLocal(); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { Status.Text = e.Message; }
         _timer.Tick += (_, _) => Flush();
@@ -41,8 +43,42 @@ public partial class ReleaseCenterWindow : ThemedWindow
     private async void WindowLoaded(object sender, RoutedEventArgs e)
     {
         Loaded -= WindowLoaded;
-        if (_initialProject is not null && !string.Equals(ProjectFile.Text, _initialProject, StringComparison.OrdinalIgnoreCase))
-            await RunAsync("Project", async (service, token) => ApplyProfile(await service.DetectAsync(_initialProject, token)));
+        if (_initialProject is not null) await SelectProjectAsync(_initialProject);
+    }
+    internal async Task SelectProjectAsync(string project)
+    {
+        if (IsWorking) { Status.Text = ReleaseText.T("StopFirst"); return; }
+        if (string.Equals(ProjectFile.Text, Path.GetFullPath(project), StringComparison.OrdinalIgnoreCase)) return;
+        await RunAsync("Project", async (service, token) =>
+        {
+            if (ProjectFile.Text.Length > 0) _store.SaveProfile(Profile());
+            // Drop the old target before awaiting I/O: a failed switch must never leave another project's publish state active.
+            ClearContext();
+            var detected = await service.DetectAsync(project, token);
+            var saved = _store.LoadProjectProfile(detected.ProjectFile);
+            string version = saved?.Version ?? detected.Version;
+            if (Version.TryParse(detected.Version, out var current) && (!Version.TryParse(version, out var previous) || current > previous))
+                version = detected.Version;
+            ApplyProfile((saved ?? detected) with { ProjectFile = detected.ProjectFile, Repository = detected.Repository, Version = version });
+            RefreshLocal();
+        });
+    }
+    private void ClearContext()
+    {
+        _package = null;
+        ApplyProfile(new());
+        UploadButton.IsEnabled = PublishButton.IsEnabled = false;
+        PackageSummary.Text = ReleaseText.T("NoPackage");
+        History.ItemsSource = null;
+        _releases = [];
+        _statsRepository = null;
+        ReleasesGrid.ItemsSource = AssetsGrid.ItemsSource = null;
+        DownloadTotal.Text = "—";
+        Breakdown.Text = RepositoryStats.Text = StatsHint.Text = "";
+        ExportButton.IsEnabled = false;
+        CommitMessage.Clear();
+        Output.Clear();
+        lock (_pending) _pending.Clear();
     }
     private ReleaseProfile Profile() => new(ProjectFile.Text.Trim(), Repository.Text.Trim(), AppId.Text.Trim(),
         VersionNumber.Text.Trim(), Notes.Text, TestProjects.Text, RequireChecks.IsChecked == true);
@@ -55,39 +91,20 @@ public partial class ReleaseCenterWindow : ThemedWindow
         Notes.Text = profile.Notes;
         TestProjects.Text = profile.TestProjects;
         RequireChecks.IsChecked = profile.RequireChecks;
+        string name = Path.GetFileNameWithoutExtension(profile.ProjectFile);
+        Title = name.Length == 0 ? ReleaseText.T("Title") : ReleaseText.T("Title") + " · " + name;
+        ContextCaption.Text = name.Length == 0 ? ReleaseText.T("SelectContext") : name + " · " + profile.Repository;
     }
     private void SaveProfile()
     {
-        var profile = Profile();
-        _store.SaveProfile(profile);
-        if (profile.ProjectFile.Length > 0)
-        {
-            string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(profile.ProjectFile.ToUpperInvariant())));
-            ReleaseStore.Save(Path.Combine(_store.DirectoryPath, "profiles", key + ".json"), profile);
-        }
+        _store.SaveProfile(Profile());
         RefreshLocal();
     }
     private void RefreshLocal()
     {
-        History.ItemsSource = _store.Packages();
+        History.ItemsSource = _store.Packages().Where(p => string.Equals(p.ProjectFile, ProjectFile.Text, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(p.Repository, Repository.Text, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (_package is not null) History.SelectedItem = ((ReleasePackage[])History.ItemsSource).FirstOrDefault(p => p.Directory == _package.Directory);
-        var profiles = new List<ReleaseProfile>();
-        string folder = Path.Combine(_store.DirectoryPath, "profiles");
-        if (Directory.Exists(folder))
-            foreach (string path in Directory.GetFiles(folder, "*.json"))
-                try
-                {
-                    var profile = JsonSerializer.Deserialize<ReleaseProfile>(File.ReadAllText(path), ReleaseStore.Json);
-                    if (profile is not null) profiles.Add(profile);
-                }
-                catch (Exception e) when (e is IOException or JsonException) { }
-        _loadingProfile = true;
-        Profiles.ItemsSource = profiles.OrderBy(p => p.Repository).ToArray();
-        _loadingProfile = false;
-    }
-    private void ProfileChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loadingProfile && Profiles.SelectedItem is ReleaseProfile profile) ApplyProfile(profile);
     }
     private static string ResolveTool(string tool) => tool switch
     {
@@ -185,13 +202,6 @@ public partial class ReleaseCenterWindow : ThemedWindow
     {
         if (ReferenceEquals(e.OriginalSource, Tabs) && Tabs.SelectedIndex == 1 && _operation is null && LogExpander is not null)
             LogExpander.IsExpanded = false;
-    }
-    private async void BrowseClick(object sender, RoutedEventArgs e)
-    {
-        var picker = new OpenFileDialog { Title = ReleaseText.T("Project"), Filter = ".NET project (*.csproj)|*.csproj" };
-        if (File.Exists(ProjectFile.Text)) picker.InitialDirectory = Path.GetDirectoryName(ProjectFile.Text);
-        if (picker.ShowDialog(this) == true)
-            await RunAsync("Project", async (service, token) => { ApplyProfile(await service.DetectAsync(picker.FileName, token)); SaveProfile(); });
     }
     private async void SaveProfileClick(object sender, RoutedEventArgs e) =>
         await RunAsync("SaveProfile", (_, _) => { SaveProfile(); return Task.CompletedTask; });

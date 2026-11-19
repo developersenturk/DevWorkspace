@@ -91,7 +91,24 @@ internal sealed class ReleaseStore(string? directory = null)
         Environment.SpecialFolder.LocalApplicationData), "DevWorkspace", "ReleaseCenter");
     internal static readonly JsonSerializerOptions Json = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
     internal string NewPackageDirectory() => Path.Combine(DirectoryPath, "packages", Guid.NewGuid().ToString("N"));
-    internal void SaveProfile(ReleaseProfile profile) => Save(Path.Combine(DirectoryPath, "profile.json"), profile);
+    private string ProjectProfilePath(string project) => Path.Combine(DirectoryPath, "profiles",
+        Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(project).ToUpperInvariant()))) + ".json");
+    internal void SaveProfile(ReleaseProfile profile)
+    {
+        Save(Path.Combine(DirectoryPath, "profile.json"), profile);
+        if (!string.IsNullOrWhiteSpace(profile.ProjectFile)) Save(ProjectProfilePath(profile.ProjectFile), profile);
+    }
+    internal ReleaseProfile? LoadProjectProfile(string project)
+    {
+        try
+        {
+            string path = ProjectProfilePath(project);
+            var saved = File.Exists(path) ? JsonSerializer.Deserialize<ReleaseProfile>(File.ReadAllText(path), Json) : LoadProfile();
+            return saved is not null && string.Equals(Path.GetFullPath(saved.ProjectFile), Path.GetFullPath(project), StringComparison.OrdinalIgnoreCase)
+                ? saved : null;
+        }
+        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or ArgumentException) { return null; }
+    }
     internal ReleaseProfile LoadProfile()
     {
         try { return JsonSerializer.Deserialize<ReleaseProfile>(File.ReadAllText(Path.Combine(DirectoryPath, "profile.json")), Json) ?? new(); }

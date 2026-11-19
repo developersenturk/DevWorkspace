@@ -65,6 +65,12 @@ try
     var profile = new ReleaseProfile(project, "owner/repo", "App", "1.0.6", "line 1\n`$literal` line 2");
     store.SaveProfile(profile);
     Check(store.LoadProfile() == profile, "Profile round trip preserves multiline notes");
+    var otherProfile = profile with { ProjectFile = Path.Combine(source, "Other.csproj"), Repository = "owner/other", Notes = "other project" };
+    store.SaveProfile(otherProfile);
+    Check(store.LoadProjectProfile(project) == profile, "A project restores its own profile after another project was saved");
+    Check(store.LoadProjectProfile(otherProfile.ProjectFile) == otherProfile, "Other project profile remains independent");
+    Check(store.LoadProjectProfile(Path.Combine(source, "Unknown.csproj")) is null, "Unknown projects never inherit the most recent project's profile");
+    store.SaveProfile(profile);
     var fake = new FakeProcess(source);
     var service = new ReleaseService(fake, store, _ => { });
 

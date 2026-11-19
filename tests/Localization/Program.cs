@@ -91,7 +91,84 @@ internal static class Program
         }
         finally { Directory.Delete(temporary, true); }
 
+        string releaseFixture = Path.Combine(Path.GetTempPath(), "DevWorkspace-release-context-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(releaseFixture);
+        try
+        {
+            string firstApp = Path.Combine(releaseFixture, "First.csproj"), secondApp = Path.Combine(releaseFixture, "Second.csproj");
+            File.WriteAllText(firstApp, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>WinExe</OutputType></PropertyGroup></Project>");
+            File.WriteAllText(secondApp, "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>WinExe</OutputType></PropertyGroup></Project>");
+            string firstSolution = Path.Combine(releaseFixture, "First.slnx");
+            File.WriteAllText(firstSolution, "<Solution><Project Path=\"First.csproj\" /></Solution>");
+            string[] Candidates(string entry) => ((IEnumerable<string>)Call("ProjectTools", "FindReleaseProjects", entry)!).ToArray();
+            Check(Candidates(firstApp).SequenceEqual(new[] { firstApp }), "A directly selected project must be used exactly");
+            Check(Candidates(firstSolution).SequenceEqual(new[] { firstApp }), "Solution context must ignore another application beside the solution");
+            File.WriteAllText(firstSolution, "<Solution><Project Path=\"First.csproj\" /><Project Path=\"Second.csproj\" /></Solution>");
+            Check(Candidates(firstSolution).ToHashSet().SetEquals(new[] { firstApp, secondApp }), "Multiple application choices must be preserved instead of selecting an arbitrary project");
+            Check(Candidates(Path.Combine(releaseFixture, "Missing.slnx")).Length == 0, "Missing project must not fall back to another application");
+        }
+        finally { Directory.Delete(releaseFixture, true); }
+
         var app = new Application();
+        // Exercise real asynchronous project switching with isolated local repositories and storage; no network or visible window.
+        string contextRoot = Path.Combine(Path.GetTempPath(), "DevWorkspace-release-switch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(contextRoot);
+        try
+        {
+            string CreateContext(string name)
+            {
+                string folder = Path.Combine(contextRoot, name); Directory.CreateDirectory(folder);
+                string projectFile = Path.Combine(folder, name + ".csproj");
+                File.WriteAllText(projectFile, "<Project><PropertyGroup><OutputType>WinExe</OutputType><Version>1.2.3</Version></PropertyGroup></Project>");
+                foreach (string[] command in new[] { new[] { "init" }, new[] { "remote", "add", "origin", "https://github.com/test-owner/" + name + ".git" } })
+                {
+                    var info = new System.Diagnostics.ProcessStartInfo("git") { WorkingDirectory = folder, CreateNoWindow = true,
+                        UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+                    foreach (string argument in command) info.ArgumentList.Add(argument);
+                    using var git = System.Diagnostics.Process.Start(info)!;
+                    git.WaitForExit(); Check(git.ExitCode == 0, "Could not prepare local context fixture");
+                }
+                return projectFile;
+            }
+            string contextA = CreateContext("First"), contextB = CreateContext("Second");
+            app.Resources.MergedDictionaries.Add((ResourceDictionary)Call("Loc", "CreateResources")!);
+            var isolatedStore = Activator.CreateInstance(Type("ReleaseStore"), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                null, new object?[] { Path.Combine(contextRoot, "state") }, CultureInfo.InvariantCulture)!;
+            var contextWindow = (Window)Activator.CreateInstance(Type("ReleaseCenterWindow"), BindingFlags.Instance | BindingFlags.NonPublic,
+                null, new object?[] { null, isolatedStore }, CultureInfo.InvariantCulture)!;
+            void SwitchTo(string projectFile)
+            {
+                var previousContext = SynchronizationContext.Current;
+                SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(contextWindow.Dispatcher));
+                try
+                {
+                var task = (Task)Type("ReleaseCenterWindow").GetMethod("SelectProjectAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(contextWindow, [projectFile])!;
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                _ = task.ContinueWith(_ => contextWindow.Dispatcher.BeginInvoke(new Action(() => frame.Continue = false)));
+                if (!task.IsCompleted) System.Windows.Threading.Dispatcher.PushFrame(frame);
+                task.GetAwaiter().GetResult();
+                }
+                finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
+            }
+            TextBox Field(string name) => (TextBox)contextWindow.FindName(name);
+            SwitchTo(contextA);
+            Check(Field("ProjectFile").Text == contextA && Field("Repository").Text == "test-owner/First", "First project context not detected");
+            Field("Notes").Text = "First project's unsaved notes";
+            ((Button)contextWindow.FindName("UploadButton")).IsEnabled = ((Button)contextWindow.FindName("PublishButton")).IsEnabled = true;
+            ((TextBlock)contextWindow.FindName("DownloadTotal")).Text = "99";
+            SwitchTo(contextB);
+            Check(Field("ProjectFile").Text == contextB && Field("Repository").Text == "test-owner/Second" && Field("AppId").Text == "Second", "Open window did not switch to the exact new project");
+            Check(Field("Notes").Text.Length == 0 && ((TextBlock)contextWindow.FindName("DownloadTotal")).Text == "—", "Old project's notes or statistics leaked into new context");
+            Check(!((Button)contextWindow.FindName("UploadButton")).IsEnabled && !((Button)contextWindow.FindName("PublishButton")).IsEnabled, "Old package actions remained enabled after switching project");
+            SwitchTo(contextA);
+            Check(Field("Notes").Text == "First project's unsaved notes" && Field("Repository").Text == "test-owner/First",
+                "Returning to a project must restore its own automatically saved notes");
+            SwitchTo(Path.Combine(contextRoot, "Missing.csproj"));
+            Check(Field("ProjectFile").Text.Length == 0 && Field("Repository").Text.Length == 0 &&
+                !((Button)contextWindow.FindName("PublishButton")).IsEnabled, "Failed detection retained another project's publish target");
+            contextWindow.Close();
+        }
+        finally { Directory.Delete(contextRoot, true); }
         foreach (string language in new[] { "en", "tr" })
         {
             Call("Loc", "Initialize", language);
@@ -107,6 +184,9 @@ internal static class Program
                 null, new object?[] { null }, CultureInfo.InvariantCulture)!;
             Check(releaseWindow.Title == (language == "en" ? "Release Center" : "Yayın Merkezi"), "Release center title not translated");
             Check(releaseWindow.FindResource("SmallLabel") is Style, "Release center shared styles missing");
+            Check(((TextBox)releaseWindow.FindName("ProjectFile")).Text.Length == 0, "Unbound release window inherited a global project");
+            foreach (string contextField in new[] { "ProjectFile", "Repository", "AppId" })
+                Check(((TextBox)releaseWindow.FindName(contextField)).IsReadOnly, "Bound project identity must not be editable: " + contextField);
             Check(((Button)releaseWindow.FindName("UploadButton")).IsEnabled == false &&
                 ((Button)releaseWindow.FindName("PublishButton")).IsEnabled == false, "No-package actions must be disabled");
             foreach (string field in new[] { "ProjectFile", "Repository", "AppId", "VersionNumber", "Notes", "TestProjects" })

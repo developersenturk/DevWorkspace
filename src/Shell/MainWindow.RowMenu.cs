@@ -166,6 +166,24 @@ public partial class MainWindow
             Add(Loc.Text("VisualStudioChange"), "\uE713", () => ChangeProjectVisualStudio(project), folderExists);
         Add(Loc.Text("LD6F2F6CAD078"), "\uE838", () => ExplorerClick(this, new()), folderExists);
         Add(Loc.Text("L72C32847EB3E"), "\uE8C8", () => CopyPathClick(this, new()));
+        var releaseProjects = ProjectTools.FindReleaseProjects(project.EntryFile);
+        var releaseMenu = new MenuItem { Header = ReleaseText.T("Title"), Icon = MenuGlyphExtension.Create("\uE898"),
+            IsEnabled = folderExists && releaseProjects.Count > 0,
+            ToolTip = releaseProjects.Count == 0 ? ReleaseText.T("UnsupportedContext") : null };
+        void OpenRelease(string file)
+        {
+            if (_workspace?.Root == workspace.Root) OpenProjectReleaseCenter(file);
+        }
+        if (releaseProjects.Count == 1)
+            releaseMenu.Click += (_, _) => OpenRelease(releaseProjects[0]);
+        else
+            foreach (string file in releaseProjects)
+            {
+                var target = new MenuItem { Header = Path.GetRelativePath(project.Folder, file).Replace("_", "__") };
+                target.Click += (_, e) => { e.Handled = true; OpenRelease(file); };
+                releaseMenu.Items.Add(target);
+            }
+        menu.Items.Add(releaseMenu);
         bool favorite = project.Preference.Favorite;
         Add(favorite ? Loc.Text("LC81AC7A60617") : Loc.Text("LC1F494543AF2"), favorite ? "\uE735" : "\uE734",
             () => FavoriteClick(this, new()));
