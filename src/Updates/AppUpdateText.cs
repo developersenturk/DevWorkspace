@@ -20,6 +20,7 @@ internal static class AppUpdateText
         ["UpdateFailed"] = ("Güncelleme indirilemedi veya doğrulanamadı. Daha sonra otomatik olarak yeniden denenecek.", "The update could not be downloaded or verified. It will be retried automatically later."),
         ["UpdateUnavailable"] = ("Otomatik güncelleme için GitHub Releases üzerindeki DevWorkspace kurulum paketini kullanın. Tek başına EXE güncellenmez.", "Install DevWorkspace using the installer from GitHub Releases to enable automatic updates. The standalone EXE does not update itself."),
         ["UpdateCurrent"] = ("DevWorkspace güncel.", "DevWorkspace is up to date."),
+        ["UpdateNotificationFailed"] = ("Bildirim gösterilemedi. Güncelleme durumunu Yardım menüsünden denetleyebilirsiniz.", "Could not display the notification. Check the update status from the Help menu."),
         ["UpdateBusy"] = ("Yeniden başlatmadan önce devam eden işlemlerin tamamlanmasını bekleyin.", "Wait for running operations to finish before restarting."),
         ["UpdateOtherInstance"] = ("Başka bir DevWorkspace penceresi açık. Güncellemeyi uygulamadan önce diğer pencereleri kapatın.", "Another DevWorkspace window is open. Close the other windows before applying the update."),
         ["UpdateRestartFailed"] = ("Güncelleme uygulanamadı. DevWorkspace'i yeniden açabilirsiniz; mevcut sürümünüz korunur.", "Could not apply the update. You can reopen DevWorkspace; your existing version is preserved."),

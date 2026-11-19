@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows.Controls;
+using System.Windows;
 using System.Windows.Input;
 using DevExpress.Mvvm;
 
@@ -7,7 +8,15 @@ namespace DevWorkspace;
 
 public partial class AppUpdateToast : UserControl
 {
-    public AppUpdateToast() => InitializeComponent();
+    public AppUpdateToast()
+    {
+        InitializeComponent();
+        Loaded += (_, _) =>
+        {
+            // Give the popup host a useful accessible window name as well.
+            if (Window.GetWindow(this) is { } host) host.Title = "DevWorkspace · " + AppUpdateText.Text("UpdateCheck");
+        };
+    }
 }
 
 internal sealed class AppUpdateToastModel(AppUpdatePhase phase, Action restart, Action retry, Action install, Action dismiss)

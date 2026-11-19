@@ -88,7 +88,11 @@ public partial class MainWindow
     private async Task ObserveAppUpdateToastAsync(INotification notification)
     {
         try { await notification.ShowAsync(); }
-        catch (Exception ex) { Trace.TraceWarning("Update notification failed: {0}", ex); }
+        catch (Exception ex)
+        {
+            Trace.TraceWarning("Update notification failed: {0}", ex);
+            if (!_closing.IsCancellationRequested) StatusText.Text = AppUpdateText.Text("UpdateNotificationFailed");
+        }
         finally
         {
             if (ReferenceEquals(_appUpdateNotification, notification))

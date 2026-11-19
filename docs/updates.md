@@ -8,7 +8,8 @@ The application never embeds a GitHub token. Drafts and prereleases are excluded
 
 - Installed copies check five seconds after startup, then every six hours. **Help → Check for updates** also checks immediately.
 - New versions download in the background. Velopack verifies the package before the banner announces it is ready.
-- A ready update stays staged while you work. Starting the application again applies it before the workbench opens.
+- Status appears in a compact DevExpress toast at the bottom right of the application's screen, without moving the workspace. The up-to-date confirmation disappears after four seconds; actionable ready notifications remain for twelve seconds. Download progress updates a single toast.
+- A ready update stays staged while you work. Starting the application again applies it before the workbench opens. The Help menu also keeps a **Restart now** action available after the toast closes.
 - **Restart now** saves the workspace and layout through the normal closing path, then launches the updater after the window has closed.
 - Restart is blocked while workspace/Git operations are running. Other running copies from the same installation hold shared leases, so an update cannot replace their files.
 - Network and package errors leave the current application usable; automatic checks retry later, and a manual check offers a retry.
