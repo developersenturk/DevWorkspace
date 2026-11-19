@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeWhatsNew();
         Closed += AppUpdateWindowClosed;
         _defaultProjectColumnWidths = ProjectColumns.Select(column => column.Width).ToArray();
         InitializeWorkspaceRefresh();

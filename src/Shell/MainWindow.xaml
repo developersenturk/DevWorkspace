@@ -171,8 +171,18 @@
     <Grid Background="{DynamicResource WorkspaceBackground}">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="29"/></Grid.RowDefinitions>
 
-        <DockPanel Margin="8,3">
-            <DockPanel DockPanel.Dock="Right" Width="350" Height="28" VerticalAlignment="Center" Margin="8,0,0,0">
+        <Grid Margin="8,3">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <dx:SimpleButton x:Name="WhatsNewButton" Grid.Column="2" Click="WhatsNewClick" Padding="10,5" Margin="12,0,0,0"
+                             AutomationProperties.Name="{DynamicResource UpdateWhatsNew}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{DynamicResource UpdateWhatsNew}" VerticalAlignment="Center"/>
+                    <Border x:Name="NewsBadge" Background="{DynamicResource BadgeAccentSurface}" CornerRadius="4" Padding="5,1" Margin="7,0,0,0">
+                        <TextBlock Text="{DynamicResource UpdateNotesNew}" Foreground="{DynamicResource BadgeAccentText}" FontSize="10" FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+            </dx:SimpleButton>
+            <DockPanel Grid.Column="1" MaxWidth="350" Height="28" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="16,0,0,0">
                 <TextBlock DockPanel.Dock="Left" Text="&#xE721;" Style="{StaticResource Icon}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0"/>
                 <Button DockPanel.Dock="Right" x:Name="ClearSearchButton" Content="×" FontSize="17" Width="25" MinHeight="23"
                         Style="{StaticResource IconButton}" Padding="2,0" Visibility="Collapsed"
@@ -260,6 +270,7 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="ResetLayoutMenu" Header="{DynamicResource L263E1655C155}" Click="ResetDockLayoutClick"/>
                 </MenuItem>
                 <MenuItem Header="{DynamicResource LC34984AA1A10}" Tag="&#xE897;" Style="{StaticResource MainMenuItem}">
+                    <MenuItem Header="{DynamicResource UpdateWhatsNew}" Click="WhatsNewClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE895;}" Header="{DynamicResource UpdateCheck}" Click="CheckAppUpdatesClick"/>
                     <MenuItem x:Name="RestartAppUpdateMenu" Header="{DynamicResource UpdateRestart}" Click="RestartForAppUpdateClick" Visibility="Collapsed"/>
                     <MenuItem Header="{DynamicResource LF69B046E069D}" Click="DevelopmentToolsClick"/>
@@ -269,7 +280,7 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE946;}" Header="{DynamicResource LDBC6A81F6489}" Click="AboutClick"/>
                 </MenuItem>
             </Menu>
-        </DockPanel>
+        </Grid>
 
         <dxdo:DockLayoutManager x:Name="WorkbenchDock" Grid.Row="1" Margin="10,0,10,0"
                                 DockingStyle="VS2010" ClosedPanelsBarVisibility="Never"

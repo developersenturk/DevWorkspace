@@ -1,6 +1,8 @@
 using DevWorkspace;
 using Velopack;
 using Velopack.Locators;
+using System.Net;
+using System.Text;
 
 if (args is ["--github", var livePackages])
 {
@@ -29,6 +31,34 @@ if (args is ["--package", var feedPath, var packagesPath])
     Console.WriteLine("PASS: real Velopack SDK downloaded and verified 1.0.1; pending restart: " + manager.UpdatePendingRestart?.Version);
     return;
 }
+
+// Release notes must remain useful with no network and must never surface drafts.
+string notesDirectory = Path.Combine(Path.GetTempPath(), "DevWorkspace-notes-" + Guid.NewGuid().ToString("N"));
+try
+{
+    using var notesClient = new HttpClient(new ReleaseNotesHandler());
+    var notes = new AppReleaseNotes(notesClient, notesDirectory);
+    Require(notes.Local().Single().Version == AppReleaseNotes.CurrentVersion && notes.Local()[0].Body.Length > 100, "Bundled notes must work before any network request");
+    Require(notes.HasUnread, "A new version must be marked unread");
+    notes.MarkRead();
+    Require(!new AppReleaseNotes(notesClient, notesDirectory).HasUnread, "Read state must survive reopening");
+    var recent = await notes.RefreshAsync(default);
+    Require(recent.Count == 3 && recent[0].Version == "900.0.1", "Only stable valid releases should be returned, newest first");
+    Require(recent.Count(r => r.Version == AppReleaseNotes.CurrentVersion) == 1, "Current release must appear exactly once");
+    Require(recent.Single(r => r.Version == "0.0.1").Body == "**Older** notes", "Markdown must survive retrieval");
+    using var offlineClient = new HttpClient(new ReleaseNotesHandler { Offline = true });
+    var offline = new AppReleaseNotes(offlineClient, notesDirectory);
+    try { await offline.RefreshAsync(default); throw new Exception("Offline failure was not reported"); }
+    catch (HttpRequestException) { }
+    Require(offline.Local().Count == 3, "Cached notes must survive an offline refresh");
+    File.WriteAllText(Path.Combine(notesDirectory, "release-notes.json"), "broken JSON");
+    Require(offline.Local().Single().Version == AppReleaseNotes.CurrentVersion, "Corrupt cache must fall back to bundled notes");
+    using var canceledNotes = new CancellationTokenSource(); canceledNotes.Cancel();
+    try { await notes.RefreshAsync(canceledNotes.Token); throw new Exception("Notes refresh ignored cancellation"); }
+    catch (OperationCanceledException) { }
+    Console.WriteLine("PASS: release notes offline fallback, stable releases, ordering, Markdown, cache recovery, read state and cancellation.");
+}
+finally { if (Directory.Exists(notesDirectory)) Directory.Delete(notesDirectory, true); }
 
 static void Require(bool condition, string message)
 {
@@ -128,5 +158,26 @@ sealed class FakeFeed : IAppUpdateFeed
         if (DownloadFailure) throw new IOException("Simulated package verification failure.");
         progress(100);
         return Task.CompletedTask;
+    }
+}
+
+sealed class ReleaseNotesHandler : HttpMessageHandler
+{
+    internal bool Offline;
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        if (Offline) throw new HttpRequestException("Offline");
+        if (request.Headers.UserAgent.Count == 0) throw new Exception("GitHub User-Agent missing");
+        string json = """
+        [
+          {"tag_name":"v900.0.1","name":"New release","body":"## Changes","draft":false,"prerelease":false,"published_at":"2026-11-20T00:00:00Z"},
+          {"tag_name":"v901.0.0","name":"Draft","body":"hidden","draft":true,"prerelease":false,"published_at":null},
+          {"tag_name":"v902.0.0","name":"Preview","body":"hidden","draft":false,"prerelease":true,"published_at":null},
+          {"tag_name":"other-tag","name":"Invalid","body":"hidden","draft":false,"prerelease":false,"published_at":null},
+          {"tag_name":"v0.0.1","name":"Older","body":"**Older** notes","draft":false,"prerelease":false,"published_at":null}
+        ]
+        """;
+        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") });
     }
 }

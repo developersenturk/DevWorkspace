@@ -14,6 +14,7 @@ internal static class Program
     {
         var assembly = Assembly.Load("DevWorkspace");
         Type Type(string name) => assembly.GetType("DevWorkspace." + name, true)!;
+        System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(Type("App").TypeHandle);
         object? Call(string type, string name, params object?[] args) => Type(type).GetMethod(name,
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!.Invoke(null, args);
         if (args is ["--release-preview", var previewLanguage, var previewTheme])
@@ -221,6 +222,23 @@ internal static class Program
             foreach (string field in new[] { "ProjectFile", "Repository", "AppId", "VersionNumber", "Notes", "TestProjects" })
                 Check(releaseWindow.FindName(field) is TextBox, "Release field missing: " + field);
             releaseWindow.Close();
+            foreach (var theme in new[] { DevExpress.Xpf.Core.LightweightTheme.Win11Light, DevExpress.Xpf.Core.LightweightTheme.Win11Dark })
+            {
+                Call("App", "ApplyTheme", theme);
+                app.Resources.MergedDictionaries.Add((ResourceDictionary)Call("App", "CreatePalette", theme)!);
+                app.Resources.MergedDictionaries.Add((ResourceDictionary)Call("AppUpdateText", "CreateResources")!);
+                using var notesClient = new System.Net.Http.HttpClient();
+                var notesService = Activator.CreateInstance(Type("AppReleaseNotes"), notesClient, Path.Combine(contextRoot, "notes"));
+                var notesWindow = (Window)Activator.CreateInstance(Type("WhatsNewWindow"), BindingFlags.Instance | BindingFlags.NonPublic,
+                    null, [notesService], CultureInfo.InvariantCulture)!;
+                Check(notesWindow.Title == (language == "en" ? "What's new" : "Yenilikler"), "News title must match language in both themes");
+                var reader = (FlowDocumentScrollViewer)notesWindow.FindName("NotesReader");
+                string noteText = new System.Windows.Documents.TextRange(reader.Document.ContentStart, reader.Document.ContentEnd).Text;
+                Check(noteText.Contains(language == "en" ? "Release notes inside the app" : "Uygulama içinden sürüm notları"), "Bundled Markdown must render in the selected language");
+                foreach (string resource in new[] { "Ink", "Muted", "PanelSoft", "Divider" })
+                    Check(notesWindow.FindResource(resource) is System.Windows.Media.Brush, "News theme brush missing: " + resource);
+                notesWindow.Close();
+            }
             const string report = """{"projects":[{"path":"test.csproj","frameworks":[{"framework":"net10.0","topLevelPackages":[{"id":"Example","resolvedVersion":"1.0.0","vulnerabilities":[{"severity":"High","advisoryurl":"https://example.test/advisory"}]}]}]}]}""";
             var result = Call("ProjectIntegrations", "ParseNuGetReport", report, "")!;
             var findings = ((System.Collections.IEnumerable)result.GetType().GetProperty("Findings")!.GetValue(result)!).Cast<object>().ToArray();

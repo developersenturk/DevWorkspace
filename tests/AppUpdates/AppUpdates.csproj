@@ -9,6 +9,9 @@
     <PackageReference Include="Velopack" Version="1.2.161" />
     <Compile Include="../../src/Updates/VelopackUpdateFeed.cs" Link="VelopackUpdateFeed.cs" />
     <Compile Include="../../src/Updates/AppUpdateService.cs" Link="AppUpdateService.cs" />
+    <Compile Include="../../src/Updates/AppReleaseNotes.cs" Link="AppReleaseNotes.cs" />
+    <EmbeddedResource Include="../../src/Updates/ReleaseNotes.tr.md" LogicalName="DevWorkspace.Updates.ReleaseNotes.tr.md" WithCulture="false" />
+    <EmbeddedResource Include="../../src/Updates/ReleaseNotes.en.md" LogicalName="DevWorkspace.Updates.ReleaseNotes.en.md" WithCulture="false" />
     <Compile Include="../../src/Updates/UpdateInstanceLease.cs" Link="UpdateInstanceLease.cs" />
   </ItemGroup>
 </Project>

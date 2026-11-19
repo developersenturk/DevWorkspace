@@ -1,0 +1,46 @@
+<dx:ThemedWindow x:Class="DevWorkspace.WhatsNewWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+    Title="{DynamicResource UpdateWhatsNew}" Width="820" Height="620" MinWidth="620" MinHeight="420"
+    WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="../Assets/DevWorkspace.ico"
+    Background="{DynamicResource WorkspaceBackground}" Foreground="{DynamicResource Ink}"
+    FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Loaded="WindowLoaded" Closed="WindowClosed">
+    <dx:ThemedWindow.Resources><ResourceDictionary Source="../Resources/Workbench.xaml"/></dx:ThemedWindow.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,20">
+            <TextBlock Text="{DynamicResource UpdateWhatsNew}" FontSize="26" FontWeight="SemiBold"/>
+            <TextBlock x:Name="InstalledVersion" Margin="0,6,0,0" Foreground="{DynamicResource Muted}"/>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="170"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <DockPanel Margin="0,0,20,0">
+                <TextBlock DockPanel.Dock="Top" Text="{DynamicResource UpdateNotesHistory}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <ListBox x:Name="ReleaseList" SelectionChanged="ReleaseChanged" DisplayMemberPath="Label"
+                         AutomationProperties.Name="{DynamicResource UpdateNotesHistory}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+            </DockPanel>
+            <Border Grid.Column="1" Background="{DynamicResource PanelSoft}" BorderBrush="{DynamicResource Divider}"
+                    BorderThickness="1" CornerRadius="6" Padding="16">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock x:Name="ReleaseTitle" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock x:Name="ReleaseDetail" Foreground="{DynamicResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <FlowDocumentScrollViewer x:Name="NotesReader" IsToolBarVisible="False" VerticalScrollBarVisibility="Auto"
+                                              AutomationProperties.Name="{DynamicResource UpdateWhatsNew}"/>
+                </DockPanel>
+            </Border>
+        </Grid>
+        <StackPanel Grid.Row="2" Margin="0,16,0,0">
+            <TextBlock x:Name="LoadStatus" TextWrapping="Wrap" Foreground="{DynamicResource Muted}" Margin="0,0,0,12"
+                       AutomationProperties.LiveSetting="Polite"/>
+            <DockPanel LastChildFill="False">
+                <dx:SimpleButton x:Name="RefreshButton" Content="{DynamicResource UpdateNotesRefresh}" Click="RefreshClick" Padding="12,6"/>
+                <dx:SimpleButton Content="{DynamicResource UpdateNotesGitHub}" Click="OpenReleaseClick" Padding="12,6" Margin="8,0,0,0"/>
+                <dx:SimpleButton DockPanel.Dock="Right" Content="{DynamicResource UpdateNotesClose}" IsCancel="True" Click="CloseClick" Padding="16,6"/>
+            </DockPanel>
+        </StackPanel>
+    </Grid>
+</dx:ThemedWindow>
