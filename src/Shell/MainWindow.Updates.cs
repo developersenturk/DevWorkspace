@@ -80,6 +80,11 @@ public partial class MainWindow
             AppUpdatePhase.Failed => TimeSpan.FromSeconds(8),
             _ => TimeSpan.FromSeconds(4)
         };
+        // DevExpress requires explicit host dimensions. Measure the full content,
+        // including action buttons, rather than using the stock toast's fixed height.
+        var hostStyle = new Style(typeof(System.Windows.Controls.ContentControl), (Style)FindResource("AppUpdateToastHost"));
+        hostStyle.Setters.Add(new Setter(HeightProperty, AppUpdateToast.MeasureHeight(message, _appUpdateToast.HasAction, _appUpdateToast.Downloading)));
+        AppUpdateNotifications.CustomNotificationStyle = hostStyle;
         var notification = AppUpdateNotifications.CreateCustomNotification(_appUpdateToast);
         _appUpdateNotification = notification;
         _ = ObserveAppUpdateToastAsync(notification);

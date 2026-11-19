@@ -17,6 +17,23 @@
                 <ResourceDictionary Source="../Resources/DashboardStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <DataTemplate x:Key="AppUpdateToastTemplate"><local:AppUpdateToast/></DataTemplate>
+            <Style x:Key="AppUpdateToastHost" TargetType="ContentControl">
+                <Setter Property="Width" Value="380"/>
+                <Setter Property="Height" Value="160"/>
+                <Setter Property="MinHeight" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContentControl">
+                            <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <local:ProjectGroupMembershipConverter x:Key="ProjectGroupMembership"/>
             <DataTemplate x:Key="DashboardLink">
                 <dx:SimpleButton Click="DashboardLinkClick" Style="{StaticResource DashboardRowButton}">
@@ -147,6 +164,7 @@
     <dxmvvm:Interaction.Behaviors>
         <dxmvvm:NotificationService x:Name="AppUpdateNotifications"
             CustomNotificationTemplate="{StaticResource AppUpdateToastTemplate}"
+            CustomNotificationStyle="{StaticResource AppUpdateToastHost}"
             CustomNotificationPosition="BottomRight" CustomNotificationScreen="ApplicationWindow"
             CustomNotificationVisibleMaxCount="1" UseWin8NotificationsIfAvailable="False"/>
     </dxmvvm:Interaction.Behaviors>

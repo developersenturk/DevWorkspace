@@ -8,6 +8,20 @@ namespace DevWorkspace;
 
 public partial class AppUpdateToast : UserControl
 {
+    internal static double MeasureHeight(string message, bool hasAction, bool downloading)
+    {
+        // Measure text directly: bindings on a detached preview do not resolve until
+        // a dispatcher pass and would incorrectly reserve space for hidden actions.
+        var text = new TextBlock
+        {
+            Text = message, FontFamily = new System.Windows.Media.FontFamily("Segoe UI Variable Text, Segoe UI"),
+            FontSize = 13, TextWrapping = TextWrapping.Wrap, LineHeight = 20
+        };
+        text.Measure(new Size(346, double.PositiveInfinity));
+        // Border + padding + 28px heading and its 10px gap; optional progress/actions.
+        return Math.Ceiling(68 + text.DesiredSize.Height + (hasAction ? 44 : 0) + (downloading ? 16 : 0));
+    }
+
     public AppUpdateToast()
     {
         InitializeComponent();
