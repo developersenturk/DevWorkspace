@@ -6,6 +6,10 @@ A Windows desktop workbench for developers juggling repositories, frameworks, an
 
 [Türkçe](docs/README.tr.md) · [Report a bug](https://github.com/developersenturk/DevWorkspace/issues) · [Suggest a feature](https://github.com/developersenturk/DevWorkspace/issues)
 
+**[Download for Windows x64](https://github.com/developersenturk/DevWorkspace/releases/latest/download/DevWorkspace-win-x64-Setup.exe)** · [Portable ZIP](https://github.com/developersenturk/DevWorkspace/releases/latest/download/DevWorkspace-win-x64-Portable.zip)
+
+Install once to receive updates in the background. Ready updates apply on the next launch, or when you choose **Restart now**.
+
 ![Windows](https://img.shields.io/badge/platform-Windows-0078D4)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![WPF](https://img.shields.io/badge/UI-WPF-512BD4)

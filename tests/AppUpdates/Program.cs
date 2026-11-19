@@ -2,6 +2,20 @@ using DevWorkspace;
 using Velopack;
 using Velopack.Locators;
 
+if (args is ["--github", var livePackages])
+{
+    Directory.CreateDirectory(livePackages);
+    var locator = new TestVelopackLocator("DevWorkspace", "0.9.0", livePackages);
+    var manager = new UpdateManager(new Velopack.Sources.GithubSource(VelopackUpdateFeed.RepositoryUrl, null, false),
+        new UpdateOptions { ExplicitChannel = VelopackUpdateFeed.Channel }, locator);
+    var actual = new AppUpdateService(new VelopackUpdateFeed(manager));
+    await actual.CheckAndDownloadAsync(default);
+    if (actual.Status.Phase != AppUpdatePhase.Ready || manager.UpdatePendingRestart is null)
+        throw new Exception("Published GitHub update was not verified: " + actual.Status);
+    Console.WriteLine("PASS: public GitHub Releases download verified; staged version: " + actual.Status.Version);
+    return;
+}
+
 if (args is ["--package", var feedPath, var packagesPath])
 {
     // Real SDK check, download, and checksum verification against a local feed.

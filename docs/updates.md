@@ -44,6 +44,14 @@ dotnet run --project tests/AppUpdates/AppUpdates.csproj -c Debug
 dotnet run --project tests/ProjectDetection/ProjectDetection.csproj -c Debug
 ```
 
+For an explicit integration check against public GitHub Releases (downloads the latest package without installing it):
+
+```powershell
+dotnet run --project tests/AppUpdates/AppUpdates.csproj -c Debug -- --github .artifacts/github-update-download
+```
+
+The initial 1.0.0 package was verified through this public feed. Local packaged 1.0.0 → 1.0.1 checks also covered application on next launch and the real **Restart now** button.
+
 Before distributing a new installer, smoke-test a packaged copy and upgrade between two versions. Check both deferred application on launch and **Restart now**, including a second open instance and a network failure. Locally simulated update checks do not establish that a GitHub Release is published.
 
 The startup bootstrap explicitly disables Velopack's automatic apply and guards application of a pending update itself. Do not call `WaitExitThenApplyUpdates` from a background check: its exit timeout can terminate a running app. The call is restricted to the explicit restart path after normal window closure.

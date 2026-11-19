@@ -6,6 +6,10 @@ Farklı klasörlere ve teknolojilere dağılmış projelerini tek Windows uygula
 
 [English](../README.md) · [Hata bildir / özellik öner](https://github.com/developersenturk/DevWorkspace/issues)
 
+**[Windows x64 için indir](https://github.com/developersenturk/DevWorkspace/releases/latest/download/DevWorkspace-win-x64-Setup.exe)** · [Taşınabilir ZIP](https://github.com/developersenturk/DevWorkspace/releases/latest/download/DevWorkspace-win-x64-Portable.zip)
+
+Bir kez kurduktan sonra güncellemeler arka planda indirilir. Hazır güncelleme sonraki açılışta veya **Şimdi yeniden başlat** düğmesiyle uygulanır.
+
 ![Örnek projeler ve Git durumları](media/workspace.jpg)
 
 ## 30 saniyede DevWorkspace
