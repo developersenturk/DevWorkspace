@@ -38,4 +38,5 @@ jobs:
       - name: Verify release center
         run: dotnet run --project tests/ReleaseCenter/ReleaseCenter.csproj --configuration Debug
       - name: Verify localization and release project context
+        timeout-minutes: 2
         run: dotnet run --project tests/Localization/Localization.csproj --configuration Debug

@@ -33,6 +33,7 @@ internal static class Program
             return;
         }
         int checks = 0;
+        Console.WriteLine("Localization: catalogs and source resources");
         void Check(bool condition, string message) { if (!condition) throw new Exception(message); checks++; }
         Dictionary<string, string> Catalog(string language)
         {
@@ -91,6 +92,7 @@ internal static class Program
         }
         finally { Directory.Delete(temporary, true); }
 
+        Console.WriteLine("Localization: release solution resolution");
         string releaseFixture = Path.Combine(Path.GetTempPath(), "DevWorkspace-release-context-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(releaseFixture);
         try
@@ -109,6 +111,7 @@ internal static class Program
         }
         finally { Directory.Delete(releaseFixture, true); }
 
+        Console.WriteLine("Localization: WPF application and context switching");
         var app = new Application();
         // Exercise real asynchronous project switching with isolated local repositories and storage; no network or visible window.
         string contextRoot = Path.Combine(Path.GetTempPath(), "DevWorkspace-release-switch-" + Guid.NewGuid().ToString("N"));
@@ -126,7 +129,8 @@ internal static class Program
                         UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
                     foreach (string argument in command) info.ArgumentList.Add(argument);
                     using var git = System.Diagnostics.Process.Start(info)!;
-                    git.WaitForExit(); Check(git.ExitCode == 0, "Could not prepare local context fixture");
+                    if (!git.WaitForExit(10000)) { git.Kill(entireProcessTree: true); throw new Exception("Git fixture command timed out"); }
+                    Check(git.ExitCode == 0, "Could not prepare local context fixture");
                 }
                 return projectFile;
             }
@@ -134,18 +138,25 @@ internal static class Program
             app.Resources.MergedDictionaries.Add((ResourceDictionary)Call("Loc", "CreateResources")!);
             var isolatedStore = Activator.CreateInstance(Type("ReleaseStore"), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 null, new object?[] { Path.Combine(contextRoot, "state") }, CultureInfo.InvariantCulture)!;
+            Console.WriteLine("Localization: construct contextual WPF window");
             var contextWindow = (Window)Activator.CreateInstance(Type("ReleaseCenterWindow"), BindingFlags.Instance | BindingFlags.NonPublic,
                 null, new object?[] { null, isolatedStore }, CultureInfo.InvariantCulture)!;
             void SwitchTo(string projectFile)
             {
+                Console.WriteLine("Localization: switch to " + Path.GetFileName(projectFile));
                 var previousContext = SynchronizationContext.Current;
                 SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(contextWindow.Dispatcher));
                 try
                 {
                 var task = (Task)Type("ReleaseCenterWindow").GetMethod("SelectProjectAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(contextWindow, [projectFile])!;
                 var frame = new System.Windows.Threading.DispatcherFrame();
+                var timeout = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
+                timeout.Tick += (_, _) => frame.Continue = false;
+                timeout.Start();
                 _ = task.ContinueWith(_ => contextWindow.Dispatcher.BeginInvoke(new Action(() => frame.Continue = false)));
-                if (!task.IsCompleted) System.Windows.Threading.Dispatcher.PushFrame(frame);
+                try { if (!task.IsCompleted) System.Windows.Threading.Dispatcher.PushFrame(frame); }
+                finally { timeout.Stop(); }
+                Check(task.IsCompleted, "Project context switch timed out: " + Path.GetFileName(projectFile));
                 task.GetAwaiter().GetResult();
                 }
                 finally { SynchronizationContext.SetSynchronizationContext(previousContext); }
@@ -171,6 +182,7 @@ internal static class Program
         finally { Directory.Delete(contextRoot, true); }
         foreach (string language in new[] { "en", "tr" })
         {
+            Console.WriteLine("Localization: themed windows in " + language);
             Call("Loc", "Initialize", language);
             app.Resources.MergedDictionaries.Clear();
             app.Resources.MergedDictionaries.Add((ResourceDictionary)Call("Loc", "CreateResources")!);
