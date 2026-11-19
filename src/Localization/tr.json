@@ -1278,5 +1278,9 @@
   "LEB57FA081E17": "Takip et · Bu hafta",
   "LF94C085EAC97": "Elle kontrol",
   "LF99FE0ADD7E4": "Uzak dallar",
-  "LFC0CC52A1D2B": "Son push · {0:dd.MM.yyyy}"
+  "LFC0CC52A1D2B": "Son push · {0:dd.MM.yyyy}",
+  "TelemetryTitle": "Kurulum istatistikleri",
+  "TelemetrySetting": "Kurulum ve etkinlik istatistiklerini paylaş",
+  "TelemetryDescription": "Rastgele kurulum kimliği, uygulama sürümü ve ilk/son görülme zamanı kaydedilir. Bilgisayar adı, kullanıcı adı ve proje bilgileri gönderilmez. Bildirimler Cloudflare üzerinde çalışan DevWorkspace servisine gider; sağlayıcı ileride değişebilir. IP adresi bağlantı sırasında hizmet sağlayıcı tarafından görülebilir, istatistik veritabanına kaydedilmez. Tercihinizi buradan değiştirebilirsiniz.",
+  "TelemetryConsent": "DevWorkspace kullanımını ölçmek için kurulum istatistiklerini paylaşmak ister misiniz?\n\nRastgele kurulum kimliği ve uygulama sürümü, uygulamayı kullandığınız gün en fazla bir kez gönderilir. Servis ilk ve son görülme zamanını kaydeder. Bilgisayar adı, kullanıcı adı ve proje bilgileri gönderilmez.\n\nBildirimler Cloudflare üzerinde çalışan DevWorkspace servisine gider; sağlayıcı ileride değişebilir. IP adresiniz bağlantı sırasında hizmet sağlayıcı tarafından görülebilir, istatistik veritabanına kaydedilmez.\n\nBu isteğe bağlıdır. Ayarlar ekranından değiştirebilirsiniz."
 }
