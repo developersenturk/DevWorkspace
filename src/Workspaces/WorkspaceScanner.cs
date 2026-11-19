@@ -50,6 +50,7 @@ internal static class WorkspaceScanner
     {
         var projects = new List<ProjectEntry>();
         var components = new List<ProjectComponent>();
+        var testOnlyFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var repoFallbacks = new Dictionary<string, ProjectEntry>(StringComparer.OrdinalIgnoreCase);
         var exclusions = new HashSet<string>(workspace.Config.ScanExclusions, StringComparer.OrdinalIgnoreCase) { ".git" };
         exclusions.UnionWith(ProjectDetection.GeneratedFolders);
@@ -72,6 +73,7 @@ internal static class WorkspaceScanner
                 scopes.Add(new(Loc.Text("L68F3F11503E7"), link, link));
             else if (File.Exists(link) && IsProjectFile(link))
             {
+                if (TestProjectDetection.IsTestProject(link)) continue;
                 string parent = Path.GetDirectoryName(link)!;
                 string kind = KindForFile(link);
                 string name = ProjectName(link, Path.GetFileName(parent), kind);
@@ -86,6 +88,7 @@ internal static class WorkspaceScanner
         string? rootKind = null;
         foreach (ScanScope scope in scopes)
         {
+            if (TestProjectDetection.IsTestFolder(scope.Folder)) continue;
             if (scope.Link is null && !scope.RootOnly &&
                 ProjectDetection.IsProjectMetadataFolder(new(scope.Folder), rootKind))
                 continue;
@@ -100,6 +103,7 @@ internal static class WorkspaceScanner
             while (pending.TryPop(out FolderScan? current))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                if (TestProjectDetection.IsTestFolder(current.Path)) continue;
                 string folderName = Path.GetFileName(current.Path);
                 if (folderName.Length == 0)
                     folderName = workspace.Config.Name;
@@ -133,6 +137,12 @@ internal static class WorkspaceScanner
                 var files = entries.OfType<FileInfo>()
                     .Where(file => !file.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     .ToArray();
+                var projectFiles = files.Where(file => IsProjectFile(file.FullName)).ToArray();
+                if (projectFiles.Length > 0 && projectFiles.All(file => TestProjectDetection.IsTestProject(file.FullName)))
+                {
+                    testOnlyFolders.Add(current.Path);
+                }
+                files = files.Where(file => !IsProjectFile(file.FullName) || !TestProjectDetection.IsTestProject(file.FullName)).ToArray();
                 var directories = entries.OfType<DirectoryInfo>().ToArray();
 
                 FileInfo? entry = files
@@ -182,7 +192,7 @@ internal static class WorkspaceScanner
                     else
                         components.Add(new(ownerFolder!, current.Path, name, kind, role!));
                 }
-                else if (isRepoRoot)
+                else if (isRepoRoot && !testOnlyFolders.Contains(current.Path))
                     repoFallbacks.TryAdd(current.Path, new(folderName, scope.Category, relativePath, current.Path, null, Loc.Text("LB9C67E2C19F8"), repo, new(GitState.None), LinkPath: scope.Link));
 
                 if (kind == "Tauri" && entry is not null && directories.FirstOrDefault(child =>
@@ -209,7 +219,7 @@ internal static class WorkspaceScanner
                             inMobileHost || entry is not null && ProjectDetection.IsMobileHost(child.FullName, kind), ownerFolder));
                 }
             }
-            if (scope.Link is not null && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
+            if (scope.Link is not null && !testOnlyFolders.Contains(scope.Folder) && initialCount == projects.Count && !repoFallbacks.Values.Any(project => project.LinkPath == scope.Link))
                 projects.Add(new(Path.GetFileName(scope.Folder), scope.Category, LinkIdentity(scope.Folder), scope.Folder, null,
                     Loc.Text("L153E900124CF"), FindGitRoot(scope.Folder), new(GitState.None), LinkPath: scope.Link));
         }
@@ -217,6 +227,8 @@ internal static class WorkspaceScanner
         var representedRepos = projects.Select(project => project.Repository).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
         projects.AddRange(repoFallbacks.Where(item => !representedRepos.Contains(item.Key)).Select(item => item.Value));
         projects = projects.OrderBy(project => project.LinkPath is not null)
+            .Where(project => !TestProjectDetection.IsTestFolder(project.Folder) &&
+                (project.EntryFile is null || !TestProjectDetection.IsTestProject(project.EntryFile)))
             .DistinctBy(project => project.EntryFile ?? project.Folder, StringComparer.OrdinalIgnoreCase).ToList();
 
         projects = projects.Select(project => project with { SavedPreference = workspace.PreferenceFor(project.RelativePath) }).ToList();

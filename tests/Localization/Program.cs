@@ -108,6 +108,17 @@ internal static class Program
             File.WriteAllText(firstSolution, "<Solution><Project Path=\"First.csproj\" /><Project Path=\"Second.csproj\" /></Solution>");
             Check(Candidates(firstSolution).ToHashSet().SetEquals(new[] { firstApp, secondApp }), "Multiple application choices must be preserved instead of selecting an arbitrary project");
             Check(Candidates(Path.Combine(releaseFixture, "Missing.slnx")).Length == 0, "Missing project must not fall back to another application");
+            string testFolder = Path.Combine(releaseFixture, "tests", "ConsoleChecks"); Directory.CreateDirectory(testFolder);
+            string consoleTest = Path.Combine(testFolder, "ConsoleChecks.csproj");
+            File.WriteAllText(consoleTest, "<Project><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>");
+            string sdkTest = Path.Combine(releaseFixture, "Checks.csproj");
+            File.WriteAllText(sdkTest, "<Project><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup><ItemGroup><PackageReference Include=\"Microsoft.NET.Test.Sdk\" /></ItemGroup></Project>");
+            string namedTest = Path.Combine(releaseFixture, "Product.Tests.csproj");
+            File.WriteAllText(namedTest, "<Project><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>");
+            Check(Candidates(consoleTest).Length == 0 && Candidates(sdkTest).Length == 0 && Candidates(namedTest).Length == 0,
+                "Test projects must not be directly publishable");
+            File.WriteAllText(firstSolution, "<Solution><Project Path=\"First.csproj\" /><Project Path=\"tests/ConsoleChecks/ConsoleChecks.csproj\" /><Project Path=\"Checks.csproj\" /><Project Path=\"Product.Tests.csproj\" /></Solution>");
+            Check(Candidates(firstSolution).SequenceEqual(new[] { firstApp }), "Release menu must exclude test targets from a mixed solution");
         }
         finally { Directory.Delete(releaseFixture, true); }
 

@@ -2,6 +2,8 @@
 
 Proje listesinde ilgili projeye **sağ tık → Yayın Merkezi** ile açılır. Arayüz Türkçe ve İngilizcedir. Pencere seçilen projeye bağlıdır; üst menülerde bağımsız giriş bulunmaz.
 
+Test projeleri kaynakta kalır; proje listesinde ve yayın hedeflerinde gösterilmez. Test klasörleri, test proje adları, `IsTestProject` işareti ve yaygın .NET test SDK/çatı bağımlılıkları tanınır. Bu gizleme, paket hazırlanırken çalışan doğrulama projelerini devre dışı bırakmaz.
+
 ## İlk kullanım
 
 1. Yayınlayacağınız proje satırına sağ tıklayıp **Yayın Merkezi** seçin. `.csproj` doğrudan kullanılır. `.sln`/`.slnx` içindeki tek uygulama otomatik belirlenir; birden fazla uygulama varsa aynı menünün altında çözümün uygulamaları listelenir. Aynı depodaki ilgisiz bir proje seçilmez. Depo GitHub üzerinde olmalıdır.

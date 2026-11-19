@@ -39,10 +39,23 @@ try
     Write("Projects/Exec/Deep/Client/package.json", """{"scripts":{"build":"vite build"}}""");
     Write("Projects/NoOwner/Assets/package.json", """{"private":true,"dependencies":{"jquery":"3.7.1"}}""");
     Write("Projects/Controls/Preferred/package.json", """{"private":true,"dependencies":{"jquery":"3.7.1"}}""");
+    Write("Projects/Product/Production.csproj", "<Project />");
+    Write("Projects/Product/tests/ConsoleRunner/Runner.csproj", "<Project><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>");
+    Write("Projects/Product/__tests__/Client/package.json", "{\"scripts\":{\"start\":\"vite\"}}");
+    Write("Projects/Named/Product.Tests.csproj", "<Project />");
+    Write("Projects/Flagged/Checks.csproj", "<Project><PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup></Project>");
+    Write("Projects/Sdk/Checks.csproj", "<Project><ItemGroup><PackageReference Include=\"Microsoft.NET.Test.Sdk\" /></ItemGroup></Project>");
+    Write("Projects/Framework/Checks.csproj", "<Project><ItemGroup><PackageReference Include=\"xunit\" /></ItemGroup></Project>");
+    Write("Projects/Latest/Latest.csproj", "<Project />");
+    Write("Projects/Contests/Contests.csproj", "<Project />");
+    Write("LinkedChecks/Checks.csproj", "<Project><PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup></Project>");
+    Write("OnlyChecks/Checks.csproj", "<Project><PropertyGroup><IsTestProject>true</IsTestProject></PropertyGroup></Project>");
+    Write("OnlyChecks/Applications.slnx", "<Solution><Project Path=\"Checks.csproj\" /></Solution>");
 
     var configJson = JsonSerializer.Serialize(new
     {
         SchemaVersion = 1, Name = "Tests", Folders = new[] { "Projects" }, ScanExclusions = Array.Empty<string>(),
+        LinkedProjects = new[] { Path.Combine(root, "LinkedChecks"), Path.Combine(root, "Projects/Flagged/Checks.csproj"), Path.Combine(root, "OnlyChecks/Applications.slnx") },
         ProjectDescriptions = new Dictionary<string, string> { ["Projects/Controls/Preferred".Replace('/', Path.DirectorySeparatorChar)] = "Explicitly listed" }
     });
     var config = JsonSerializer.Deserialize(configJson, Type("WorkspaceConfig"))!;
@@ -71,7 +84,28 @@ try
     foreach (string path in new[] { "Apps/Standalone", "Apps/Source", "Public", "Workspace", "Broken", "IndependentRepo", "Preferred" })
         Expect("Projects/Controls/" + path, false);
     Expect("Projects/NoOwner/Assets", false);
+    foreach (string path in new[] { "Projects/Product", "Projects/Latest", "Projects/Contests" }) Expect(path, false);
+    foreach (string path in new[] { "Projects/Product/tests/ConsoleRunner", "Projects/Product/__tests__/Client", "Projects/Named", "Projects/Flagged", "Projects/Sdk", "Projects/Framework", "LinkedChecks", "OnlyChecks" })
+    {
+        string folder = Path.GetFullPath(Path.Combine(root, path));
+        if (projects.Any(p => (string)Property(p, "Folder")! == folder) || components.Any(p => (string)Property(p, "Folder")! == folder))
+            throw new Exception("Test project should be hidden: " + path);
+        passed++;
+    }
+    if (!File.Exists(Path.Combine(root, "Projects/Product/tests/ConsoleRunner/Runner.csproj"))) throw new Exception("Test sources must remain intact");
     Console.WriteLine($"{passed} scanner checks passed.");
+
+    if (args is ["--hide-tests", var actualRoot])
+    {
+        var realWorkspace = Type("Workspace").GetMethod("Open")!.Invoke(null, [actualRoot])!;
+        var realScan = (Task)Type("WorkspaceScanner").GetMethod("ScanAsync")!.Invoke(null, [realWorkspace, CancellationToken.None])!;
+        await realScan;
+        var realResult = Property(realScan, "Result")!;
+        var actualProjects = ((IEnumerable)Property(realResult, "Projects")!).Cast<object>().ToArray();
+        bool IsTest(object item) => Property(item, "EntryFile") is string file && (bool)Type("TestProjectDetection").GetMethod("IsTestProject", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [file])!;
+        if (actualProjects.Any(IsTest) || actualProjects.Length == 0) throw new Exception("Actual workspace visibility verification failed");
+        Console.WriteLine($"PASS actual workspace: {actualProjects.Length} production projects; test projects hidden.");
+    }
 
     if (args.Length == 3)
     {

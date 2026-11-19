@@ -57,7 +57,7 @@ internal static class ProjectTools
 
     internal static IReadOnlyList<string> FindReleaseProjects(string? entry)
     {
-        if (entry is null || !File.Exists(entry)) return [];
+        if (entry is null || !File.Exists(entry) || TestProjectDetection.IsTestProject(entry)) return [];
         if (Path.GetExtension(entry).Equals(".csproj", StringComparison.OrdinalIgnoreCase)) return [Path.GetFullPath(entry)];
         if (Path.GetExtension(entry).ToLowerInvariant() is not (".sln" or ".slnx")) return [];
         return FindRunnableProjects(entry).Where(path => Path.GetExtension(path).Equals(".csproj", StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -75,6 +75,7 @@ internal static class ProjectTools
             }
 
             return candidates.Where(path => Path.GetExtension(path).ToLowerInvariant() is ".csproj" or ".vbproj" or ".fsproj")
+                .Where(path => !TestProjectDetection.IsTestProject(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase).Where(IsRunnable).ToArray();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException)
