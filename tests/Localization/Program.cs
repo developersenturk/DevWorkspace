@@ -111,6 +111,12 @@ internal static class Program
         }
         finally { Directory.Delete(releaseFixture, true); }
 
+        if (args is ["--headless"])
+        {
+            Console.WriteLine($"{checks} headless localization and solution-context checks passed across {tr.Count} messages.");
+            Console.WriteLine("Desktop window/dispatcher checks run in the default mode on a desktop host; --headless does not instantiate windows or pump WPF messages.");
+            return;
+        }
         Console.WriteLine("Localization: WPF application and context switching");
         var app = new Application();
         // Exercise real asynchronous project switching with isolated local repositories and storage; no network or visible window.

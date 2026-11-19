@@ -22,7 +22,11 @@ try {
     if ($LASTEXITCODE) { throw 'Project detection verification failed.' }
     dotnet run --project tests/GitHubLinks/GitHubLinks.csproj -c Debug
     if ($LASTEXITCODE) { throw 'GitHub link verification failed.' }
-    dotnet run --project tests/Localization/Localization.csproj -c Debug
+    if ($env:GITHUB_ACTIONS -eq 'true') {
+        dotnet run --project tests/Localization/Localization.csproj -c Debug -- --headless
+    } else {
+        dotnet run --project tests/Localization/Localization.csproj -c Debug
+    }
     if ($LASTEXITCODE) { throw 'Localization verification failed.' }
     dotnet run --project tests/VisualStudioSelection/VisualStudioSelection.csproj -c Debug
     if ($LASTEXITCODE) { throw 'Visual Studio selection verification failed.' }

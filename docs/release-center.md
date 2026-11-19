@@ -37,3 +37,7 @@ Proje listesinde ilgili projeye **sağ tık → Yayın Merkezi** ile açılır. 
 Yerel veriler: `%LOCALAPPDATA%\DevWorkspace\ReleaseCenter\`. `profiles` proje profillerini, `packages` kaynak kopyalarını/çıktıları/manifestleri, `logs` işlem kayıtlarını, `download-checks` izole güncelleme indirmelerini ve `tools` sabitlenmiş paketleme aracını içerir. Bunlar uygulama EXE'sinin yanında dosya veya betik bulunmasını gerektirmez.
 
 API/araç kaynakları: [GitHub CLI release create](https://cli.github.com/manual/gh_release_create), [GitHub release assets](https://docs.github.com/en/rest/releases/assets), [Velopack packaging](https://docs.velopack.io/packaging/overview).
+
+## Geliştirici doğrulaması
+
+`tests/Localization` varsayılan çalıştırmada gerçek WPF pencerelerini ve mesaj döngüsü üzerinden iki yerel depo arasında proje değişimini de denetler. GitHub çalıştırıcısında bu mesaj döngüsünün beklediği gözlendiği için CI açıkça `--headless` kullanır: katalog, kaynak ve çözüm hedefi kontrollerini çalıştırır; pencere oluşturmaz. Masaüstü testleri atlanmış bir geçiş gibi gösterilmez. Yerel paketleme tam doğrulamayı kullanır. GitHub Actions paketleme betiği de aynı arayüzsüz modu kullanır.
