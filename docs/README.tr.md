@@ -1,0 +1,54 @@
+# DevWorkspace
+
+**Çok proje. Tek çalışma alanı.**
+
+Farklı klasörlere ve teknolojilere dağılmış projelerini tek Windows uygulamasında bul, Git durumlarını gör, paket güvenliği bulgularını incele ve geliştirme araçlarını aç.
+
+[English](../README.md) · [Hata bildir / özellik öner](https://github.com/developersenturk/DevWorkspace/issues)
+
+## Neyi kolaylaştırıyor?
+
+- **Proje keşfi:** Geliştirme klasörünü tara; projeleri ve bağlı bileşenlerini birlikte gör.
+- **Git çalışma alanı:** Durum, diff, geçmiş, branch, remote ve worktree işlemlerine ulaş.
+- **Paket güvenliği:** NuGet bulgularını incele; desteklenen JavaScript ve Dart kilit dosyalarını OSV-Scanner ile tara.
+- **Günlük akış:** Proje araçlarını aç, komutları çalıştır ve çalışma profillerini kaydet.
+- **Düzen:** Favoriler, gruplar, kayıtlı filtreler ve bağlı klasörlerle projelerini organize et.
+- **Entegrasyonlar:** Gerekli araçlar kuruluysa GitHub Actions çalıştırmalarını ve Docker Compose servislerini incele.
+
+.NET, React, Next.js, Vue, Angular, Flutter/Dart, Python, Rust, Go, Java/Gradle ve CMake dahil birçok proje biçimini tanır. Bir projenin tanınması, tüm geliştirme işlemlerinin desteklendiği anlamına gelmez; kullanılabilen işlemler proje türüne ve kurulu araçlara bağlıdır.
+
+## Başlangıç
+
+Windows x64, .NET 10 SDK ve projede kullanılan DevExpress WPF paketlerine erişim gerekir. DevExpress, kendi lisans koşulları olan ticari bir bağımlılıktır.
+
+```powershell
+git clone https://github.com/developersenturk/DevWorkspace.git
+cd DevWorkspace
+dotnet restore DevWorkspace.slnx
+dotnet run --project src/DevWorkspace.csproj -c Debug
+```
+
+1. **Dosya → Çalışma alanı aç veya kur…** (`Ctrl+O`) ile geliştirme klasörünü seç.
+2. Bulunan projelerden birini seçerek detaylarına ve işlemlerine ulaş.
+3. `Ctrl+F` ile ara, `Ctrl+K` ile komut paletini aç, `F5` ile yeniden tara.
+
+Arayüz Türkçedir. Farklı platformlara yönelik projeleri tanısa da uygulamanın kendisi Windows üzerinde çalışır.
+
+Git işlemleri için Git, GitHub entegrasyonu için kimlik doğrulaması yapılmış GitHub CLI (`gh`), desteklenen JavaScript/Dart güvenlik taramaları için OSV-Scanner, Compose işlemleri için Docker ve Compose gerekir. Proje komutları ilgili SDK ve paket yöneticilerini kullanır.
+
+## Derleme ve doğrulama
+
+```powershell
+dotnet build DevWorkspace.slnx -c Debug
+dotnet run --project tests/ProjectDetection/ProjectDetection.csproj -c Debug
+```
+
+Tek dosyalı Windows x64 paketi oluşturma komutu [İngilizce README'de](../README.md#build-and-verify) bulunur.
+
+## Deneyip fikrini paylaş
+
+Tanınmayan bir proje türü mü var? Her gün kullandığın bir iş akışını kolaylaştırabilir miyiz? [Issue aç](https://github.com/developersenturk/DevWorkspace/issues); proje türünü, beklenen davranışı ve yeniden üretme adımlarını yaz. Eklerdeki özel yolları ve kimlik bilgilerini temizle.
+
+İşine yaradıysa yıldız vererek projenin keşfedilmesine destek olabilirsin.
+
+**Lisans:** Depoda henüz proje lisansı belirtilmemiştir. Üçüncü taraf bağımlılıkların kendi lisansları geçerlidir.
