@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "devworkspace-telemetry",
+  "account_id": "4ddbc333e6512edc28d49e7aea286e1e",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-19",
   "workers_dev": true,
@@ -9,7 +10,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "devworkspace-telemetry",
-    "database_id": "REPLACE_AFTER_CREATE",
+    "database_id": "1a8bcb31-cf5f-4b1a-bc2a-c5b18e277eea",
     "migrations_dir": "migrations"
   }]
 }
