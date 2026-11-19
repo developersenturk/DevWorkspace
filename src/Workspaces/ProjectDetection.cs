@@ -224,37 +224,92 @@ internal static class ProjectDetection
         (parentKind is "Flutter / Dart" or "Expo" or "React Native" or "Capacitor" ||
          parentKind?.StartsWith("Ionic", StringComparison.Ordinal) == true);
 
-    internal static bool IsEmbeddedJavaScript(string folder)
+    internal static bool IsEmbeddedJavaScript(string folder, string? ownerFolder)
     {
-        var parent = Directory.GetParent(folder);
-        if (parent is null)
+        if (ownerFolder is null)
             return false;
-        string name = Path.GetFileName(folder);
-        try
+        string relative = Path.GetRelativePath(ownerFolder, folder);
+        if (Path.IsPathRooted(relative) || relative == "." || relative == ".." ||
+            relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            return false;
+
+        bool hasDotNetOwner = false;
+        // Inspect every level up to the detected owner, including nested asset folders.
+        // Repository boundaries are already enforced by the scanner's OwnerFolder state.
+        for (var parent = Directory.GetParent(folder); parent is not null; parent = parent.Parent)
         {
-            foreach (var project in parent.EnumerateFiles("*.csproj"))
+            try
             {
-                var xml = ProjectTools.ReadXml(project.FullName);
-                foreach (var element in xml.Descendants())
+                foreach (var project in parent.EnumerateFiles().Where(file =>
+                    file.Extension.ToLowerInvariant() is ".csproj" or ".vbproj" or ".fsproj"))
                 {
-                    if (element.Name.LocalName == "SpaRoot" && IsChildPath(element.Value))
-                        return true;
-                    if (element.Name.LocalName == "Exec" &&
-                        ((string?)element.Attribute("Command"))?.TrimStart().StartsWith("npm ", StringComparison.OrdinalIgnoreCase) == true &&
-                        IsChildPath((string?)element.Attribute("WorkingDirectory")))
-                        return true;
+                    hasDotNetOwner = true;
+                    try
+                    {
+                        var xml = ProjectTools.ReadXml(project.FullName);
+                        string? spaRoot = xml.Descendants().FirstOrDefault(element => element.Name.LocalName == "SpaRoot")?.Value;
+                        foreach (var element in xml.Descendants())
+                        {
+                            if (element.Name.LocalName == "SpaRoot" && MatchesFolder(element.Value))
+                                return true;
+                            if (element.Name.LocalName == "Exec" &&
+                                Regex.IsMatch((string?)element.Attribute("Command") ?? "",
+                                    @"^\s*(?:npm|npx|pnpm|yarn|bun)(?:\.cmd)?\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
+                                MatchesFolder((string?)element.Attribute("WorkingDirectory")))
+                                return true;
+                        }
+
+                        bool MatchesFolder(string? value)
+                        {
+                            if (string.IsNullOrWhiteSpace(value))
+                                return false;
+                            string path = value.Trim().Replace("$(MSBuildProjectDirectory)", parent.FullName, StringComparison.OrdinalIgnoreCase);
+                            if (spaRoot is not null)
+                                path = path.Replace("$(SpaRoot)", spaRoot, StringComparison.OrdinalIgnoreCase);
+                            // Unknown MSBuild expressions cannot establish ownership.
+                            if (path.Contains("$(", StringComparison.Ordinal))
+                                return false;
+                            path = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+                            return Path.TrimEndingDirectorySeparator(Path.GetFullPath(path, parent.FullName))
+                                .Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder)), StringComparison.OrdinalIgnoreCase);
+                        }
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException or ArgumentException or NotSupportedException) { }
                 }
             }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            if (parent.FullName.Equals(ownerFolder, StringComparison.OrdinalIgnoreCase))
+                break;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException) { }
-        return false;
-
-        bool IsChildPath(string? value) => value?.Trim().Replace('\\', '/').TrimEnd('/') is { } path &&
-            (path.Equals(name, StringComparison.OrdinalIgnoreCase) ||
-             path.Equals("./" + name, StringComparison.OrdinalIgnoreCase) ||
-             path.Equals("$(MSBuildProjectDirectory)/" + name, StringComparison.OrdinalIgnoreCase));
+        return hasDotNetOwner && IsDependencyOnlyAssetPackage(folder);
     }
 
+    private static bool IsDependencyOnlyAssetPackage(string folder)
+    {
+        try
+        {
+            var manifest = new FileInfo(Path.Combine(folder, "package.json"));
+            if (!manifest.Exists || manifest.Length > 1_000_000)
+                return false;
+            using var json = JsonDocument.Parse(File.ReadAllText(manifest.FullName));
+            var root = json.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("private", out var privacy) ||
+                privacy.ValueKind != JsonValueKind.True)
+                return false;
+            // Public packages, executable packages, workspaces and applications remain projects.
+            if (new[] { "main", "module", "exports", "bin", "workspaces" }.Any(key => root.TryGetProperty(key, out _)) ||
+                root.TryGetProperty("scripts", out var scripts) &&
+                    (scripts.ValueKind != JsonValueKind.Object || scripts.EnumerateObject().Any()))
+                return false;
+            if (new[] { "src", "app", "pages" }.Any(name => Directory.Exists(Path.Combine(folder, name))) ||
+                new[] { "index.html", "index.js", "index.ts", "server.js", "server.ts" }
+                    .Any(name => File.Exists(Path.Combine(folder, name))))
+                return false;
+            return DependencySections.Any(section => root.TryGetProperty(section, out var dependencies) &&
+                dependencies.ValueKind == JsonValueKind.Object && dependencies.EnumerateObject().Any());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { return false; }
+    }
     private static string JavaScriptKind(string path, bool ionic, bool angular, bool nx, bool workspace)
     {
         var dependencies = new HashSet<string>(StringComparer.Ordinal);

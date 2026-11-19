@@ -166,7 +166,7 @@ internal static class WorkspaceScanner
                     string? role = coveredBySolution ? "Çözüm bileşeni" :
                         inMobileHost && kind is ProjectDetection.Android or "Gradle" or "Xcode" ? "Platform" :
                         inProjectScripts && kind == ".NET / MSBuild" ? "Yardımcı araç" :
-                        ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path)
+                        ProjectDetection.IsJavaScript(entry.FullName) && ProjectDetection.IsEmbeddedJavaScript(current.Path, ownerFolder)
                             ? "Gömülü istemci" : null;
                     bool coveredByParent = role is not null && ownerFolder is not null &&
                         !current.Path.Equals(scope.Link, StringComparison.OrdinalIgnoreCase) &&
