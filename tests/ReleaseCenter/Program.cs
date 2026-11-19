@@ -12,7 +12,6 @@ if (args is ["--build-live", var liveProject, var liveVersion, var liveNotes])
     Directory.CreateDirectory(liveStore.DirectoryPath);
     var liveService = new ReleaseService(new ReleaseProcess(), liveStore, Console.WriteLine);
     var liveProfile = (await liveService.DetectAsync(liveProject, default)) with { Version = liveVersion, Notes = File.ReadAllText(liveNotes) };
-    liveStore.SaveProfile(liveProfile);
     var livePackage = await liveService.BuildAsync(liveProfile, default);
     Console.WriteLine("MANIFEST: " + livePackage.ManifestPath);
     return;
@@ -86,7 +85,22 @@ try
     var publish = fake.Calls.Single(c => c.Tool == "dotnet" && c.Args[0] == "publish");
     Check(publish.Args.Contains("Debug") && !publish.Args.Contains("Release") &&
         publish.Args.Contains("-p:IncludeNativeLibrariesForSelfExtract=true") && publish.Args.Contains("-p:Version=1.0.6"), "Debug single-file native publish flags");
+    Check(!fake.Calls.Single(c => c.Tool.EndsWith("vpk.exe")).Args.Contains("--skipVeloAppCheck"), "Modern .NET retains Velopack startup verification");
     Check(publish.Directory != source && publish.Directory.StartsWith(store.DirectoryPath), "Compilation uses the snapshot directory");
+    foreach (string target in new[] { "net48", "net461" })
+    {
+        var frameworkFake = new FakeProcess(source) { FrameworkIdentifier = ".NETFramework" };
+        var frameworkService = new ReleaseService(frameworkFake, new ReleaseStore(Path.Combine(directory, target)), _ => { });
+        var frameworkPackage = await frameworkService.BuildAsync(profile, default);
+        var frameworkPublish = frameworkFake.Calls.Single(c => c.Tool == "dotnet" && c.Args[0] == "publish");
+        Check(frameworkPublish.Args.Contains("-p:PublishSingleFile=false") &&
+            frameworkPublish.Args.Contains("-p:EnableCompressionInSingleFile=false") &&
+            frameworkPublish.Args[Array.IndexOf(frameworkPublish.Args, "--self-contained") + 1] == "false",
+            target + " publishes with dependencies rather than unsupported single-file bundling");
+        await ReleaseStore.VerifyAsync(frameworkPackage, default);
+        Check(frameworkFake.Calls.Single(c => c.Tool.EndsWith("vpk.exe")).Args.Contains("--skipVeloAppCheck"),
+            target + " permits packaging without the update SDK");
+    }
     await ReleaseStore.VerifyAsync(package, default);
     checks++;
     Bad(() => ReleaseRules.RequiredFiles(package with { Files = package.Files[..^1] }), "Incomplete package rejected");
@@ -192,6 +206,7 @@ sealed class FakeProcess(string root) : IReleaseProcess
 {
     public string Commit = new('a', 40);
     public bool Dirty;
+    public string FrameworkIdentifier = ".NETCoreApp";
     public bool RemoteCommitExists = true;
     public string CheckStatus = "";
     public string? TagCommit;
@@ -229,7 +244,7 @@ sealed class FakeProcess(string root) : IReleaseProcess
         if (tool == "dotnet")
         {
             if (a[0] == "publish") { Directory.CreateDirectory(Get("-o")); File.WriteAllText(Path.Combine(Get("-o"), "App.exe"), "exe"); }
-            if (a[0] == "msbuild") return "App";
+            if (a[0] == "msbuild") return a.Contains("-getProperty:TargetFrameworkIdentifier") ? FrameworkIdentifier : "App";
             return "";
         }
         if (tool.EndsWith("vpk.exe"))

@@ -125,9 +125,17 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
             await Run("dotnet", executable ? ["run", "--project", testPath, "-c", "Debug"] : ["test", testPath, "-c", "Debug"], buildRoot, token);
         }
         string publish = Path.Combine(directory, "publish");
-        await Run("dotnet", ["publish", buildProject, "-c", "Debug", "-r", "win-x64", "--self-contained", "true",
-            "-p:PublishSingleFile=true", "-p:EnableCompressionInSingleFile=true", "-p:IncludeNativeLibrariesForSelfExtract=true",
-            "-p:Version=" + profile.Version, "-o", publish], buildRoot, token);
+        // Evaluate imports and conditions too (the framework may come from Directory.Build.props).
+        string framework = (await Run("dotnet", ["msbuild", buildProject, "-getProperty:TargetFrameworkIdentifier",
+            "-property:Configuration=Debug"], buildRoot, token, false)).Trim();
+        bool netFramework = framework.Equals(".NETFramework", StringComparison.OrdinalIgnoreCase);
+        var publishArgs = new List<string> { "publish", buildProject, "-c", "Debug", "-r", "win-x64",
+            "--self-contained", netFramework ? "false" : "true",
+            "-p:PublishSingleFile=" + (netFramework ? "false" : "true"),
+            "-p:EnableCompressionInSingleFile=" + (netFramework ? "false" : "true"),
+            "-p:IncludeNativeLibrariesForSelfExtract=" + (netFramework ? "false" : "true"),
+            "-p:Version=" + profile.Version, "-o", publish };
+        await Run("dotnet", publishArgs.ToArray(), buildRoot, token);
         string exeName = (await Run("dotnet", ["msbuild", buildProject, "-getProperty:AssemblyName", "-property:Configuration=Debug"], buildRoot, token, false)).Trim();
         string exe = exeName + ".exe";
         if (!File.Exists(Path.Combine(publish, exe))) throw new IOException(ReleaseText.T("MissingExe"));
@@ -138,6 +146,13 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
         var packArgs = new List<string> { "pack", "--packId", profile.AppId, "--packVersion", profile.Version, "--packDir", publish,
             "--mainExe", exe, "--packTitle", profile.AppId, "--channel", "win-x64", "--runtime", "win-x64",
             "--outputDir", Path.Combine(directory, "releases") };
+        if (netFramework)
+        {
+            // Framework applications may be distributed without the optional update SDK.
+            // vpk's managed startup probe otherwise rejects those applications outright.
+            packArgs.Add("--skipVeloAppCheck");
+            log(ReleaseText.T("FrameworkPackageHint"));
+        }
         string? icon = XDocument.Load(buildProject).Descendants("ApplicationIcon").FirstOrDefault()?.Value;
         if (icon is not null && File.Exists(Path.Combine(Path.GetDirectoryName(buildProject)!, icon)))
             packArgs.AddRange(["--icon", Path.Combine(Path.GetDirectoryName(buildProject)!, icon)]);
