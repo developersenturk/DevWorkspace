@@ -10,8 +10,6 @@
         <ComboBox x:Name="LanguagePicker" DisplayMemberPath="Label" SelectedValuePath="Code"
                   AutomationProperties.Name="{DynamicResource InterfaceLanguage}" MinHeight="30"/>
         <TextBlock Text="{DynamicResource LanguageRestartHint}" TextWrapping="Wrap" Margin="0,12,0,20"/>
-        <CheckBox x:Name="InstallationStatistics" Content="{DynamicResource TelemetrySetting}" Margin="0,0,0,8"/>
-        <TextBlock Text="{DynamicResource TelemetryDescription}" TextWrapping="Wrap" Margin="0,0,0,20"/>
         <WrapPanel HorizontalAlignment="Right">
             <Button Content="{DynamicResource CancelSettings}" IsCancel="True" MinWidth="80" Margin="0,0,8,0"/>
             <Button Content="{DynamicResource SaveAndRestart}" Click="SaveClick" IsDefault="True" MinWidth="170"/>

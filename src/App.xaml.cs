@@ -94,7 +94,6 @@ public partial class App : Application
                 main.Activate();
             splash.Close();
             main.StartUpdateChecks();
-            main.StartInstallationStatistics();
         }
         catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted) { }
         catch (Exception ex) when (!Dispatcher.HasShutdownStarted)

@@ -1,5 +1,0 @@
-{
-  "protocol": 1,
-  "enabled": true,
-  "endpoint": "https://devworkspace-telemetry.devworkspace-telemetry.workers.dev/v1/heartbeat"
-}

@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <StartupObject>DevWorkspace.Program</StartupObject>
-    <Version>1.0.1</Version>
+    <Version>1.0.4</Version>
     <IncludeNativeLibrariesForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
     <ApplicationIcon>Assets/DevWorkspace.ico</ApplicationIcon>
   </PropertyGroup>

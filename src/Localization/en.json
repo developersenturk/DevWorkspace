@@ -1278,9 +1278,5 @@
   "LEB57FA081E17": "Track · This week",
   "LF94C085EAC97": "Manual check",
   "LF99FE0ADD7E4": "Remote branches",
-  "LFC0CC52A1D2B": "Last push · {0:d}",
-  "TelemetryTitle": "Installation statistics",
-  "TelemetrySetting": "Share installation and activity statistics",
-  "TelemetryDescription": "A random installation ID, app version and first/last seen times are stored. Computer names, usernames and project data are not sent. Reports go to the DevWorkspace service currently hosted on Cloudflare; the provider may change. The hosting provider can see your IP address during the connection; it is not stored in the statistics database. You can change your preference here.",
-  "TelemetryConsent": "Would you like to share installation statistics to help measure DevWorkspace usage?\n\nA random installation ID and app version are sent at most once per day while the app is used. The service records first and last seen times. Computer names, usernames and project data are not sent.\n\nReports go to the DevWorkspace service currently hosted on Cloudflare; the provider may change. The hosting provider can see your IP address during the connection; it is not stored in the statistics database.\n\nThis is optional. You can change your preference in Settings."
+  "LFC0CC52A1D2B": "Last push · {0:d}"
 }

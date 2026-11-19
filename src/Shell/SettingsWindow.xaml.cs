@@ -13,17 +13,7 @@ public partial class SettingsWindow : ThemedWindow
         InitializeComponent();
         LanguagePicker.ItemsSource = new[] { new LanguageChoice("tr", "Türkçe"), new LanguageChoice("en", "English") };
         LanguagePicker.SelectedValue = Loc.NormalizeLanguage(language);
-        InstallationStatistics.IsChecked = InstallationTelemetry.Current.Load().Enabled == true;
     }
 
-    private void SaveClick(object sender, RoutedEventArgs e)
-    {
-        if (!InstallationTelemetry.Current.SetEnabled(InstallationStatistics.IsChecked == true))
-        {
-            MessageBox.Show(this, Loc.Text("SettingsSaveFailed"), Loc.Text("SettingsTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-        _ = Task.Run(() => InstallationTelemetry.Current.SendAsync(DateTimeOffset.UtcNow));
-        DialogResult = true;
-    }
+    private void SaveClick(object sender, RoutedEventArgs e) => DialogResult = true;
 }
