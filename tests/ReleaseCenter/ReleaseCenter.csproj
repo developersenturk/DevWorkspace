@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0-windows</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../../src/Releases/ReleaseModels.cs" Link="ReleaseModels.cs"/>
+  <Compile Include="../../src/Releases/ReleaseProcess.cs" Link="ReleaseProcess.cs"/>
+  <Compile Include="../../src/Releases/ReleaseService.cs" Link="ReleaseService.cs"/>
+  <Compile Include="../../src/Releases/ReleaseText.cs" Link="ReleaseText.cs"/>
+ </ItemGroup>
+</Project>

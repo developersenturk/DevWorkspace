@@ -110,6 +110,8 @@ The executable is written to `src/bin/Debug/net10.0-windows/win-x64/publish/`. T
 
 Automatic updates use Velopack and GitHub Releases. See [installation, update behavior, and publishing](docs/updates.md).
 
+**Release Center** (Git → Release Center) prepares Debug Windows x64 packages from a captured source commit, uploads resumable drafts, verifies SHA-256 digests and publishes after GitHub Actions checks. It also shows per-release and per-asset downloads, repository stars/forks, CSV exports and a public update download probe. See the [Release Center guide](docs/release-center.md).
+
 Try it against your own development folder and [tell us what you find](https://github.com/developersenturk/DevWorkspace/issues): a project type that was missed, a workflow that takes too many steps, or an integration you would use every day. Include the project type, expected behavior, and reproduction steps; remove private paths and credentials from attachments.
 
 If DevWorkspace fits your workflow, a star helps other developers discover it.

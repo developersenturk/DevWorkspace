@@ -215,6 +215,7 @@
                     <MenuItem x:Name="BatchFetchMenu" Icon="{local:MenuGlyph &#xE896;}" Header="{DynamicResource L813B585D130E}" Click="BatchFetchClick"
                               ToolTip="{DynamicResource L86A8EF62528F}" IsEnabled="False"/>
                     <MenuItem x:Name="GitHubRepositoriesMenu" Icon="{local:MenuGlyph &#xE753;}" Header="{DynamicResource LAEC38F63E121}" Click="GitHubRepositoriesClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE898;}" Header="{DynamicResource ReleaseTitle}" Click="ReleaseCenterClick"/>
                     <Separator/>
                     <MenuItem Icon="{local:MenuGlyph &#xE890;}" x:Name="GitNavigationMenu" Header="{DynamicResource LEEC38A6A1F6F}" IsEnabled="False">
                         <MenuItem Icon="{local:MenuGlyph &#xE8F1;}" Header="{DynamicResource LBBF8DEC3700C}" Tag="repositories" Click="NavigateFromMenu"/>
@@ -248,6 +249,7 @@
                 </MenuItem>
                 <MenuItem Header="{DynamicResource SettingsTitle}" Tag="&#xE713;" Style="{StaticResource MainMenuItem}" Click="SettingsClick"/>
                 <MenuItem x:Name="WindowsMenu" Header="{DynamicResource WindowsMenuTitle}" Tag="&#xE78B;" Style="{StaticResource MainMenuItem}" SubmenuOpened="WindowsMenuOpened">
+                    <MenuItem Icon="{local:MenuGlyph &#xE898;}" Header="{DynamicResource ReleaseTitle}" Click="ReleaseCenterClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE9D9;}" Header="{DynamicResource L4328F6541368}" Click="OperationCenterClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE7BA;}" Header="Takip edilen bulgular…" Click="TrackedFindingsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE8B7;}" Header="{DynamicResource L768201CBF793}" Click="ShowExplorerClick"/>

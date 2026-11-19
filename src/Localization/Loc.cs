@@ -38,6 +38,7 @@ internal static class Loc
     {
         var resources = new ResourceDictionary();
         resources.MergedDictionaries.Add(AppUpdateText.CreateResources());
+        foreach (string key in ReleaseText.Messages.Keys) resources["Release" + key] = ReleaseText.T(key);
         foreach (string key in Turkish.Keys) resources[key] = Text(key);
         return resources;
     }

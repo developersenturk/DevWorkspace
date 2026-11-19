@@ -10,12 +10,28 @@ using System.Windows.Controls;
 internal static class Program
 {
     [STAThread]
-    public static void Main()
+    public static void Main(string[] args)
     {
         var assembly = Assembly.Load("DevWorkspace");
         Type Type(string name) => assembly.GetType("DevWorkspace." + name, true)!;
         object? Call(string type, string name, params object?[] args) => Type(type).GetMethod(name,
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!.Invoke(null, args);
+        if (args is ["--release-preview", var previewLanguage, var previewTheme])
+        {
+            var previewApp = (Application)Activator.CreateInstance(Type("App"))!;
+            Call("Loc", "Initialize", previewLanguage);
+            var messages = previewApp.Resources.MergedDictionaries.First(d => d.Contains("SettingsTitle"));
+            previewApp.Resources.MergedDictionaries[previewApp.Resources.MergedDictionaries.IndexOf(messages)] = (ResourceDictionary)Call("Loc", "CreateResources")!;
+            Call("App", "ApplyTheme", previewTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
+            string project = Path.GetFullPath("src/DevWorkspace.csproj");
+            var preview = (Window)Activator.CreateInstance(Type("ReleaseCenterWindow"), BindingFlags.Instance | BindingFlags.NonPublic,
+                null, new object?[] { File.Exists(project) ? project : null }, CultureInfo.InvariantCulture)!;
+            preview.Width = 960; preview.Height = 720;
+            previewApp.MainWindow = preview;
+            previewApp.ShutdownMode = ShutdownMode.OnMainWindowClose;
+            previewApp.Run(preview);
+            return;
+        }
         int checks = 0;
         void Check(bool condition, string message) { if (!condition) throw new Exception(message); checks++; }
         Dictionary<string, string> Catalog(string language)
@@ -87,6 +103,15 @@ internal static class Program
             Check((string?)picker.SelectedValue == language && picker.Items.Count == 2, "Language picker did not restore selection");
             Check(window.Title == (language == "en" ? "Settings" : "Ayarlar"), "Settings window title not translated");
             window.Close();
+            var releaseWindow = (Window)Activator.CreateInstance(Type("ReleaseCenterWindow"), BindingFlags.Instance | BindingFlags.NonPublic,
+                null, new object?[] { null }, CultureInfo.InvariantCulture)!;
+            Check(releaseWindow.Title == (language == "en" ? "Release Center" : "Yayın Merkezi"), "Release center title not translated");
+            Check(releaseWindow.FindResource("SmallLabel") is Style, "Release center shared styles missing");
+            Check(((Button)releaseWindow.FindName("UploadButton")).IsEnabled == false &&
+                ((Button)releaseWindow.FindName("PublishButton")).IsEnabled == false, "No-package actions must be disabled");
+            foreach (string field in new[] { "ProjectFile", "Repository", "AppId", "VersionNumber", "Notes", "TestProjects" })
+                Check(releaseWindow.FindName(field) is TextBox, "Release field missing: " + field);
+            releaseWindow.Close();
             const string report = """{"projects":[{"path":"test.csproj","frameworks":[{"framework":"net10.0","topLevelPackages":[{"id":"Example","resolvedVersion":"1.0.0","vulnerabilities":[{"severity":"High","advisoryurl":"https://example.test/advisory"}]}]}]}]}""";
             var result = Call("ProjectIntegrations", "ParseNuGetReport", report, "")!;
             var findings = ((System.Collections.IEnumerable)result.GetType().GetProperty("Findings")!.GetValue(result)!).Cast<object>().ToArray();

@@ -16,6 +16,8 @@ try {
     if ($LASTEXITCODE) { throw 'Debug build failed.' }
     dotnet run --project tests/AppUpdates/AppUpdates.csproj -c Debug
     if ($LASTEXITCODE) { throw 'Update verification failed.' }
+    dotnet run --project tests/ReleaseCenter/ReleaseCenter.csproj -c Debug
+    if ($LASTEXITCODE) { throw 'Release center verification failed.' }
     dotnet run --project tests/ProjectDetection/ProjectDetection.csproj -c Debug
     if ($LASTEXITCODE) { throw 'Project detection verification failed.' }
     dotnet run --project tests/GitHubLinks/GitHubLinks.csproj -c Debug

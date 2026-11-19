@@ -66,6 +66,12 @@ public partial class MainWindow : Window
 
     private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        if (_releaseCenter?.IsWorking == true)
+        {
+            e.Cancel = true;
+            StatusText.Text = ReleaseText.T("StopFirst");
+            return;
+        }
         if (PackageUpdateRunning)
         {
             e.Cancel = true;
