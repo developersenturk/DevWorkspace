@@ -1,0 +1,51 @@
+name: Package application update
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version (for example 1.0.1)'
+        required: true
+        type: string
+      publish:
+        description: 'Publish the GitHub Release so installed apps can download it'
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: devworkspace-update-release
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build, verify and package using Debug
+        env:
+          UPDATE_VERSION: ${{ inputs.version }}
+        run: ./scripts/New-UpdatePackage.ps1 -Version $env:UPDATE_VERSION -OutputDirectory .artifacts/update
+      - name: Upload GitHub Release
+        env:
+          VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATE_VERSION: ${{ inputs.version }}
+          UPDATE_PUBLISH: ${{ inputs.publish }}
+          UPDATE_REPOSITORY: ${{ github.repository }}
+          UPDATE_COMMIT: ${{ github.sha }}
+        run: |
+          $uploadArgs = @('upload', 'github', '--repoUrl', "https://github.com/$env:UPDATE_REPOSITORY", '--outputDir', '.artifacts/update/releases', '--channel', 'win-x64', '--tag', "v$env:UPDATE_VERSION", '--releaseName', "DevWorkspace $env:UPDATE_VERSION", '--targetCommitish', $env:UPDATE_COMMIT)
+          if ($env:UPDATE_PUBLISH -eq 'true') { $uploadArgs += '--publish' }
+          dotnet tool run vpk @uploadArgs
+          if ($LASTEXITCODE) { throw 'GitHub Release upload failed.' }

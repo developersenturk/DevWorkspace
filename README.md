@@ -104,6 +104,8 @@ The executable is written to `src/bin/Debug/net10.0-windows/win-x64/publish/`. T
 
 ## Help shape DevWorkspace
 
+Automatic updates use Velopack and GitHub Releases. See [installation, update behavior, and publishing](docs/updates.md).
+
 Try it against your own development folder and [tell us what you find](https://github.com/developersenturk/DevWorkspace/issues): a project type that was missed, a workflow that takes too many steps, or an integration you would use every day. Include the project type, expected behavior, and reproduction steps; remove private paths and credentials from attachments.
 
 If DevWorkspace fits your workflow, a star helps other developers discover it.

@@ -28,8 +28,10 @@ jobs:
           dotnet-version: |
             10.0.x
       - name: Restore dependencies
-        run: dotnet restore "$env:DEVWORKSPACE_TARGET" -p:Configuration=Release
+        run: dotnet restore "$env:DEVWORKSPACE_TARGET" -p:Configuration=Debug
       - name: Build
-        run: dotnet build "$env:DEVWORKSPACE_TARGET" --configuration Release --no-restore
-      - name: Test
-        run: dotnet test "$env:DEVWORKSPACE_TARGET" --configuration Release --no-build
+        run: dotnet build "$env:DEVWORKSPACE_TARGET" --configuration Debug --no-restore
+      - name: Verify project detection
+        run: dotnet run --project tests/ProjectDetection/ProjectDetection.csproj --configuration Debug
+      - name: Verify application updates
+        run: dotnet run --project tests/AppUpdates/AppUpdates.csproj --configuration Debug

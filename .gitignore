@@ -7,3 +7,6 @@
 
 # Packaged DevWorkspace application
 /DevWorkspace.exe
+
+# Local packaging output and tools
+/.artifacts/

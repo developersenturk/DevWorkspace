@@ -145,6 +145,7 @@
     <Grid Background="{DynamicResource WorkspaceBackground}">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="29"/></Grid.RowDefinitions>
 
+        <StackPanel>
         <DockPanel Margin="8,3">
             <DockPanel DockPanel.Dock="Right" Width="350" Height="28" VerticalAlignment="Center" Margin="8,0,0,0">
                 <TextBlock DockPanel.Dock="Left" Text="&#xE721;" Style="{StaticResource Icon}" Foreground="{DynamicResource Muted}" Margin="0,0,8,0"/>
@@ -233,6 +234,7 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="ResetLayoutMenu" Header="Pencere düzenini sıfırla" Click="ResetDockLayoutClick"/>
                 </MenuItem>
                 <MenuItem Header="_Yardım" Tag="&#xE897;" Style="{StaticResource MainMenuItem}">
+                    <MenuItem Icon="{local:MenuGlyph &#xE895;}" Header="{DynamicResource UpdateCheck}" Click="CheckAppUpdatesClick"/>
                     <MenuItem Header="Geliştirme araçları…" Click="DevelopmentToolsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE765;}" Header="Klavye kısayolları" Click="KeyboardShortcutsClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE713;}" Header="Ayar dosyalarının konumu" Click="SettingsLocationsClick"/>
@@ -241,6 +243,27 @@
                 </MenuItem>
             </Menu>
         </DockPanel>
+        <Border x:Name="AppUpdateBanner" Visibility="Collapsed" Margin="10,4,10,6" Padding="12,8"
+                Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="4">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <Button x:Name="AppUpdateRestartButton" Content="{DynamicResource UpdateRestart}" Click="RestartForAppUpdateClick"
+                            Padding="12,5" Visibility="Collapsed"/>
+                    <Button x:Name="AppUpdateRetryButton" Content="{DynamicResource UpdateRetry}" Click="CheckAppUpdatesClick"
+                            Padding="12,5" Visibility="Collapsed"/>
+                    <Button x:Name="AppUpdateInstallButton" Content="{DynamicResource UpdateReleases}" Click="AppUpdateReleasesClick"
+                            Padding="12,5" Visibility="Collapsed"/>
+                    <Button Content="×" FontSize="17" Margin="8,0,0,0" Padding="8,0" Click="DismissAppUpdateClick"
+                            AutomationProperties.Name="{DynamicResource UpdateDismiss}"/>
+                </StackPanel>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="AppUpdateMessage" TextWrapping="Wrap"/>
+                    <ProgressBar x:Name="AppUpdateProgress" Height="3" Margin="0,7,0,0" Visibility="Collapsed"
+                                 Maximum="100" AutomationProperties.Name="{DynamicResource UpdateProgress}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        </StackPanel>
 
         <dxdo:DockLayoutManager x:Name="WorkbenchDock" Grid.Row="1" Margin="10,0,10,0"
                                 DockingStyle="VS2010" ClosedPanelsBarVisibility="Never"

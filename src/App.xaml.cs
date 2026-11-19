@@ -91,6 +91,7 @@ public partial class App : Application
             if (splash.IsActive)
                 main.Activate();
             splash.Close();
+            main.StartUpdateChecks();
         }
         catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted) { }
         catch (Exception ex) when (!Dispatcher.HasShutdownStarted)
