@@ -10,6 +10,33 @@ A Windows desktop workbench for developers juggling repositories, frameworks, an
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![WPF](https://img.shields.io/badge/UI-WPF-512BD4)
 
+![DevWorkspace showing eight sample repositories and their Git status](docs/media/workspace.jpg)
+
+## See it in 30 seconds
+
+[![Watch the 30-second DevWorkspace demo](docs/media/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/devworkspace-demo.mp4)
+
+[Watch or download the MP4](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/devworkspace-demo.mp4) · Project list → search → changed repositories → side-by-side Git diff.
+
+Recorded in the real Windows application using local sample repositories. The interface is currently in Turkish. The demo is silent, with English captions.
+
+<details>
+<summary>More screenshots: workspace overview, search, and Git diff</summary>
+
+**Workspace overview** — project counts and work that needs attention.
+
+![Workspace overview with repository counts and pending work](docs/media/dashboard.jpg)
+
+**Project search** — find related projects across folders.
+
+![Searching for Atlas filters the workspace to three projects](docs/media/search.jpg)
+
+**Git diff** — inspect changes alongside the Git workbench.
+
+![Side-by-side Git diff for a sample TypeScript file](docs/media/git-diff.jpg)
+
+</details>
+
 ## Your development folder, with context
 
 Which repository has uncommitted work? Where is that React client inside your .NET solution? Which package findings need attention before you pick up a project again?

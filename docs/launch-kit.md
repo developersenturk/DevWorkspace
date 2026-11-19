@@ -44,17 +44,12 @@ https://github.com/developersenturk/DevWorkspace
 
 ## 30 saniyelik demo akışı
 
-Gerçek uygulama kaydı kullan. Kayıt için özel bilgi içermeyen örnek projeler seç.
+Hazır kayıt: [30 saniyelik MP4](media/devworkspace-demo.mp4) · [Animasyonlu önizleme](media/demo.gif).
 
-1. **0–5 sn:** Birkaç farklı proje içeren geliştirme klasörünü göster. Başlık: “Çok proje. Tek çalışma alanı.”
-2. **5–12 sn:** Klasörü aç, bulunan proje türlerini göster ve bir proje ara.
-3. **12–20 sn:** Değişiklik olan bir örnek repoyu seç; Git durumu ve diff görünümüne geç.
-4. **20–26 sn:** Daha önce tamamlanmış bir paket taramasının sonuçlarını göster. Kullanılan tarama aracını belirt.
-5. **26–30 sn:** GitHub adresi ve “Dene, geri bildirim ver” çağrısıyla bitir.
+Kayıt gerçek uygulamada, özel bilgi içermeyen sekiz yerel örnek repoyla alındı. Proje listesi, arama, değişiklikli depolar ve yan yana Git diff gösterilir. Sessiz videodaki İngilizce açıklamalar uluslararası paylaşımlara uygundur.
 
 ## Tanıtımı büyütmeden önce
 
-- README'ye özel bilgi içermeyen gerçek uygulama ekran görüntüsü ve kısa demo ekle.
 - Projenin dağıtım lisansını seç; bağımlılıkların dağıtım koşullarını doğrula.
 - İndirilebilir paket yayımlanacaksa temiz bir Windows ortamında açılışını doğrula ve kurulum gereksinimlerini yaz.
 - Paylaşım yaptığın topluluğun kurallarını kontrol et; geri bildirimleri GitHub issue'larında takip et.

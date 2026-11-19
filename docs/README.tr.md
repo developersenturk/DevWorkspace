@@ -6,6 +6,33 @@ Farklı klasörlere ve teknolojilere dağılmış projelerini tek Windows uygula
 
 [English](../README.md) · [Hata bildir / özellik öner](https://github.com/developersenturk/DevWorkspace/issues)
 
+![Örnek projeler ve Git durumları](media/workspace.jpg)
+
+## 30 saniyede DevWorkspace
+
+[![30 saniyelik uygulama demosunu izle](media/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/devworkspace-demo.mp4)
+
+[MP4 videoyu izle veya indir](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/devworkspace-demo.mp4) · Proje listesi → arama → değişiklikli depolar → yan yana Git diff.
+
+Kayıt, gerçek Windows uygulamasında yerel örnek repolarla alındı. Demo sessizdir ve İngilizce açıklamalar içerir.
+
+<details>
+<summary>Diğer ekran görüntüleri</summary>
+
+**Genel bakış**
+
+![Çalışma alanının özeti ve öncelikli işler](media/dashboard.jpg)
+
+**Proje arama**
+
+![Atlas projelerini arama](media/search.jpg)
+
+**Git diff**
+
+![Örnek TypeScript dosyasının yan yana karşılaştırması](media/git-diff.jpg)
+
+</details>
+
 ## Neyi kolaylaştırıyor?
 
 - **Proje keşfi:** Geliştirme klasörünü tara; projeleri ve bağlı bileşenlerini birlikte gör.
