@@ -10,6 +10,7 @@ internal sealed record ReleaseProfile(string ProjectFile = "", string Repository
     string Version = "", string Notes = "", string TestProjects = "", bool RequireChecks = true);
 
 internal sealed record ReleaseFile(string Name, long Size, string Sha256);
+internal sealed record ReleaseDraftReference(long Id, string Repository, string Tag, string Commit);
 internal sealed record ReleasePackage(string Directory, string Root, string ProjectFile, string Repository,
     string AppId, string Version, string Commit, DateTimeOffset Created, ReleaseFile[] Files)
 {

@@ -11,7 +11,8 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
     private Task<string> Run(string tool, string[] args, string root, CancellationToken token, bool output = true) =>
         process.RunAsync(tool, args, root, output ? log : null, token);
     private Task<string> Gh(string[] args, CancellationToken token) => Run("gh", args, store.DirectoryPath, token, false);
-    private Task<string> Api(string endpoint, CancellationToken token) => Gh(["api", "--hostname", "github.com", endpoint], token);
+    private Task<string> Api(string endpoint, CancellationToken token) => Gh(["api", "--hostname", "github.com", "-H", "Cache-Control: no-cache",
+        endpoint + (endpoint.Contains('?') ? "&" : "?") + "devworkspace_read=" + Guid.NewGuid().ToString("N")], token);
 
     internal async Task<string> RootAsync(string project, CancellationToken token)
     {
@@ -179,6 +180,23 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
         using var doc = JsonDocument.Parse(await Api($"repos/{repo}/releases/{id}", token));
         return ParseRelease(doc.RootElement);
     }
+    private static string DraftPath(ReleasePackage package) => Path.Combine(package.Directory, "github-draft.json");
+    private static void RememberDraft(ReleasePackage package, RemoteRelease release) =>
+        ReleaseStore.Save(DraftPath(package), new ReleaseDraftReference(release.Id, package.Repository, package.Tag, package.Commit));
+
+    private async Task<RemoteRelease?> FindPackageReleaseAsync(ReleasePackage package, CancellationToken token)
+    {
+        if (File.Exists(DraftPath(package)))
+        {
+            var reference = JsonSerializer.Deserialize<ReleaseDraftReference>(File.ReadAllText(DraftPath(package)), ReleaseStore.Json);
+            if (reference is null || reference.Repository != package.Repository || reference.Tag != package.Tag || reference.Commit != package.Commit)
+                throw new IOException(ReleaseText.T("DraftMismatch"));
+            return await ReadReleaseAsync(package.Repository, reference.Id, token);
+        }
+        var release = (await ReleasesAsync(package.Repository, token)).SingleOrDefault(r => r.Tag == package.Tag);
+        if (release is not null) RememberDraft(package, release);
+        return release;
+    }
     private async Task VerifyCommitAsync(ReleasePackage package, CancellationToken token)
     {
         string sha = (await Gh(["api", $"repos/{package.Repository}/commits/{package.Commit}", "--jq", ".sha"], token)).Trim();
@@ -204,14 +222,19 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
         await ReleaseStore.VerifyAsync(package, token);
         await VerifyCommitAsync(package, token);
         await VerifyTagAsync(package, token);
-        var release = (await ReleasesAsync(package.Repository, token)).SingleOrDefault(r => r.Tag == package.Tag);
+        var release = await FindPackageReleaseAsync(package, token);
         string notesPath = Path.Combine(package.Directory, "release-notes.md");
         await File.WriteAllTextAsync(notesPath, notes, token);
         if (release is null)
         {
-            await Gh(["release", "create", package.Tag, "--repo", package.Repository, "--target", package.Commit,
-                "--title", package.AppId + " " + package.Version, "--notes-file", notesPath, "--draft"], token);
-            release = (await ReleasesAsync(package.Repository, token)).Single(r => r.Tag == package.Tag);
+            string requestPath = Path.Combine(package.Directory, "create-draft.json");
+            ReleaseStore.Save(requestPath, new { tag_name = package.Tag, target_commitish = package.Commit,
+                name = package.AppId + " " + package.Version, body = notes, draft = true, prerelease = false });
+            using var created = JsonDocument.Parse(await Gh(["api", "--hostname", "github.com", "--method", "POST",
+                $"repos/{package.Repository}/releases", "--input", requestPath], token));
+            // GitHub's release list can lag behind creation. Continue from the returned identity and persist it for retries.
+            release = ParseRelease(created.RootElement);
+            RememberDraft(package, release);
         }
         ReleaseRules.SameDraft(package, release);
         await Gh(["release", "edit", package.Tag, "--repo", package.Repository, "--notes-file", notesPath], token);
@@ -249,7 +272,7 @@ internal sealed class ReleaseService(IReleaseProcess process, ReleaseStore store
     internal async Task<RemoteRelease> VerifyRemoteAsync(ReleasePackage package, CancellationToken token)
     {
         await ReleaseStore.VerifyAsync(package, token);
-        var release = (await ReleasesAsync(package.Repository, token)).SingleOrDefault(r => r.Tag == package.Tag)
+        var release = await FindPackageReleaseAsync(package, token)
             ?? throw new IOException(ReleaseText.T("NoDraft"));
         ReleaseRules.SameDraft(package, release);
         if (release.Assets.Length != package.Files.Length) throw new IOException(ReleaseText.T("IncompletePackage"));

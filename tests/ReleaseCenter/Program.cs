@@ -92,12 +92,15 @@ try
     Check(fake.Release is null, "Tampering created no remote draft");
     File.WriteAllText(assetPath, content);
 
+    fake.OmitOwnReleaseFromList = true;
     fake.FailUploadOnce = package.Files[1].Name;
     await Reject(() => service.UploadDraftAsync(package, profile.Notes, default), "Simulated interrupted upload");
     Check(fake.Release is { Draft: true, Assets.Length: 1 }, "Interrupted upload preserves a recoverable draft");
+    Check(File.Exists(Path.Combine(package.Directory, "github-draft.json")), "Created draft identity is persisted for retries");
     int firstUploads = fake.Uploads[package.Files[0].Name];
     await service.UploadDraftAsync(package, profile.Notes, default);
     Check(fake.Uploads[package.Files[0].Name] == firstUploads && fake.Release?.Assets.Length == 5, "Resume skips previously verified files");
+    Check(fake.OmitOwnReleaseFromList && fake.Release?.Assets.Length == 5, "Upload and resume succeed while GitHub's release list omits the new draft");
     Check(File.ReadAllText(Path.Combine(package.Directory, "release-notes.md")) == profile.Notes, "Release notes retain exact literal text");
     Check(fake.Calls.All(c => !c.Args.Contains("--clobber") && !c.Args.Contains("--force")), "Upload never overwrites assets or force pushes");
     var remote = fake.Release!;
@@ -186,6 +189,7 @@ sealed class FakeProcess(string root) : IReleaseProcess
     public bool RemoteCommitExists = true;
     public string CheckStatus = "";
     public string? TagCommit;
+    public bool OmitOwnReleaseFromList;
     public string? FailUploadOnce;
     public RemoteRelease? Release;
     public RemoteRelease? ExtraRelease;
@@ -234,6 +238,14 @@ sealed class FakeProcess(string root) : IReleaseProcess
             if (a[0] == "api")
             {
                 string endpoint = a.FirstOrDefault(v => v.StartsWith("repos/")) ?? "";
+                if (a.Contains("POST") && endpoint.EndsWith("/releases"))
+                {
+                    using var input = JsonDocument.Parse(File.ReadAllText(Get("--input")));
+                    string tag = input.RootElement.GetProperty("tag_name").GetString()!;
+                    string target = input.RootElement.GetProperty("target_commitish").GetString()!;
+                    Release = new(1, tag, "App 1.0.6", target, true, false, "https://github.com/owner/repo/releases/tag/" + tag, null, []);
+                    return Json(Release);
+                }
                 if (endpoint.Contains("/git/ref/tags/"))
                     return TagCommit is null ? throw new IOException("HTTP 404") : JsonSerializer.Serialize(new { @object = new { type = "commit", sha = TagCommit } });
                 if (a.Contains("DELETE"))
@@ -244,8 +256,8 @@ sealed class FakeProcess(string root) : IReleaseProcess
                 }
                 if (endpoint.Contains("/commits/")) return RemoteCommitExists ? Commit : throw new IOException("not pushed");
                 if (endpoint.Contains("/actions/runs")) return CheckStatus;
-                if (endpoint.Contains("releases?")) return string.Join('\n', new[] { Release, ExtraRelease }.OfType<RemoteRelease>().Select(Json));
-                if (endpoint.EndsWith("releases/1")) return Json(Release!);
+                if (endpoint.Contains("releases?")) return string.Join('\n', new[] { OmitOwnReleaseFromList ? null : Release, ExtraRelease }.OfType<RemoteRelease>().Select(Json));
+                if (endpoint.Split('?')[0].EndsWith("releases/1")) return Json(Release!);
             }
             if (a[0] == "release")
             {
