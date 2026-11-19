@@ -7,6 +7,7 @@ namespace DevWorkspace;
 public partial class MainWindow
 {
     private OperationCenterWindow? _operationsWindow;
+    private bool _startingProfile;
     internal CancellationToken WorkbenchCancellation => _closing.Token;
 
     private void OperationCenterClick(object sender, RoutedEventArgs e) => ShowOperationCenter();
@@ -34,7 +35,7 @@ public partial class MainWindow
         {
             _session.RememberProfiles(workspace.Root, profiles);
             _session.Save();
-        }) { Owner = this };
+        }, workspace.Root) { Owner = this };
         if (window.ShowDialog() != true || window.SelectedProfile is not { } profile)
             return;
 
@@ -59,6 +60,11 @@ public partial class MainWindow
 
     private async void StartLaunchProfile(LaunchProfile profile)
     {
+        if (_startingProfile || _busy || _workspace is null) return;
+        _startingProfile = true;
+        try
+        {
+        UsageMetrics.Record(_session, "profile_run");
         string? root = _workspace?.Root;
         foreach (var step in profile.Steps)
         {
@@ -69,11 +75,15 @@ public partial class MainWindow
                 OperationCenter.Start(profile.Name, step.Project).Finish(Loc.Text("LF0873175A881"), Loc.Text("LAC678EB688A2"));
                 continue;
             }
-            if (step.Command is { } command)
+            if (step.Action == "terminal")
+                OpenProjectTerminal(project);
+            else if (step.Command is { } command)
                 _ = OperationCenter.RunCommandAsync(command, project.Name, project.Folder, _closing.Token);
             else
                 await OpenProjectAsync(project);
         }
-        if (!_closing.IsCancellationRequested) ShowOperationCenter();
+        if (!_closing.IsCancellationRequested) ShowWorkspaceTools(2);
+        }
+        finally { _startingProfile = false; }
     }
 }

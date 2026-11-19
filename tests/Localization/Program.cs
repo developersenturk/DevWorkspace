@@ -89,7 +89,8 @@ internal static class Program
                 Check(formatted.Contains(language == "en" ? "1,234" : "1.234"), "Wrong number formatting");
             }
             File.WriteAllText(file, "{\"Language\":\"unsupported\"}");
-            Check((string?)sessionType.GetProperty("Language")!.GetValue(Call("SessionState", "LoadFrom", file)) == "tr", "Invalid language fallback");
+            Check((string?)sessionType.GetProperty("Language")!.GetValue(Call("SessionState", "LoadFrom", file)) == "en", "Invalid language fallback");
+            Check((string?)sessionType.GetProperty("Language")!.GetValue(Call("SessionState", "LoadFrom", Path.Combine(temporary, "new.json"))) == "en", "New installations default to English");
         }
         finally { Directory.Delete(temporary, true); }
 
@@ -234,7 +235,7 @@ internal static class Program
                 Check(notesWindow.Title == (language == "en" ? "What's new" : "Yenilikler"), "News title must match language in both themes");
                 var reader = (FlowDocumentScrollViewer)notesWindow.FindName("NotesReader");
                 string noteText = new System.Windows.Documents.TextRange(reader.Document.ContentStart, reader.Document.ContentEnd).Text;
-                Check(noteText.Contains(language == "en" ? "Release notes inside the app" : "Uygulama içinden sürüm notları"), "Bundled Markdown must render in the selected language");
+                Check(noteText.Contains(language == "en" ? "Get started faster" : "Daha hızlı başlangıç"), "Bundled Markdown must render in the selected language");
                 foreach (string resource in new[] { "Ink", "Muted", "PanelSoft", "Divider" })
                     Check(notesWindow.FindResource(resource) is System.Windows.Media.Brush, "News theme brush missing: " + resource);
                 notesWindow.Close();

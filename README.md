@@ -77,7 +77,7 @@ dotnet run --project src/DevWorkspace.csproj -c Debug
 2. Browse discovered projects and select one to inspect its details and available actions.
 3. Use `Ctrl+F` to search, `Ctrl+K` for the command palette, and `F5` to rescan.
 
-The current interface is in **Turkish**. The application runs on Windows even when it recognizes projects targeting other platforms.
+New installations start in **English**; **Turkish** is available in Settings. Existing language preferences are preserved. The application runs on Windows even when it recognizes projects targeting other platforms.
 
 ### Optional integrations
 
@@ -116,4 +116,8 @@ Try it against your own development folder and [tell us what you find](https://g
 
 If DevWorkspace fits your workflow, a star helps other developers discover it.
 
-**License:** No project license has been declared in this repository yet. Third-party dependencies retain their own licenses.
+**License:** Original code is [MIT licensed](LICENSE). [Contributions are welcome](CONTRIBUTING.md). [Third-party components](THIRD-PARTY-NOTICES.md), including commercial DevExpress dependencies, retain their own licenses.
+
+## Getting started, sharing and privacy
+
+The first-run guide discovers projects in your development folder. Open it again from Help → Getting started. Export/import portable launch profiles in the profile editor, or create an anonymous HTML workspace report from File. Help → Report a bug prepares an editable GitHub issue draft. Optional local usage counters are off by default and never uploaded automatically. See [privacy and sharing](docs/privacy.md) and [signing / WinGet preparation](docs/distribution.md).

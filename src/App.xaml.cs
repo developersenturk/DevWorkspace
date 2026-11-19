@@ -62,6 +62,9 @@ public partial class App : Application
             MainWindow = main;
             var interop = new WindowInteropHelper(main);
             main.SourceInitialized += (_, _) => SetWindowCloak(interop.Handle, true);
+            splash.SetStage(1);
+            await Dispatcher.Yield(DispatcherPriority.Render);
+            if (Dispatcher.HasShutdownStarted) return;
             main.Show();
             try
             {
@@ -87,12 +90,14 @@ public partial class App : Application
                 return;
             }
 
+            splash.SetStage(2);
             finished = true;
             main.ShowInTaskbar = true;
             SetWindowCloak(interop.Handle, false);
             if (splash.IsActive)
                 main.Activate();
             splash.Close();
+            await main.ShowWelcomeIfNeededAsync();
             main.StartUpdateChecks();
         }
         catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted) { }

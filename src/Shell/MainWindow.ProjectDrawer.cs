@@ -49,6 +49,7 @@ public partial class MainWindow
     private void ShowProjectDrawer(ProjectEntry project, bool activate = true)
     {
         _drawerProject = project;
+        RefreshResumeNote(project);
         ProjectDrawer.DataContext = project;
         DrawerEntryName.Text = Path.GetFileName(project.EntryFile) ?? "";
         DrawerEntryName.Visibility = project.EntryFile is null ? Visibility.Collapsed : Visibility.Visible;

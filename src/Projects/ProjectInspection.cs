@@ -110,6 +110,7 @@ internal static class ProjectInspection
             rows.AddRange(health.Findings.Where(finding => finding.Severity == "SDK")
                 .Select(finding => new InspectionRow(Loc.Text("L3A1CCF19A70C"), ".NET SDK", finding.Description)));
         }
+        rows.AddRange(await EnvironmentChecks.ReadAsync(project, token));
         return rows.ToArray();
     }
 

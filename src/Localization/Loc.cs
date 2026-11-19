@@ -12,8 +12,8 @@ internal static class Loc
 {
     private static readonly IReadOnlyDictionary<string, string> Turkish = Load("tr");
     private static readonly IReadOnlyDictionary<string, string> English = Load("en");
-    public static string Language { get; private set; } = "tr";
-    public static string NormalizeLanguage(string? language) => language is "en" ? "en" : "tr";
+    public static string Language { get; private set; } = "en";
+    public static string NormalizeLanguage(string? language) => language is "tr" ? "tr" : "en";
 
     public static void Initialize(string? language)
     {
@@ -37,6 +37,7 @@ internal static class Loc
     public static ResourceDictionary CreateResources()
     {
         var resources = new ResourceDictionary();
+        resources.MergedDictionaries.Add(WorkbenchText.Resources());
         resources.MergedDictionaries.Add(AppUpdateText.CreateResources());
         foreach (string key in ReleaseText.Messages.Keys) resources["Release" + key] = ReleaseText.T(key);
         foreach (string key in Turkish.Keys) resources[key] = Text(key);

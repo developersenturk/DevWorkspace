@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
@@ -20,10 +19,10 @@ internal sealed class ProjectInspectionWindow : ThemedWindow
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var cancel = new CancellationTokenSource();
         var status = new TextBlock { Text = Loc.Text("LF56748ED4DD5"), Margin = new(0, 0, 0, 8), TextWrapping = TextWrapping.Wrap };
-        var grid = new DataGrid { AutoGenerateColumns = false, IsReadOnly = true };
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("L8BD057388E28"), Binding = new Binding("Category"), Width = new(130) });
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("LC488576B91C5"), Binding = new Binding("Name"), Width = new(170) });
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("L3902002D5818"), Binding = new Binding("Detail"), Width = new(1, DataGridLengthUnitType.Star) });
+        var grid = WorkbenchGrid.Create(Title);
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("L8BD057388E28"), "Category", new(130)));
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("LC488576B91C5"), "Name", new(170)));
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("L3902002D5818"), "Detail", new(1, DevExpress.Xpf.Grid.GridColumnUnitType.Star)));
         var panel = new DockPanel { Margin = new(12) };
         DockPanel.SetDock(status, Dock.Top);
         panel.Children.Add(status);

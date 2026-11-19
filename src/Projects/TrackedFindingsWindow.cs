@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using DevExpress.Xpf.Core;
+using DevExpress.Xpf.Grid;
 
 namespace DevWorkspace;
 
@@ -18,17 +18,17 @@ internal sealed class TrackedFindingsWindow : ThemedWindow
         MinHeight = 280;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var grid = new DataGrid { AutoGenerateColumns = false, IsReadOnly = true, SelectionMode = DataGridSelectionMode.Single };
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("L293390C82A9F"), Binding = new Binding("Title"), Width = new(1, DataGridLengthUnitType.Star) });
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("L3902002D5818"), Binding = new Binding("Detail"), Width = new(2, DataGridLengthUnitType.Star) });
-        grid.Columns.Add(new DataGridTextColumn { Header = Loc.Text("L04AA9BDF5F2E"), Binding = new Binding("Due.LocalDateTime") { StringFormat = "g" }, Width = new(145) });
+        var grid = WorkbenchGrid.Create(Title);
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("L293390C82A9F"), "Title", new(1, GridColumnUnitType.Star)));
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("L3902002D5818"), "Detail", new(2, GridColumnUnitType.Star)));
+        grid.Columns.Add(WorkbenchGrid.Column(Loc.Text("L04AA9BDF5F2E"), "Due.LocalDateTime", new(145), "g"));
         var footer = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new(0, 8, 0, 0) };
         void AddButton(string label, Action<TrackedFinding> action)
         {
             var button = new Button { Content = label, Padding = new(8, 4, 8, 4), Margin = new(8, 0, 0, 0) };
             button.Click += (_, _) =>
             {
-                if (grid.SelectedItem is TrackedFinding item)
+                if (grid.CurrentItem is TrackedFinding item)
                     action(item);
             };
             footer.Children.Add(button);
@@ -36,7 +36,7 @@ internal sealed class TrackedFindingsWindow : ThemedWindow
         void ShowRows()
         {
             grid.ItemsSource = findings.OrderBy(row => row.Due).ToArray();
-            grid.SelectedIndex = 0;
+            WorkbenchGrid.SelectFirst(grid);
         }
         AddButton(Loc.Text("LF269BAD26538"), item =>
         {

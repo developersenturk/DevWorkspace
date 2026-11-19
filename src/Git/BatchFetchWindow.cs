@@ -3,8 +3,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using DevExpress.Xpf.Core;
+using DevExpress.Xpf.Editors.Settings;
+using DevExpress.Xpf.Grid;
 
 namespace DevWorkspace;
 
@@ -24,22 +25,28 @@ internal sealed class BatchFetchWindow : ThemedWindow
         _results = new(repositories.Select(project => new Result(project.Repository!, project.Branch,
             project.Git.Label, Loc.Text("L9025B4AF025A"), $"git fetch · {project.Git.RemoteNames}")));
         Title = Loc.Text("L04777757E3AE");
-        Width = 910;
+        Width = 1100;
         Height = 440;
         MinWidth = 530;
         MinHeight = 260;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var grid = new DataGrid { ItemsSource = _results, AutoGenerateColumns = false, CanUserAddRows = false, CanUserDeleteRows = false };
-        var include = new DataGridCheckBoxColumn { Header = Loc.Text("L2A957CDC6892"), Binding = new Binding("Included") };
+        var grid = WorkbenchGrid.Create(Title);
+        grid.ItemsSource = _results;
+        var view = (TableView)grid.View;
+        view.AllowEditing = true;
+        view.NavigationStyle = GridViewNavigationStyle.Cell;
+        var include = new GridColumn { Header = Loc.Text("L2A957CDC6892"), FieldName = "Included", Width = 65, MinWidth = 65, MaxWidth = 65, EditSettings = new CheckEditSettings() };
         grid.Columns.Add(include);
-        void AddColumn(string header, string property, DataGridLength width) =>
-            grid.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(property), Width = width, IsReadOnly = true });
-        AddColumn(Loc.Text("L582095FBE4C3"), "Repository", new(2, DataGridLengthUnitType.Star));
+        void AddColumn(string header, string property, GridColumnWidth width) =>
+            grid.Columns.Add(WorkbenchGrid.Column(header, property, width));
+        AddColumn(Loc.Text("L582095FBE4C3"), "Repository", new(2, GridColumnUnitType.Star));
         AddColumn(Loc.Text("L1245EEBD439F"), "Branch", new(100));
         AddColumn(Loc.Text("L55998A2BD3B4"), "Worktree", new(118));
         AddColumn(Loc.Text("L8BD057388E28"), "Status", new(110));
-        AddColumn(Loc.Text("L2B36A0FE599A"), "Detail", new(2, DataGridLengthUnitType.Star));
+        AddColumn(Loc.Text("L2B36A0FE599A"), "Detail", new(2, GridColumnUnitType.Star));
+        grid.Columns[1].MinWidth = 260;
+        grid.Columns[5].MinWidth = 220;
         var start = new Button { Content = Loc.Text("L6F312B82B8DF"), MinWidth = 145, Margin = new(0, 8, 8, 0) };
         var close = new Button { Content = Loc.Text("L7B31A9FC4816"), MinWidth = 82, Margin = new(0, 8, 0, 0) };
         close.Click += (_, _) =>
@@ -64,15 +71,14 @@ internal sealed class BatchFetchWindow : ThemedWindow
         Closed += (_, _) => _cancel.Dispose();
         start.Click += async (_, _) =>
         {
-            grid.CommitEdit(DataGridEditingUnit.Cell, true);
-            grid.CommitEdit(DataGridEditingUnit.Row, true);
+            if (!view.CommitEditing()) return;
             if (!_results.Any(row => row.Included))
             {
                 MessageBox.Show(this, Loc.Text("LD1152FC0382B"), Title);
                 return;
             }
 
-            grid.IsReadOnly = true;
+            view.AllowEditing = false;
             start.IsEnabled = false;
             close.Content = Loc.Text("L5769A8F8AECD");
             _running = true;

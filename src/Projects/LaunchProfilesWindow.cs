@@ -1,14 +1,17 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.IO;
+using System.Text.Json;
+using Microsoft.Win32;
 using DevExpress.Xpf.Core;
 
 namespace DevWorkspace;
 
 internal sealed class LaunchProfilesWindow : ThemedWindow
 {
-    private sealed record Option(ProjectCommand? Command)
+    private sealed record Option(ProjectCommand? Command, string Action = "default")
     {
-        public string Label => Command is null ? Loc.Text("L913A7BCCDD79") : $"{Command.Name} · {Command.Display}";
+        public string Label => Action == "terminal" ? WorkbenchText.T("Terminal") : Command is null ? Loc.Text("L913A7BCCDD79") : $"{Command.Name} · {Command.Display}";
     }
 
     private sealed record Step(LaunchStep Value, string Label);
@@ -21,11 +24,13 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
     private readonly TextBox _name = new() { MinWidth = 185 };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
     private LaunchProfile[] _saved;
+    private readonly string _root;
     private readonly List<Step> _draft = [];
     internal LaunchProfile? SelectedProfile { get; private set; }
 
-    internal LaunchProfilesWindow(IReadOnlyList<ProjectEntry> projects, LaunchProfile[] saved, Action<LaunchProfile[]> save)
+    internal LaunchProfilesWindow(IReadOnlyList<ProjectEntry> projects, LaunchProfile[] saved, Action<LaunchProfile[]> save, string root)
     {
+        _root = root;
         _projects = projects;
         _saved = saved;
         _save = save;
@@ -43,7 +48,10 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         {
             if (_project.SelectedItem is ProjectEntry project)
             {
-                _command.ItemsSource = new[] { new Option(null) }.Concat(ProjectTools.Presets(project).Select(command => new Option(command))).ToArray();
+                var options = new List<Option> { new(null), new(null, "terminal") };
+                options.AddRange(ProjectTools.Presets(project).Concat(project.Preference.Commands ?? []).Select(command => new Option(command)));
+                if (ProjectIntegrations.HasCompose(project)) options.Add(new(new(WorkbenchText.T("ComposeStart"), "docker.exe", "compose up")));
+                _command.ItemsSource = options;
                 _command.SelectedIndex = 0;
             }
         };
@@ -55,6 +63,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         AddDocked(body, Row(Label(Loc.Text("L7B321D627CB1")), _project, _command, Button(Loc.Text("L150474518D2F"), AddStep)), Dock.Top);
         AddDocked(body, _status, Dock.Bottom);
         AddDocked(body, Row(Button(Loc.Text("L8C9EFC5978DA"), RemoveStep), Button(Loc.Text("LC1FE2ECDFF02"), Save),
+            Button(Loc.Text("ShareExport"), Export), Button(Loc.Text("ShareImport"), Import),
             Button(Loc.Text("L6F66590C9715"), Run)), Dock.Bottom);
         body.Children.Add(_steps);
         Content = body;
@@ -95,7 +104,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         {
             string projectName = _projects.FirstOrDefault(project =>
                 project.RelativePath.Equals(step.Project, StringComparison.OrdinalIgnoreCase))?.Name ?? step.Project;
-            _draft.Add(new(step, $"{projectName} · {step.Command?.Name ?? Loc.Text("L913A7BCCDD79")}"));
+            _draft.Add(new(step, $"{projectName} · {(step.Action == "terminal" ? WorkbenchText.T("Terminal") : step.Command?.Name ?? Loc.Text("L913A7BCCDD79"))}"));
         }
         RefreshSteps();
         _status.Text = "";
@@ -105,7 +114,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
     {
         if (_project.SelectedItem is ProjectEntry project && _command.SelectedItem is Option option)
         {
-            var step = new LaunchStep(project.RelativePath, option.Command);
+            var step = new LaunchStep(project.RelativePath, option.Command, option.Action);
             if (_draft.All(row => row.Value != step))
                 _draft.Add(new(step, $"{project.Name} · {option.Label}"));
             RefreshSteps();
@@ -166,5 +175,37 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
             SelectedProfile = profile;
             DialogResult = true;
         }
+    }
+
+    private void Export()
+    {
+        if (ReadDraft() is not { } profile) return;
+        var picker = new SaveFileDialog { FileName = "DevWorkspace-profile.json", Filter = "JSON (*.json)|*.json", DefaultExt = ".json" };
+        if (picker.ShowDialog(this) != true) return;
+        try
+        {
+            WorkspaceSharing.WriteAtomic(picker.FileName, WorkspaceSharing.ExportProfile(profile, _projects, _root));
+            _status.Text = Loc.Text("GrowthSaved");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _status.Text = ex.Message; }
+    }
+
+    private void Import()
+    {
+        var picker = new OpenFileDialog { Filter = "JSON (*.json)|*.json" };
+        if (picker.ShowDialog(this) != true) return;
+        try
+        {
+            if (new FileInfo(picker.FileName).Length > 1024 * 1024) throw new InvalidDataException(Loc.Text("ShareInvalid"));
+            var profile = WorkspaceSharing.ImportProfile(File.ReadAllText(picker.FileName), _projects, _root);
+            string preview = profile.Name + "\n\n" + string.Join("\n", profile.Steps.Select(step =>
+                step.Project + " · " + (step.Command?.Display ?? Loc.Text("L913A7BCCDD79"))));
+            if (MessageBox.Show(this, Loc.Text("ShareReview") + "\n\n" + preview, Loc.Text("ShareImport"),
+                MessageBoxButton.OKCancel, MessageBoxImage.Information, MessageBoxResult.Cancel) != MessageBoxResult.OK) return;
+            _profiles.SelectedIndex = -1;
+            Load(profile);
+            _status.Text = Loc.Text("ShareImported");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { _status.Text = ex.Message; }
     }
 }

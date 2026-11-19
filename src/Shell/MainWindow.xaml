@@ -207,6 +207,7 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE71B;}" x:Name="LinkFolderMenu" Header="{DynamicResource L8B43A81027D6}" Click="LinkFolderClick" IsEnabled="False"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE74E;}" x:Name="ExportWorkspaceMenu" Header="{DynamicResource LFEFE09C46493}" Click="ExportWorkspaceClick" IsEnabled="False"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE896;}" x:Name="ImportWorkspaceMenu" Header="{DynamicResource LE9A1DCFC8134}" Click="ImportWorkspaceClick"/>
+                    <MenuItem x:Name="ReportWorkspaceMenu" Header="{DynamicResource ReportExport}" Click="ReportWorkspaceClick" IsEnabled="False"/>
                     <Separator/>
                     <MenuItem Icon="{local:MenuGlyph &#xE8BB;}" Header="{DynamicResource L246E2D6478ED}" InputGestureText="Alt+F4" Click="ExitClick"/>
                 </MenuItem>
@@ -237,6 +238,14 @@
                               ToolTip="{DynamicResource L8BF07350D320}"/>
                 </MenuItem>
                 <MenuItem x:Name="ViewMenu" Header="{DynamicResource L29F0FFA0D755}" Tag="&#xE890;" Style="{StaticResource MainMenuItem}" SubmenuOpened="ViewMenuOpened">
+                    <MenuItem Header="{DynamicResource WorkbenchTools}" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchSearch}" InputGestureText="Ctrl+Shift+F" Tag="0" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchGitSummary}" Tag="1" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchRuntime}" Tag="2" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchDependencies}" Tag="3" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchTemplates}" Tag="4" Click="WorkspaceToolsClick"/>
+                    <MenuItem Header="{DynamicResource WorkbenchEnvironment}" Tag="5" Click="WorkspaceToolsClick"/>
+                    <Separator/>
                     <MenuItem Icon="{local:MenuGlyph &#xE72C;}" x:Name="RefreshMenu" Header="{DynamicResource L9AC0650A83BE}" InputGestureText="F5" Click="RefreshClick" IsEnabled="False"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE721;}" Header="Projelerde ara" InputGestureText="Ctrl+F" Click="FocusSearchClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE890;}" Header="{DynamicResource LB6A23FF8FBA9}">
@@ -270,6 +279,10 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE777;}" x:Name="ResetLayoutMenu" Header="{DynamicResource L263E1655C155}" Click="ResetDockLayoutClick"/>
                 </MenuItem>
                 <MenuItem Header="{DynamicResource LC34984AA1A10}" Tag="&#xE897;" Style="{StaticResource MainMenuItem}">
+                    <MenuItem Header="{DynamicResource WelcomeMenu}" Click="WelcomeClick"/>
+                    <MenuItem Header="{DynamicResource BugReport}" Click="BugReportClick"/>
+                    <MenuItem Header="{DynamicResource UsageTitle}" Click="UsageClick"/>
+                    <Separator/>
                     <MenuItem Header="{DynamicResource UpdateWhatsNew}" Click="WhatsNewClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE895;}" Header="{DynamicResource UpdateCheck}" Click="CheckAppUpdatesClick"/>
                     <MenuItem x:Name="RestartAppUpdateMenu" Header="{DynamicResource UpdateRestart}" Click="RestartForAppUpdateClick" Visibility="Collapsed"/>
@@ -824,6 +837,13 @@
                                                 <Button x:Name="DrawerComposeButton" Content="Docker Compose" Style="{StaticResource DrawerAction}"
                                                         Tag="Compose" Click="DrawerToolClick"/>
                                             </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource DrawerCard}">
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource WorkbenchResumeNote}" Style="{StaticResource DrawerHeading}"/>
+                                            <TextBlock x:Name="DrawerResumeText" TextWrapping="Wrap" MaxHeight="200" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
+                                            <Button Content="{DynamicResource WorkbenchEditNote}" Click="ResumeNoteClick" Style="{StaticResource DrawerAction}"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Style="{StaticResource DrawerCard}">

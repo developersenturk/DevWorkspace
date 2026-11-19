@@ -35,6 +35,7 @@ public partial class MainWindow : Window
         InitializeWorkspaceRefresh();
         InitializeFindingReminders();
         RestoreLayout();
+        PopulateSavedLayoutsMenu();
         WatchProjectColumnWidths();
         BuildNavigation("all");
     }
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
                 return;
 
             _defaultDockLayout = CaptureDockLayout();
+            ResetLayoutMenu.IsEnabled = _defaultDockLayout is not null;
             RestoreDockLayout();
             _startupLayoutRestored = true;
             string[] args = Environment.GetCommandLineArgs();
@@ -161,6 +163,11 @@ public partial class MainWindow : Window
             e.Handled = true;
             QuickOpen();
         }
+        else if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.F)
+        {
+            e.Handled = true;
+            ShowWorkspaceTools(0);
+        }
         else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.F)
         {
             e.Handled = true;
@@ -200,6 +207,9 @@ public partial class MainWindow : Window
             StatusText.Text = Loc.Text("LD6699A79F3D8");
             return;
         }
+
+        if (_workspace is { } toolsWorkspace && !root.Equals(toolsWorkspace.Root, StringComparison.OrdinalIgnoreCase))
+            _workspaceTools?.Close();
 
         if (background)
         {
@@ -262,6 +272,7 @@ public partial class MainWindow : Window
             }
             bool filtersChanged = !(_workspace?.Config.SavedFilters ?? []).SequenceEqual(workspace.Config.SavedFilters ?? []);
             _workspace = workspace;
+            if (!background) UsageMetrics.Record(_session, "workspace_open");
             WorkspaceSession saved = _session.For(workspace.Root);
             _resumeSessions.TryAdd(workspace.Root, saved);
             var projects = result.Projects.Where(project => !project.Preference.Archived).ToArray();
@@ -337,11 +348,13 @@ public partial class MainWindow : Window
         }
         catch (JsonException)
         {
+            if (!background) UsageMetrics.Record(_session, "workspace_failed");
             if (!background)
                 StatusText.Text = Loc.Format("L96FADEFB1A6A", Workspace.ConfigFileName);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
+            if (!background) UsageMetrics.Record(_session, "workspace_failed");
             if (!background)
                 StatusText.Text = ex.Message;
         }
@@ -369,6 +382,7 @@ public partial class MainWindow : Window
         OpenWorkspaceMenu.IsEnabled = !busy;
         RefreshMenu.IsEnabled = LinkSolutionMenu.IsEnabled = LinkFolderMenu.IsEnabled = GitNavigationMenu.IsEnabled = !busy && _workspace is not null;
         ExportWorkspaceMenu.IsEnabled = !busy && _workspace is not null;
+        ReportWorkspaceMenu.IsEnabled = !busy && _workspace is not null;
         ImportWorkspaceMenu.IsEnabled = !busy;
         QuickOpenMenu.IsEnabled = !busy && _projects.Count > 0;
         GitRecoveryMenu.IsEnabled = GitRecoveryFolderMenu.IsEnabled = !busy;

@@ -4,9 +4,9 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Threading;
 using DevExpress.Xpf.Core;
+using DevExpress.Xpf.Grid;
 
 namespace DevWorkspace;
 
@@ -16,6 +16,11 @@ internal sealed class WorkspaceOperation(string name, string target, Action? ret
     private string _status = Loc.Text("LAF7DA0BB4DFC");
     internal Action? Retry { get; } = retry;
     internal Action? Cancel { get; set; }
+    internal ProjectCommand? Command { get; set; }
+    internal string? Folder { get; set; }
+    public int? ProcessId { get; internal set; }
+    internal DateTime? ProcessStartedUtc { get; set; }
+    public string Ports { get; internal set; } = "—";
     public string Name { get; } = name;
     public string Target { get; } = target;
     public DateTime Started { get; } = DateTime.Now;
@@ -65,13 +70,20 @@ internal static class OperationCenter
 
     internal static async Task RunCommandAsync(ProjectCommand command, string target, string folder, CancellationToken token)
     {
+        if (Entries.Any(e => e.IsRunning && e.Command == command && string.Equals(e.Folder, folder, StringComparison.OrdinalIgnoreCase))) return;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
         var operation = Start(command.Name, target, () => _ = RunCommandAsync(command, target, folder, token));
+        operation.Command = command;
+        operation.Folder = folder;
         operation.Cancel = cancellation.Cancel;
         operation.Append("> " + command.Display + Environment.NewLine);
         try
         {
-            int code = await ProjectTools.RunAsync(command, folder, operation.Append, cancellation.Token);
+            int code = await ProjectTools.RunAsync(command, folder, operation.Append, cancellation.Token, process =>
+            {
+                operation.ProcessId = process.Id;
+                operation.ProcessStartedUtc = process.StartTime.ToUniversalTime();
+            });
             operation.Finish(code == 0 ? Loc.Text("L7C6F3F5F37BC") : Loc.Text("LF0873175A881"), Loc.Format("L36D2AD5696B2", code));
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -96,15 +108,12 @@ internal sealed class OperationCenterWindow : ThemedWindow
         MinHeight = 330;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var grid = new DataGrid
-        {
-            ItemsSource = OperationCenter.Entries, AutoGenerateColumns = false, IsReadOnly = true,
-            SelectionMode = DataGridSelectionMode.Single
-        };
-        void Column(string header, string property, DataGridLength width, string? format = null) =>
-            grid.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(property) { StringFormat = format }, Width = width });
-        Column(Loc.Text("LB93C839F51F3"), "Name", new(2, DataGridLengthUnitType.Star));
-        Column(Loc.Text("LA3973F7CD7C0"), "Target", new(2, DataGridLengthUnitType.Star));
+        var grid = WorkbenchGrid.Create(Title);
+        grid.ItemsSource = OperationCenter.Entries;
+        void Column(string header, string property, GridColumnWidth width, string? format = null) =>
+            grid.Columns.Add(WorkbenchGrid.Column(header, property, width, format));
+        Column(Loc.Text("LB93C839F51F3"), "Name", new(2, GridColumnUnitType.Star));
+        Column(Loc.Text("LA3973F7CD7C0"), "Target", new(2, GridColumnUnitType.Star));
         Column(Loc.Text("L8BD057388E28"), "Status", new(110));
         Column(Loc.Text("L296CCC7AC21E"), "Started", new(135), "g");
         var output = new TextBox
@@ -115,28 +124,28 @@ internal sealed class OperationCenterWindow : ThemedWindow
         System.Windows.Automation.AutomationProperties.SetName(output, Loc.Text("L352303F6BCA1"));
         var retry = new Button { Content = Loc.Text("L2089D743B42A"), HorizontalAlignment = HorizontalAlignment.Right, Margin = new(0, 8, 0, 0) };
         var stop = new Button { Content = Loc.Text("L5769A8F8AECD"), Margin = new(0, 8, 8, 0) };
-        stop.Click += (_, _) => (grid.SelectedItem as WorkspaceOperation)?.Cancel?.Invoke();
+        stop.Click += (_, _) => (grid.CurrentItem as WorkspaceOperation)?.Cancel?.Invoke();
         retry.Click += (_, _) =>
         {
-            if (grid.SelectedItem is WorkspaceOperation { IsFailed: true, Retry: { } repeat })
+            if (grid.CurrentItem is WorkspaceOperation { IsFailed: true, Retry: { } repeat })
             {
                 repeat();
-                grid.SelectedIndex = 0;
+                WorkbenchGrid.SelectFirst(grid);
             }
         };
         void UpdateOutput()
         {
-            var selected = grid.SelectedItem as WorkspaceOperation;
+            var selected = grid.CurrentItem as WorkspaceOperation;
             string text = selected?.ReadOutput() ?? "";
             if (output.Text != text)
                 output.Text = text;
             retry.IsEnabled = selected is { IsFailed: true, Retry: not null };
             stop.IsEnabled = selected is { IsRunning: true, Cancel: not null };
         }
-        grid.SelectionChanged += (_, _) => UpdateOutput();
+        grid.CurrentItemChanged += (_, _) => UpdateOutput();
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
         timer.Tick += (_, _) => UpdateOutput();
-        Loaded += (_, _) => { grid.SelectedIndex = 0; timer.Start(); };
+        Loaded += (_, _) => { WorkbenchGrid.SelectFirst(grid); UpdateOutput(); timer.Start(); };
         Closed += (_, _) => timer.Stop();
 
         var panel = new Grid { Margin = new(12) };

@@ -2,8 +2,8 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using DevExpress.Xpf.Core;
+using DevExpress.Xpf.Grid;
 using Microsoft.Win32;
 
 namespace DevWorkspace;
@@ -15,7 +15,7 @@ internal sealed class GitWorktreeWindow : ThemedWindow
     private readonly string _repository;
     private readonly Func<string, bool> _openFolder;
     private readonly CancellationTokenSource _cancel = new();
-    private readonly DataGrid _trees = new() { AutoGenerateColumns = false, IsReadOnly = true, SelectionMode = DataGridSelectionMode.Single };
+    private readonly GridControl _trees = WorkbenchGrid.Create(Loc.Text("L3D1AF3569EB3"));
     private readonly ComboBox _branches = new() { MinWidth = 185, Margin = new(0, 0, 8, 0) };
     private readonly TextBox _newBranch = new() { MinWidth = 125, Margin = new(0, 0, 8, 0), ToolTip = Loc.Text("LA8A008D78F9E") };
     private readonly StackPanel _commands = new() { Orientation = Orientation.Horizontal, Margin = new(0, 8, 0, 0) };
@@ -34,14 +34,14 @@ internal sealed class GitWorktreeWindow : ThemedWindow
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         foreach (var (header, property) in new[] { (Loc.Text("L1DF9A7B4EB23"), "Path"), (Loc.Text("L1245EEBD439F"), "Branch"), ("Commit", "Commit"), (Loc.Text("L8BD057388E28"), "Status") })
-            _trees.Columns.Add(new DataGridTextColumn { Header = header, Binding = new Binding(property), Width = new(property == "Path" ? 3 : 1, DataGridLengthUnitType.Star) });
+            _trees.Columns.Add(WorkbenchGrid.Column(header, property, new(property == "Path" ? 3 : 1, GridColumnUnitType.Star)));
         _commands.Children.Add(_branches);
         System.Windows.Automation.AutomationProperties.SetName(_newBranch, Loc.Text("L633F4273E5E4"));
         _commands.Children.Add(_newBranch);
         AddCommand(Loc.Text("L04EE593941D9"), AddAsync);
         AddCommand(Loc.Text("LD6F2F6CAD078"), () =>
         {
-            if (_trees.SelectedItem is Worktree worktree)
+            if (_trees.CurrentItem is Worktree worktree)
                 _openFolder(worktree.Path);
             return Task.CompletedTask;
         });
@@ -136,7 +136,7 @@ internal sealed class GitWorktreeWindow : ThemedWindow
 
     private async Task RemoveAsync()
     {
-        if (_trees.SelectedItem is not Worktree worktree || worktree.Main ||
+        if (_trees.CurrentItem is not Worktree worktree || worktree.Main ||
             string.Equals(worktree.Path.Replace('/', '\\'), _repository, StringComparison.OrdinalIgnoreCase))
         {
             _status.Text = Loc.Text("L063E9B349E9B");

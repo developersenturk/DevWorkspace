@@ -36,7 +36,13 @@ jobs:
       - name: Build, verify and package using Debug
         env:
           UPDATE_VERSION: ${{ inputs.version }}
-        run: ./scripts/New-UpdatePackage.ps1 -Version $env:UPDATE_VERSION -OutputDirectory .artifacts/update
+          UPDATE_PUBLISH: ${{ inputs.publish }}
+          SIGNING_THUMBPRINT: ${{ vars.WINDOWS_SIGNING_THUMBPRINT }}
+        run: |
+          $packageArgs = @{ Version = $env:UPDATE_VERSION; OutputDirectory = '.artifacts/update' }
+          if ($env:SIGNING_THUMBPRINT) { $packageArgs.SigningCertificateThumbprint = $env:SIGNING_THUMBPRINT }
+          if ($env:UPDATE_PUBLISH -eq 'true') { $packageArgs.RequireSigning = $true }
+          ./scripts/New-UpdatePackage.ps1 @packageArgs
       - name: Upload GitHub Release
         env:
           VPK_TOKEN: ${{ secrets.GITHUB_TOKEN }}

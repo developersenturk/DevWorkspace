@@ -35,6 +35,8 @@ jobs:
         run: dotnet run --project tests/ProjectDetection/ProjectDetection.csproj --configuration Debug
       - name: Verify application updates
         run: dotnet run --project tests/AppUpdates/AppUpdates.csproj --configuration Debug
+      - name: Verify portable profiles and report privacy
+        run: dotnet run --project tests/WorkspaceSharing/WorkspaceSharing.csproj --configuration Debug
       - name: Verify release center
         run: dotnet run --project tests/ReleaseCenter/ReleaseCenter.csproj --configuration Debug
       - name: Verify localization catalogs and solution context (headless)

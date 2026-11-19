@@ -50,7 +50,6 @@ public partial class MainWindow
 
         ShowProjectInfoMenu.IsEnabled = !_busy && ProjectGrid.SelectedItem is ProjectEntry;
         ShowGitMenu.IsEnabled = !_busy && ProjectGrid.SelectedItem is ProjectEntry { Repository: not null };
-        PopulateSavedLayoutsMenu();
     }
 
     private void ShowExplorerClick(object sender, RoutedEventArgs e)

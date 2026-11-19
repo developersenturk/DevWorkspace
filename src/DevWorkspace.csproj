@@ -7,12 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <StartupObject>DevWorkspace.Program</StartupObject>
-    <Version>1.0.11</Version>
+    <Version>1.1.0</Version>
     <IncludeNativeLibrariesForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
     <ApplicationIcon>Assets/DevWorkspace.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="../LICENSE" Link="LICENSE" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <Content Include="../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     <ApplicationDefinition Remove="App.xaml" />
     <Page Include="App.xaml" />
     <EmbeddedResource Include="Localization/*.json" />

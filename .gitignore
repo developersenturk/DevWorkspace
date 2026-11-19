@@ -10,3 +10,6 @@
 
 # Local packaging output and tools
 /.artifacts/
+
+# Local Sites deployment identity
+/website/.openai/

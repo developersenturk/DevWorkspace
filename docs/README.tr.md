@@ -50,6 +50,8 @@ Kayıt, gerçek Windows uygulamasında yerel örnek repolarla alındı. Demo ses
 
 ## Başlangıç
 
+Günlük iş akışları için [çalışma alanı araçları rehberine](workspace-tools.tr.md) bak: başlatma profilleri, dönüş notları, toplu Git özeti, çalışan uygulamalar, ortam kontrolü, içerik araması, bağımlılık haritası ve proje şablonları.
+
 Windows x64, .NET 10 SDK ve projede kullanılan DevExpress WPF paketlerine erişim gerekir. DevExpress, kendi lisans koşulları olan ticari bir bağımlılıktır.
 
 ```powershell
@@ -82,4 +84,6 @@ Tanınmayan bir proje türü mü var? Her gün kullandığın bir iş akışın�
 
 İşine yaradıysa yıldız vererek projenin keşfedilmesine destek olabilirsin.
 
-**Lisans:** Depoda henüz proje lisansı belirtilmemiştir. Üçüncü taraf bağımlılıkların kendi lisansları geçerlidir.
+**Lisans:** Özgün kod [MIT lisanslıdır](../LICENSE). [Katkı rehberi](../CONTRIBUTING.md) ve [üçüncü taraf bildirimleri](../THIRD-PARTY-NOTICES.md) mevcuttur. DevExpress ticari lisansına tabidir.
+
+Yeni kurulumlar İngilizce başlar; Ayarlar üzerinden Türkçe seçilebilir. Mevcut dil tercihleri korunur. İlk açılış rehberi Yardım menüsünden tekrar açılabilir. Profil düzenleyicisinden taşınabilir profil, Dosya menüsünden anonim HTML raporu paylaşılabilir. Yerel kullanım sayaçları varsayılan kapalıdır ve otomatik gönderilmez. [Gizlilik](privacy.md) · [İmzalama ve WinGet hazırlığı](distribution.md).

@@ -226,6 +226,8 @@ public partial class MainWindow
 
     private void PopulateSavedLayoutsMenu()
     {
+        // Rebuild only when saved layouts change, never while the Windows popup is opening.
+        // Removing submenu containers during SubmenuOpened can disrupt popup focus/capture.
         SavedLayoutsMenu.Items.Clear();
         foreach (var (name, layout) in _session.SavedLayouts.OrderBy(pair => pair.Key, StringComparer.CurrentCultureIgnoreCase))
         {
@@ -305,6 +307,7 @@ public partial class MainWindow
         {
             _session.SavedLayouts[name] = layout;
             _session.Save();
+            PopulateSavedLayoutsMenu();
             StatusText.Text = Loc.Format("LE5D51EB0637C", name);
         }
         else

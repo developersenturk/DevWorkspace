@@ -197,6 +197,9 @@ public partial class ProjectToolsWindow : ThemedWindow
                 () => _ = OperationCenter.RunCommandAsync(option.Command, _project.Name, _project.Folder,
                     (Owner as MainWindow)?.WorkbenchCancellation ?? CancellationToken.None));
             operation.Append("> " + option.Command.Display + Environment.NewLine);
+            operation.Command = option.Command;
+            operation.Folder = _project.Folder;
+            operation.Cancel = running.Cancel;
             int exitCode;
             try
             {
@@ -204,7 +207,11 @@ public partial class ProjectToolsWindow : ThemedWindow
                 {
                     QueueOutput(text);
                     operation.Append(text);
-                }, running.Token);
+                }, running.Token, process =>
+                {
+                    operation.ProcessId = process.Id;
+                    operation.ProcessStartedUtc = process.StartTime.ToUniversalTime();
+                });
                 operation.Finish(exitCode == 0 ? Loc.Text("L7C6F3F5F37BC") : Loc.Text("LF0873175A881"), Loc.Format("L36D2AD5696B2", exitCode));
             }
             catch (OperationCanceledException)

@@ -27,7 +27,7 @@ Use PowerShell from the repository root:
 
 The script uses **Debug**, runs the update and project detection checks, publishes a self-contained Windows x64 application, and packages it with the pinned local `vpk` tool. It prints the new output directory under `.artifacts/updates/`. Neither the script nor packaging publishes anything to GitHub.
 
-Each stable version must be strictly newer than the previous one. Version **1.0.1** includes interface language preferences, GitHub URL cloning, remembered Visual Studio selection and update notifications. For the next update, use `1.0.2`. Keep the app ID **DevWorkspace**, channel **win-x64**, and repository URL consistent.
+Each stable version must be strictly newer than the previous one. Version **1.1.0** adds workspace tools, launch-profile extensions, project handoff notes, shared DevExpress tables and the refreshed startup screen. For the next update after 1.1.0, use at least `1.1.1`. Keep the app ID **DevWorkspace**, channel **win-x64**, and repository URL consistent.
 
 ## Publish through GitHub
 
@@ -37,6 +37,8 @@ After committing and pushing the integration, run **Actions → Package applicat
 - Enable **publish** to make the version available to installed apps.
 
 The workflow builds from its selected commit and uploads the installer, portable ZIP, full package, and `releases.win-x64.json` feed together using GitHub's workflow token. Publishing a tag or uploading only the EXE is insufficient. Do not overwrite the assets of a published version; publish a newer version instead.
+
+The signed workflow requires a configured signing certificate. For an explicitly requested local unsigned release, build the Debug packages locally and upload the complete generated release directory with the pinned Velopack CLI. Such a release must be described as unsigned; it does not satisfy the signed workflow or WinGet prerequisites.
 
 ## Verification
 

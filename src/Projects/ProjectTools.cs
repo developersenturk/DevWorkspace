@@ -184,7 +184,7 @@ internal static class ProjectTools
         return DevelopmentTools.ForCommand(command.Executable);
     }
 
-    public static async Task<int> RunAsync(ProjectCommand command, string folder, Action<string> output, CancellationToken token)
+    public static async Task<int> RunAsync(ProjectCommand command, string folder, Action<string> output, CancellationToken token, Action<Process>? started = null)
     {
         token.ThrowIfCancellationRequested();
         string executable = command.Executable;
@@ -223,6 +223,7 @@ internal static class ProjectTools
         }
         using var process = Process.Start(info) ?? throw new IOException(Loc.Text("LC288EBA686E0"));
         using var cancellation = KillOnCancellation(process, token);
+        started?.Invoke(process);
         async Task Pump(StreamReader reader)
         {
             var buffer = new char[4096];
