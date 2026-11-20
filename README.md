@@ -14,30 +14,30 @@ Install once to receive updates in the background. Ready updates apply on the ne
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![WPF](https://img.shields.io/badge/UI-WPF-512BD4)
 
-![DevWorkspace showing eight sample repositories and their Git status](docs/media/workspace.jpg)
+![DevWorkspace showing eight sample repositories and their Git status](docs/media/en/workspace.jpg)
 
 ## See it in 30 seconds
 
-[![Watch the 30-second DevWorkspace demo](docs/media/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/devworkspace-demo.mp4)
+[![Watch the 30-second DevWorkspace demo](docs/media/en/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/en/devworkspace-demo.mp4)
 
-[Watch or download the MP4](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/devworkspace-demo.mp4) · Project list → search → changed repositories → side-by-side Git diff.
+[Watch or download the MP4](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/en/devworkspace-demo.mp4) · Project list → search → workspace overview → side-by-side Git diff.
 
-Recorded in the real Windows application using local sample repositories. The interface is currently in Turkish. The demo is silent, with English captions.
+A silent, 30-second screenshot tour captured in the real Windows application using local sample repositories. The interface and captions are in English.
 
 <details>
 <summary>More screenshots: workspace overview, search, and Git diff</summary>
 
 **Workspace overview** — project counts and work that needs attention.
 
-![Workspace overview with repository counts and pending work](docs/media/dashboard.jpg)
+![Workspace overview with repository counts and pending work](docs/media/en/dashboard.jpg)
 
 **Project search** — find related projects across folders.
 
-![Searching for Atlas filters the workspace to three projects](docs/media/search.jpg)
+![Searching for Atlas filters the workspace to three projects](docs/media/en/search.jpg)
 
 **Git diff** — inspect changes alongside the Git workbench.
 
-![Side-by-side Git diff for a sample TypeScript file](docs/media/git-diff.jpg)
+![Side-by-side Git diff for a sample TypeScript file](docs/media/en/git-diff.jpg)
 
 </details>
 
@@ -73,7 +73,7 @@ dotnet restore DevWorkspace.slnx
 dotnet run --project src/DevWorkspace.csproj -c Debug
 ```
 
-1. Select **Dosya → Çalışma alanı aç veya kur…** (`Ctrl+O`) and choose a development folder.
+1. Select **File → Open or create workspace…** (`Ctrl+O`) and choose a development folder.
 2. Browse discovered projects and select one to inspect its details and available actions.
 3. Use `Ctrl+F` to search, `Ctrl+K` for the command palette, and `F5` to rescan.
 

@@ -10,30 +10,30 @@ Farklı klasörlere ve teknolojilere dağılmış projelerini tek Windows uygula
 
 Bir kez kurduktan sonra güncellemeler arka planda indirilir. Hazır güncelleme sonraki açılışta veya **Şimdi yeniden başlat** düğmesiyle uygulanır.
 
-![Örnek projeler ve Git durumları](media/workspace.jpg)
+![Örnek projeler ve Git durumları](media/tr/workspace.jpg)
 
 ## 30 saniyede DevWorkspace
 
-[![30 saniyelik uygulama demosunu izle](media/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/devworkspace-demo.mp4)
+[![30 saniyelik uygulama demosunu izle](media/tr/demo.gif)](https://github.com/developersenturk/DevWorkspace/blob/master/docs/media/tr/devworkspace-demo.mp4)
 
-[MP4 videoyu izle veya indir](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/devworkspace-demo.mp4) · Proje listesi → arama → değişiklikli depolar → yan yana Git diff.
+[MP4 videoyu izle veya indir](https://github.com/developersenturk/DevWorkspace/raw/refs/heads/master/docs/media/tr/devworkspace-demo.mp4) · Proje listesi → arama → genel bakış → yan yana Git diff.
 
-Kayıt, gerçek Windows uygulamasında yerel örnek repolarla alındı. Demo sessizdir ve İngilizce açıklamalar içerir.
+Gerçek Windows uygulamasında yerel örnek repolarla alınan ekran görüntülerinden oluşan 30 saniyelik sessiz tur. Arayüz ve açıklamalar Türkçedir.
 
 <details>
 <summary>Diğer ekran görüntüleri</summary>
 
 **Genel bakış**
 
-![Çalışma alanının özeti ve öncelikli işler](media/dashboard.jpg)
+![Çalışma alanının özeti ve öncelikli işler](media/tr/dashboard.jpg)
 
 **Proje arama**
 
-![Atlas projelerini arama](media/search.jpg)
+![Atlas projelerini arama](media/tr/search.jpg)
 
 **Git diff**
 
-![Örnek TypeScript dosyasının yan yana karşılaştırması](media/git-diff.jpg)
+![Örnek TypeScript dosyasının yan yana karşılaştırması](media/tr/git-diff.jpg)
 
 </details>
 
@@ -65,7 +65,7 @@ dotnet run --project src/DevWorkspace.csproj -c Debug
 2. Bulunan projelerden birini seçerek detaylarına ve işlemlerine ulaş.
 3. `Ctrl+F` ile ara, `Ctrl+K` ile komut paletini aç, `F5` ile yeniden tara.
 
-Arayüz Türkçedir. Farklı platformlara yönelik projeleri tanısa da uygulamanın kendisi Windows üzerinde çalışır.
+Arayüz İngilizce ve Türkçe kullanılabilir; dil Ayarlar üzerinden seçilir. Farklı platformlara yönelik projeleri tanısa da uygulamanın kendisi Windows üzerinde çalışır.
 
 Git işlemleri için Git, GitHub entegrasyonu için kimlik doğrulaması yapılmış GitHub CLI (`gh`), desteklenen JavaScript/Dart güvenlik taramaları için OSV-Scanner, Compose işlemleri için Docker ve Compose gerekir. Proje komutları ilgili SDK ve paket yöneticilerini kullanır.
 
