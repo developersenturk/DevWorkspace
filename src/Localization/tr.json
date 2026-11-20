@@ -1,4 +1,8 @@
 {
+  "DashboardChecksTitle": "Çalışma alanı kontrolleri",
+  "DashboardChecksHint": "Proje sağlığı, Git ve CI, JavaScript ve Flutter paket güvenliği",
+  "DashboardSelectedProject": "Seçili proje",
+  "DashboardWorkspaceSecurity": "Çalışma alanı · NuGet paket güvenliği",
   "WelcomeTitle": "Projelerin. Tek bir yerde.",
   "WelcomeMenu": "İlk açılış rehberi…",
   "WelcomeIntro": "Geliştirme klasörünü seç. DevWorkspace desteklenen projeleri keşfeder ve Git durumlarını aranabilir bir çalışma alanında gösterir.",

@@ -8,7 +8,7 @@ public partial class MainWindow
 {
     private const string DashboardKey = "overview";
     private const int DashboardFindingPageSize = 5;
-    private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null, Uri? Link = null);
+    private sealed record DashboardLink(string Title, string Detail, string Navigation, ProjectEntry? Project = null, Uri? Link = null, bool IsUrgent = false);
     private sealed record DashboardFinding(string Severity, string Package, string Version, string Target,
         string Detail, ProjectEntry Project, string Identity)
     {
@@ -81,6 +81,7 @@ public partial class MainWindow
         var filters = (_workspace?.Config.SavedFilters ?? []).OrderBy(filter => filter.Name, StringComparer.CurrentCultureIgnoreCase)
             .Select(filter => new DashboardLink(filter.Name, _navigationNodes.GetValueOrDefault(filter.Key)?.Hint ?? filter.Query, filter.Key)).ToArray();
         DashboardFilters.ItemsSource = filters;
+        DashboardFiltersPanel.Visibility = filters.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         DashboardFiltersHint.Text = filters.Length == 0 ? Loc.Text("LD0EABB0EFC33") : "";
 
         var targets = DashboardNuGetTargets();
@@ -127,7 +128,7 @@ public partial class MainWindow
         int urgent = affected.Count(item => SeverityRank(item.Findings[0].Severity) >= 3);
         if (urgent > 0)
             tasks.Add(new(Loc.Text("LAA4CC2B13C70"), $"{urgent:N0} hedef · {FindingDetail(affected[0].Findings)}",
-                "nuget-report", affected[0].Project));
+                "nuget-report", affected[0].Project, IsUrgent: true));
         else if (affected.Length > 0)
             tasks.Add(new(Loc.Text("L569C53D3158B"), Loc.Format("LE6FF91A40518", affected.Length), "nuget-section"));
         if (warnings > 0)
@@ -147,14 +148,14 @@ public partial class MainWindow
 
     private void DashboardSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        bool narrow = e.NewSize.Width < 620;
-        DashboardMetrics.Tag = DashboardSeverityMetrics.Tag = narrow ? 2 : 4;
-        Grid.SetColumnSpan(DashboardPriorityPanel, narrow ? 2 : 1);
-        Grid.SetColumnSpan(DashboardRecentPanel, narrow ? 2 : 1);
-        Grid.SetColumn(DashboardRecentPanel, narrow ? 0 : 1);
-        Grid.SetRow(DashboardRecentPanel, narrow ? 1 : 0);
-        DashboardPriorityPanel.Margin = narrow ? new(0, 0, 0, 10) : new(0, 0, 6, 0);
-        DashboardRecentPanel.Margin = narrow ? new(0) : new(6, 0, 0, 0);
+        bool narrow = e.NewSize.Width < 900;
+        DashboardMetrics.Tag = DashboardSeverityMetrics.Tag = e.NewSize.Width < 620 ? 2 : 4;
+        Grid.SetColumnSpan(DashboardPriorityColumn, narrow ? 2 : 1);
+        Grid.SetColumnSpan(DashboardRecentColumn, narrow ? 2 : 1);
+        Grid.SetColumn(DashboardRecentColumn, narrow ? 0 : 1);
+        Grid.SetRow(DashboardRecentColumn, narrow ? 1 : 0);
+        DashboardPriorityColumn.Margin = narrow ? new(0) : new(0, 0, 8, 0);
+        DashboardRecentColumn.Margin = narrow ? new(0) : new(8, 0, 0, 0);
     }
 
     private void DashboardSeverityClick(object sender, RoutedEventArgs e)
@@ -266,14 +267,17 @@ public partial class MainWindow
                 DashboardScanButton.Focus();
                 break;
             case "health-section":
+                DashboardChecksExpander.IsExpanded = true;
                 DashboardHealthButton.BringIntoView();
                 DashboardHealthButton.Focus();
                 break;
             case "packages-section":
+                DashboardChecksExpander.IsExpanded = true;
                 DashboardPackagesButton.BringIntoView();
                 DashboardPackagesButton.Focus();
                 break;
             case "actions-section":
+                DashboardChecksExpander.IsExpanded = true;
                 DashboardActionsButton.BringIntoView();
                 DashboardActionsButton.Focus();
                 break;

@@ -1,4 +1,5 @@
-## Düzeltmeler
+## Genel bakış
 
-- Toplu Git özeti, bağımlılık haritası ve proje şablonlarında açıklama metninin iki kez görünmesi düzeltildi.
-- Yardım metni bir kez gösterilir. İşlem ve sonuç alanı başlangıçta boş kalır; tarama, hata veya sonuç bilgisi olduğunda görünür.
+- Öncelikli işler, değişiklikli depolar ve son açılan projeler bağımsız sütunlarla daha düzenli gösterilir; boş kart alanları azaltıldı.
+- Çalışma alanının NuGet sonuçları yukarı taşındı. Proje sağlığı, Git/CI ve diğer paket kontrolleri açılabilir bir bölümde toplandı.
+- Dar pencerelerde bölümler tek sütuna geçer. Metin aralıkları ve işlem düğmeleri iyileştirildi; seçili proje ile çalışma alanı kapsamı belirginleştirildi.

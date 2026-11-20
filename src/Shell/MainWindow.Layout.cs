@@ -151,7 +151,7 @@ public partial class MainWindow
             // Dock snapshots contain captions from the previous session's language.
             ExplorerPane.Caption = Loc.Text("L768201CBF793");
             ProjectsPane.Caption = Loc.Text("L30BCB5BCCD3E");
-            ProjectPane.Caption = Loc.Text("L4C26507A1012");
+            ProjectPane.Caption = Loc.Text("DashboardSelectedProject");
             GitPane.Caption = Loc.Text("LD11171088FD5");
         }
     }

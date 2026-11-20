@@ -1,4 +1,8 @@
 {
+  "DashboardChecksTitle": "Workspace checks",
+  "DashboardChecksHint": "Project health, Git and CI, JavaScript and Flutter package security",
+  "DashboardSelectedProject": "Selected project",
+  "DashboardWorkspaceSecurity": "Workspace · NuGet package security",
   "WelcomeTitle": "Your projects. One place.",
   "WelcomeMenu": "Getting started…",
   "WelcomeIntro": "Choose your development folder. DevWorkspace discovers supported projects and shows Git status in a searchable workspace.",
