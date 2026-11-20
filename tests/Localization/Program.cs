@@ -235,7 +235,10 @@ internal static class Program
                 Check(notesWindow.Title == (language == "en" ? "What's new" : "Yenilikler"), "News title must match language in both themes");
                 var reader = (FlowDocumentScrollViewer)notesWindow.FindName("NotesReader");
                 string noteText = new System.Windows.Documents.TextRange(reader.Document.ContentStart, reader.Document.ContentEnd).Text;
-                Check(noteText.Contains(language == "en" ? "Get started faster" : "Daha hızlı başlangıç"), "Bundled Markdown must render in the selected language");
+                using var bundledStream = assembly.GetManifestResourceStream($"DevWorkspace.Updates.ReleaseNotes.{language}.md")!;
+                string bundledHeading = new StreamReader(bundledStream).ReadToEnd().Split('\n')
+                    .First(line => line.StartsWith("## ", StringComparison.Ordinal))[3..].Trim();
+                Check(noteText.Contains(bundledHeading), "Bundled Markdown must render in the selected language");
                 foreach (string resource in new[] { "Ink", "Muted", "PanelSoft", "Divider" })
                     Check(notesWindow.FindResource(resource) is System.Windows.Media.Brush, "News theme brush missing: " + resource);
                 notesWindow.Close();

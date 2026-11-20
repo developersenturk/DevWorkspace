@@ -47,6 +47,14 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
     internal void SelectTab(int index) => _tabs.SelectedIndex = index;
     private void AddTab(string key, UIElement content) => _tabs.Items.Add(new TabItem { Header = WorkbenchText.T(key), Content = content });
     internal static TextBlock Text(string key) => new() { Text = WorkbenchText.T(key), TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 8) };
+    private static TextBlock StatusLine()
+    {
+        var style = new Style(typeof(TextBlock));
+        var empty = new Trigger { Property = TextBlock.TextProperty, Value = "" };
+        empty.Setters.Add(new Setter(VisibilityProperty, Visibility.Collapsed));
+        style.Triggers.Add(empty);
+        return new TextBlock { Style = style, TextWrapping = TextWrapping.Wrap, Margin = new(0, 0, 0, 8) };
+    }
     internal static Button Button(string key, Action action)
     {
         var button = new Button { Content = WorkbenchText.T(key), Padding = new(10, 5, 10, 5), Margin = new(0, 0, 8, 8), MinHeight = 30 };
@@ -134,7 +142,7 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
 
     private UIElement GitPanel()
     {
-        var panel = Panel(); var status = Text("GitHint");
+        var panel = Panel(); var status = StatusLine();
         var grid = Table(("Project", "Project", 150), ("Branch", "Branch", 125), ("Upstream", "Upstream", 150), ("Ahead", "Ahead", 85), ("Behind", "Behind", 85), ("Changes", "Changes", 85), ("Stashes", "Stashes", 75), ("Detail", "Detail", 0));
         Button refresh = null!;
         refresh = Button("Refresh", async () => await Run(refresh, status, async () =>
@@ -202,7 +210,7 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
 
     private UIElement DependenciesPanel()
     {
-        var panel = Panel(); var status = Text("DependenciesHint");
+        var panel = Panel(); var status = StatusLine();
         var nodes = new ComboBox { MinWidth = 350, Margin = new(0, 0, 8, 8) }; AutomationProperties.SetName(nodes, WorkbenchText.T("Project"));
         var tree = new TreeView(); var edges = Table(("Source", "Source", 0), ("Target", "Target", 0), ("Kind", "Kind", 100));
         DependencyReport? report = null;
@@ -252,7 +260,7 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
         var panel = Panel(); var templates = new ComboBox { MinWidth = 230, DisplayMemberPath = "Name", Margin = new(0, 0, 8, 8) }; AutomationProperties.SetName(templates, WorkbenchText.T("Templates"));
         var name = Input("ProjectName"); var parent = Input("Destination", 350); parent.Text = _workspace.Root;
         var initGit = new CheckBox { Content = WorkbenchText.T("InitGit"), Margin = new(0, 5, 8, 8) };
-        var status = Text("TemplateHint"); var preview = new TextBox { IsReadOnly = true, FontFamily = new("Consolas"), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var status = StatusLine(); var preview = new TextBox { IsReadOnly = true, FontFamily = new("Consolas"), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto };
         AutomationProperties.SetName(preview, WorkbenchText.T("Preview"));
         TemplateFile[]? plan = null; string? planName = null, planParent = null;
         void Reload() { templates.ItemsSource = ProjectTemplates.BuiltIns.Concat(_templates()).ToArray(); templates.SelectedIndex = 0; }
