@@ -41,29 +41,23 @@ public partial class App : Application
         if (MainWindow is not null)
             return;
 
-        var splash = new StartupWindow();
-        bool finished = false;
-        splash.Closed += (_, _) =>
-        {
-            if (!finished)
-                Shutdown();
-        };
-        splash.Show();
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        var splash = new StartupScreen(_palette!, () => Dispatcher.BeginInvoke(() => Shutdown()));
+        Exit += (_, _) => splash.Close();
 
         try
         {
-            // Give the preparation window a frame before constructing the dock and grids.
-            await Dispatcher.Yield(DispatcherPriority.ContextIdle);
+            await splash.ShowAsync();
             if (Dispatcher.HasShutdownStarted)
                 return;
 
             var main = new MainWindow { ShowInTaskbar = false };
             main.ShowActivated = main.WindowState == WindowState.Maximized;
             MainWindow = main;
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
             var interop = new WindowInteropHelper(main);
             main.SourceInitialized += (_, _) => SetWindowCloak(interop.Handle, true);
-            splash.SetStage(1);
-            await Dispatcher.Yield(DispatcherPriority.Render);
+            await splash.SetStageAsync(1);
             if (Dispatcher.HasShutdownStarted) return;
             main.Show();
             try
@@ -73,7 +67,7 @@ public partial class App : Application
             catch (OperationCanceledException) when (Dispatcher.HasShutdownStarted || !main.IsLoaded)
             {
                 if (!Dispatcher.HasShutdownStarted)
-                    splash.Close();
+                    Shutdown();
                 return;
             }
             catch (Exception ex)
@@ -86,15 +80,15 @@ public partial class App : Application
                 return;
             if (!main.IsLoaded)
             {
-                splash.Close();
+                Shutdown();
                 return;
             }
 
-            splash.SetStage(2);
-            finished = true;
+            bool activateMain = await splash.CompleteAsync();
+            if (Dispatcher.HasShutdownStarted) return;
             main.ShowInTaskbar = true;
             SetWindowCloak(interop.Handle, false);
-            if (splash.IsActive)
+            if (activateMain)
                 main.Activate();
             splash.Close();
             await main.ShowWelcomeIfNeededAsync();
@@ -104,10 +98,14 @@ public partial class App : Application
         catch (Exception ex) when (!Dispatcher.HasShutdownStarted)
         {
             System.Diagnostics.Trace.TraceError(ex.ToString());
-            finished = true;
-            MessageBox.Show(splash, Loc.Format("LB3D31315A568", ex.Message), "DevWorkspace",
+            splash.Close();
+            MessageBox.Show(Loc.Format("LB3D31315A568", ex.Message), "DevWorkspace",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(1);
+        }
+        finally
+        {
+            splash.Close();
         }
     }
 

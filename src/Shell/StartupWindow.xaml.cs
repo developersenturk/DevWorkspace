@@ -5,9 +5,10 @@ namespace DevWorkspace;
 
 public partial class StartupWindow : Window
 {
-    public StartupWindow()
+    internal StartupWindow(ResourceDictionary resources)
     {
         InitializeComponent();
+        Resources.MergedDictionaries.Add(resources);
         VersionLabel.Text = "v" + typeof(StartupWindow).Assembly.GetName().Version?.ToString(3);
         LoadingProgress.IsIndeterminate = SystemParameters.ClientAreaAnimation;
         SetStage(0);

@@ -1,5 +1,4 @@
-## Genel bakış
+## Açılış deneyimi
 
-- Öncelikli işler, değişiklikli depolar ve son açılan projeler bağımsız sütunlarla daha düzenli gösterilir; boş kart alanları azaltıldı.
-- Çalışma alanının NuGet sonuçları yukarı taşındı. Proje sağlığı, Git/CI ve diğer paket kontrolleri açılabilir bir bölümde toplandı.
-- Dar pencerelerde bölümler tek sütuna geçer. Metin aralıkları ve işlem düğmeleri iyileştirildi; seçili proje ile çalışma alanı kapsamı belirginleştirildi.
+- Ana pencere ve çalışma alanı hazırlanırken yükleme ekranının ilerleme animasyonunun takılması giderildi.
+- Yükleme ekranı hazırlık sırasında taşınabilir ve iptal düğmesi yanıt vermeye devam eder. Windows'un azaltılmış hareket tercihi korunur.
