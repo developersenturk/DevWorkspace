@@ -81,7 +81,14 @@ public partial class MainWindow : Window
             StatusText.Text = Loc.Text("L2337C6C48D60");
             return;
         }
-        e.Cancel = _gitView?.IsBusy == true || _savingExplorerFolder;
+        e.Cancel = _gitView?.IsBusy == true || _savingExplorerFolder || _restoringWorkSet;
+        if (!e.Cancel && !_finishingDevelopmentOnClose && _developmentRuns.Values.Any(run => run.IsActive))
+        {
+            e.Cancel = true; _finishingDevelopmentOnClose = true;
+            // Defer the second Close until this Closing event has unwound, even for an empty plan.
+            Dispatcher.BeginInvoke(() => _ = StopDevelopmentAndCloseAsync());
+            return;
+        }
         if (!e.Cancel && _startupLayoutRestored && _startupReady.Task.IsCompleted)
         {
             CaptureLayout();
@@ -98,6 +105,7 @@ public partial class MainWindow : Window
         if (Application.Current is { } app)
             app.Activated -= WorkspaceActivated;
         _gitView?.Release();
+        foreach (var run in _developmentRuns.Values) run.Stop();
         _closing.Cancel();
         _findingTimer.Stop();
         StopWorkspaceRefresh();
@@ -163,6 +171,11 @@ public partial class MainWindow : Window
             e.Handled = true;
             QuickOpen();
         }
+        else if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.D)
+        {
+            e.Handled = true;
+            DevelopmentHubClick(this, new RoutedEventArgs());
+        }
         else if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.F)
         {
             e.Handled = true;
@@ -209,7 +222,12 @@ public partial class MainWindow : Window
         }
 
         if (_workspace is { } toolsWorkspace && !root.Equals(toolsWorkspace.Root, StringComparison.OrdinalIgnoreCase))
+        {
             _workspaceTools?.Close();
+            _developmentHub?.Close();
+            _productivityWindow?.Close();
+            StopDevelopment();
+        }
 
         if (background)
         {
@@ -333,6 +351,7 @@ public partial class MainWindow : Window
                 details.Add(Loc.Format("L2E7B900A1156", result.SkippedDirectories));
             if (recoveryWarning is not null)
                 details.Add(recoveryWarning);
+            details.Add(string.Format(WorkbenchText.T("WorkspaceChecked"), DateTime.Now.ToString("T")));
             StatusText.Text = string.Join("   ·   ", details);
             StartWorkspaceWatch(workspace);
             if (projectsChanged)
@@ -351,12 +370,14 @@ public partial class MainWindow : Window
             if (!background) UsageMetrics.Record(_session, "workspace_failed");
             if (!background)
                 StatusText.Text = Loc.Format("L96FADEFB1A6A", Workspace.ConfigFileName);
+            else StatusText.Text = WorkbenchText.T("WorkspaceStale");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
             if (!background) UsageMetrics.Record(_session, "workspace_failed");
             if (!background)
                 StatusText.Text = ex.Message;
+            else StatusText.Text = WorkbenchText.T("WorkspaceStale") + " " + ex.Message;
         }
         finally
         {

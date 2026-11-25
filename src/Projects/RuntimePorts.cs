@@ -20,7 +20,7 @@ internal static class RuntimePorts
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry entry);
     [DllImport("kernel32.dll")] private static extern bool CloseHandle(IntPtr handle);
 
-    internal static async Task RefreshAsync(WorkspaceOperation[] operations, CancellationToken token)
+    internal static Dictionary<int, int> ProcessParents()
     {
         var parents = new Dictionary<int, int>();
         IntPtr snapshot = CreateToolhelp32Snapshot(2, 0);
@@ -32,6 +32,12 @@ internal static class RuntimePorts
                 do { parents[(int)entry.Id] = (int)entry.Parent; } while (Process32NextW(snapshot, ref entry));
         }
         finally { CloseHandle(snapshot); }
+        return parents;
+    }
+
+    internal static async Task RefreshAsync(WorkspaceOperation[] operations, CancellationToken token)
+    {
+        var parents = ProcessParents();
         var (code, output, error) = await ProjectTools.CaptureAsync(ProjectTools.CreateCaptureInfo(System.IO.Path.Combine(Environment.SystemDirectory, "netstat.exe"), Environment.SystemDirectory, ["-ano", "-p", "tcp"]), "netstat", 10, token);
         if (code != 0) throw new System.IO.IOException(error);
         var ports = Parse(output);

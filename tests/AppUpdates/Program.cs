@@ -65,6 +65,13 @@ static void Require(bool condition, string message)
     if (!condition) throw new Exception(message);
 }
 
+Require(!VelopackUpdateFeed.IsNewer("1.1.3", "1.2.0"), "A pending older package must not replace a newer executable.");
+Require(!VelopackUpdateFeed.IsNewer("1.2.0", "1.2.0"), "The running version must not be reapplied.");
+Require(VelopackUpdateFeed.IsNewer("1.2.1", "1.2.0"), "A newer patch must remain eligible.");
+Require(!VelopackUpdateFeed.IsNewer("1.2.0-beta.1", "1.2.0"), "A prerelease must not replace the corresponding stable version.");
+Require(!VelopackUpdateFeed.IsNewer("broken", "1.2.0"), "An invalid pending version must not apply.");
+Console.WriteLine("PASS: older, equal, invalid and prerelease packages cannot replace the running stable executable.");
+
 var feed = new FakeFeed { IsInstalled = false };
 var service = new AppUpdateService(feed);
 await service.CheckAndDownloadAsync(default);

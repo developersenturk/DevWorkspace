@@ -31,7 +31,7 @@ public partial class MainWindow
 
             if (_busy || _backgroundWorkspaceScan || IsMainMenuOpen || _projectContextMenu?.IsOpen == true ||
                 _savingPreference || _savingExplorerFolder || _explorerEdit is not null || _explorerContextMenu?.IsOpen == true ||
-                OwnedWindows.OfType<Window>().Any(window => window.IsVisible && window is not OperationCenterWindow))
+                OwnedWindows.OfType<Window>().Any(window => window.IsVisible && window is not (OperationCenterWindow or DevelopmentHubWindow or WorkspaceToolsWindow or ProductivityWindow)))
                 return;
 
             _workspaceRefresh.Stop();
@@ -49,8 +49,7 @@ public partial class MainWindow
     {
         if (_closing.IsCancellationRequested || _workspaceRefresh is null)
             return;
-        _workspaceRefresh.Stop();
-        _workspaceRefresh.Start();
+        if (!_workspaceRefresh.IsEnabled) _workspaceRefresh.Start();
     }
 
     private void StartWorkspaceWatch(Workspace workspace)
@@ -66,11 +65,16 @@ public partial class MainWindow
         StopWorkspaceRefresh();
         _watchKey = key;
         int generation = _watchGeneration;
-        void QueueRefresh() => Dispatcher.BeginInvoke(() =>
+        int pending = 0;
+        void QueueRefresh()
         {
-            if (generation == _watchGeneration)
-                ScheduleWorkspaceRefresh();
-        });
+            if (Interlocked.Exchange(ref pending, 1) != 0) return;
+            Dispatcher.BeginInvoke(() =>
+            {
+                Interlocked.Exchange(ref pending, 0);
+                if (generation == _watchGeneration) ScheduleWorkspaceRefresh();
+            });
+        }
 
         var exclusions = workspace.Config.ScanExclusions.ToHashSet(StringComparer.OrdinalIgnoreCase);
         exclusions.UnionWith(ProjectDetection.GeneratedFolders);
@@ -94,7 +98,7 @@ public partial class MainWindow
                 watcher = new(root)
                 {
                     IncludeSubdirectories = true,
-                    NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName
+                    NotifyFilter = NotifyFilters.DirectoryName | NotifyFilters.FileName | NotifyFilters.LastWrite
                 };
                 bool IsRelevant(string path)
                 {
@@ -110,10 +114,15 @@ public partial class MainWindow
                     if (IsRelevant(e.FullPath))
                         QueueRefresh();
                 }
+                watcher.Changed += Changed;
                 watcher.Created += Changed;
                 watcher.Deleted += Changed;
                 watcher.Renamed += (_, e) => { if (IsRelevant(e.FullPath) || IsRelevant(e.OldFullPath)) QueueRefresh(); };
-                watcher.Error += (_, _) => QueueRefresh();
+                watcher.Error += (_, _) => Dispatcher.BeginInvoke(() =>
+                {
+                    if (generation != _watchGeneration) return;
+                    _watchKey = null; ScheduleWorkspaceRefresh();
+                });
                 watcher.EnableRaisingEvents = true;
                 _workspaceWatchers.Add(watcher);
             }

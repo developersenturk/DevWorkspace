@@ -190,6 +190,7 @@ public partial class MainWindow
         menu.Items.Add(new Separator());
         if (project.Repository is not null)
         {
+            Add(Loc.Text("UncommittedChanges"), "\uE8A5", () => OpenProjectDiff(project), folderExists);
             Add(Loc.Text("L8C9C5A963356"), MenuGlyphExtension.GitHistory, () => new GitHistoryWindow(project) { Owner = this }.ShowDialog());
             Add(Loc.Text("LD11171088FD5"), MenuGlyphExtension.GitOperations, () => OpenGitWorkbench(project));
             Add(Loc.Text("L405B8B84BC36"), "\uE8F1", () =>

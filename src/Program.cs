@@ -40,7 +40,8 @@ internal static class Program
                     "DevWorkspace", "update-locks"));
             UpdateManager = manager;
             UpdateLease = lease;
-            if (manager.UpdatePendingRestart is { } pending && lease.TryAcquireExclusive())
+            if (manager.UpdatePendingRestart is { } pending &&
+                VelopackUpdateFeed.IsNewer(pending.Version.ToString(), AppReleaseNotes.CurrentVersion) && lease.TryAcquireExclusive())
             {
                 try { manager.ApplyUpdatesAndRestart(pending, args); }
                 finally { lease.ReleaseExclusive(); }

@@ -1,0 +1,172 @@
+DevWorkspace — User guide
+Windows x64 · English
+
+01. Installation and preparation
+
+DevWorkspace is a Windows x64 desktop workbench. It works alongside your existing IDE and terminal, so you can keep your development tools.
+
+1. Choose the Windows installer in the website’s Download section. For portable use, download and extract the ZIP package.
+2. Open the application and follow the getting-started guide. Reopen it later from Help → Getting started.
+3. New installations start in English. Change the language in Settings if you prefer Turkish; existing preferences are retained.
+4. Check the tools you need under Help → Development tools. Git, GitHub CLI, SDKs, Docker and the security scanner are required for their respective features.
+
+Good to know: Prebuilt packages include their runtime. Building and running your projects still requires their SDKs and package managers.
+
+
+02. Open your first workspace
+
+A workspace is the development folder where you review your everyday projects together. Select a root folder and DevWorkspace discovers supported project files within that scope.
+
+1. Use File → Open or create workspace… or press Ctrl+O, then choose your development folder.
+2. After scanning, inspect the project list and Overview. Review project type, folder and Git status where available.
+3. Use the linking tools in File for a solution or folder in another location. Include linked projects in your existing workspace.
+4. File changes are watched automatically. Press F5 to rescan manually and check the last successful scan time and any stale-data warning.
+
+Good to know: Project discovery does not upload source code. Recognizing a technology does not imply every build and run operation is available for it.
+
+
+03. Find projects and organize your work
+
+Narrow a large project list to the work you need today. Favorites, groups and saved filters reduce repeated navigation.
+
+1. Press Ctrl+F to focus project search. Select a project and inspect its information and available actions.
+2. Favorite frequently used projects from the context menu. Organize related projects with groups and tags, using multi-selection for bulk grouping.
+3. Save the current filter from View. Archive inactive projects and restore them when needed.
+4. Open a project in its IDE using right-click → Open project/Open solution. Reach folders, documents and project tools from the same menu and choose a Visual Studio installation for supported solutions.
+
+Good to know: Archiving does not delete source files. Showing or hiding component rows changes the list’s level of detail.
+
+
+04. Review Git changes and create a commit
+
+Check the branch and pending changes before starting work. Reviewing file diffs while preparing a commit makes it clear what you are about to send.
+
+1. Select the project and open Git operations. Select a changed file to inspect its side-by-side diff.
+2. Stage the files you want in the commit. Unstage a file to remove it from the index if necessary.
+3. Write the message and choose Commit. Use the appropriate commit-and-push or separate push action when you also want to send it to the remote.
+4. Use fetch to refresh remote information. Open history, branch/tag, remote, stash and worktree tools from the relevant Git menus.
+5. Open View → Combined Git summary to review multiple repositories. Use the separate batch-fetch action in Git to fetch workspace repositories.
+
+Good to know: The summary does not automatically fetch, pull or push. Ahead/behind reflects the last fetched state. Repository recovery is not a backup of local work that was never pushed.
+
+
+05. Start a development setup with a profile
+
+When an API, client and services are needed together, define a launch profile rather than preparing each one separately. Startup order and readiness rules are part of that setup.
+
+1. With a workspace open, use File → Development hub or Ctrl+Shift+D. Open Edit profiles to prepare a profile.
+2. Choose a project and action for each step. Arrange IDE, terminal, preset/custom command or eligible Compose startup actions in the required order.
+3. Set a readiness port for a long-running service. Choose Wait for task completion for a build or setup task. Apply changes to the selected step when editing an existing one.
+4. Use Check environment to review requirements. Prepare missing tools and, when appropriate, create a missing .env from an example and edit its local values yourself.
+5. Choose Start development. Inspect failures or timeouts. Use Stop development to cancel pending startup and managed profile processes for the workspace.
+
+Good to know: Port readiness checks TCP access on 127.0.0.1 rather than full application health. The default timeout is 60 seconds. A step without a readiness rule continues immediately.
+
+
+06. Follow running applications and logs
+
+See managed commands launched through DevWorkspace in one place. Review project, log and port information together to find the relevant process.
+
+1. Open the list from the development hub or View → Running applications, then filter by project.
+2. Inspect PID, state and TCP listening addresses. Search log text for the relevant output or error.
+3. Select a supported file/line location and use Open file from log. VS Code opens the location when available; Notepad is the fallback.
+4. Stop a command when needed and restart it after it has stopped. Use Operation Center for broader operation state and output.
+
+Good to know: IDE and independent terminal windows are not part of the managed list. Managed commands stop when DevWorkspace closes; closing only the tool window does not stop them.
+
+
+07. Check package security
+
+Run a current scan first, then review the package and project context. Do not mistake an old report or failed scan for a clean result.
+
+1. Use package security checks in Overview or the selected project’s Project tools → NuGet security. OSV-Scanner must be available for supported JavaScript/Dart lockfiles.
+2. Start scanning. Review severity, affected package, version, project and target, and open the advisory when needed.
+3. Read proposed changes when using supported repair or version-review flows. Consider direct/transitive dependencies and major-version changes before proceeding.
+4. Inspect the follow-up scan. Run your project’s build and functional checks after package changes.
+
+Good to know: Scanning and automatic repair have different coverage; not every package can be repaired automatically. Known-vulnerability scans do not guarantee application security.
+
+
+08. Inspect documents, source and dependencies
+
+README files, handoff notes and dependency context are useful starting points when returning to work. Use search and analysis tools to move from source files to related projects.
+
+1. Open README and documents from the project’s context menu. Save where you left off and what comes next in its handoff note.
+2. Press Ctrl+Shift+F for content search. Choose project scope and case sensitivity, then inspect plain-text matches with their file and line context.
+3. Scan from View → Dependency and impact map. Select a project or service to inspect direct/indirect requirements and potentially affected projects.
+4. Refresh project health and environment checks when needed. Pay attention to source files, skipped items and check times.
+
+Good to know: Content search skips generated folders, local .env files, binaries and files larger than 2 MB. Dependency maps do not automatically resolve every runtime API relationship.
+
+
+09. Comparison, move plans and templates
+
+Comparing folder versions, reviewing move impacts and creating projects are separate tools. Choose the one that matches your task.
+
+1. Select two project versions and open comparison from the context menu. Review changed or one-sided files and text diff previews.
+2. If considering a project move, choose a destination inside the workspace in Move plan. Read reference and conflict findings.
+3. In View → Project templates, choose a built-in or registered folder template. Set the project name and parent folder.
+4. Review files with Preview, then choose Create. If the new folder is inside the scan scope, it appears after rescanning.
+
+Good to know: Comparison does not merge files. Move planning is analysis only and does not move files. Templates do not overwrite existing targets or automatically install packages or create the initial commit.
+
+
+10. Share a setup with your team
+
+Development configuration and status reports serve different needs. One transfers a setup; the other shares the workspace’s last known state.
+
+1. In Development hub → Team configuration, preview the configuration from profiles. Review project paths, commands, readiness rules and required tools.
+2. Save the configuration as devworkspace.development.json in the workspace root. Include the file in your source repository if appropriate.
+3. On another computer, open the same workspace, read the repository file, review its preview and import it. Importing does not execute commands.
+4. To share only status, use HTML report export from File. Review the project-name inclusion option and inspect the file before sharing.
+
+Good to know: Keep secrets in local .env files rather than shared configuration. Anonymous reports exclude local paths, branches, remotes and source code; workspace ZIP transfers have a different scope.
+
+
+11. Prepare a release with Release Center
+
+This section is for distributing supported .NET applications for Windows x64 through GitHub. Packages, source commits and remote drafts are verified together.
+
+1. Right-click the project and open Release Center. Choose the correct application when a solution has multiple targets, and check project and GitHub origin.
+2. Run preflight checks. Review tools, account, source state and verification projects. Complete Git preparation for a clean commit available on GitHub.
+3. Prepare a stable version and release notes, optionally importing editable notes from commits. Choose Prepare package and follow operations in the isolated source copy.
+4. Upload assets with Upload draft / resume. Review asset verification and relevant GitHub Actions results, then check repository, version and commit when confirming publication.
+5. After publishing, refresh statistics from GitHub and export CSV when useful. Update download probes run in a test folder separate from the installed application.
+
+Good to know: Packaging uses Debug. The target application needs Velopack integration for automatic updates. Download counts are not active or unique user counts.
+
+
+12. Personalize the workspace and stay updated
+
+Arrange frequent panels and your interface language around your daily routine. Keep release notes and help tools within reach.
+
+1. Set the language in Settings and adjust theme, density and columns from View.
+2. Open panels from Windows. Save a named layout, return to a saved layout later or restore the default.
+3. Read current-version notes in Help → What’s New. In the installed copy, a ready update applies on the next launch or Restart now.
+4. Use Help → Report a bug to prepare an editable GitHub draft. Add the problem and reproduction steps, then review before submitting.
+
+Good to know: Bug reporting does not automatically submit an issue or attach logs. Optional local usage counters are off by default and never uploaded automatically.
+
+
+13. Troubleshoot common situations
+
+When an operation behaves unexpectedly, first check project scope, installed tools and the last check time.
+
+1. Project missing: check the root folder and scan exclusions, confirm the file format is supported and refresh with F5.
+2. Command unavailable: check project type and existing scripts. Confirm the required SDK or executable is available in Development tools.
+3. GitHub operation failed: check GitHub CLI installation, authentication, repository access and origin.
+4. Profile will not start: refresh environment checks and inspect missing .env keys, port conflicts, failed tasks or readiness timeouts.
+5. Results look old: read the last scan/check time. Rerun the relevant operation after resolving tool or network issues rather than treating an old report as new.
+
+
+14. Quick keyboard access
+
+These shortcuts cover frequent daily actions. See the application’s Help menu for other shortcuts.
+
+1. Ctrl+O — Open or create a workspace.
+2. Ctrl+K — Open the command palette.
+3. Ctrl+F — Search the project list.
+4. Ctrl+Shift+F — Open cross-project content search.
+5. Ctrl+Shift+D — Open the development hub.
+6. F5 — Rescan the workspace.
+

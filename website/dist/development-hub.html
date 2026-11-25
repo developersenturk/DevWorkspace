@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Development hub — DevWorkspace</title><link rel="stylesheet" href="style.css"><style>main{max-width:850px!important;padding-block:55px}h1{font-size:40px;letter-spacing:-1px;line-height:1.2;margin-bottom:30px}h2{font-size:26px;letter-spacing:-.5px;margin-top:40px}main p,main li{color:var(--muted)}main a{color:var(--accent);text-decoration:underline;overflow-wrap:anywhere}pre{padding:20px;background:var(--surface);border:1px solid var(--line);overflow:auto}code{font-family:Consolas,monospace;font-size:14px;overflow-wrap:anywhere}</style><link rel="stylesheet" href="light-theme.css"></head><body><header class="wrap nav"><a class="brand" href="index.html">DevWorkspace</a><a href="index.html">Home / Ana sayfa</a></header><main class="wrap"><h1>Development hub</h1><p>Open <strong>File → Development hub</strong> after opening a workspace.</p><p>1. Use <strong>Edit profiles</strong> to add projects and commands in startup order.</p><p>2. For a long-running service, set its <strong>Readiness port</strong> to a TCP port on <code>127.0.0.1</code>. For a build or setup task, choose <strong>Wait for task completion</strong> instead. Use <strong>Apply to selected step</strong> when editing an existing step. The default timeout is 60 seconds; a step without either readiness option starts the next step immediately.</p><p>3. Use <strong>Check environment</strong> to review the selected profile's requirements. Missing tools, SDK failures and missing <code>.env</code> keys prevent startup. <strong>Tool setup</strong> opens the existing installer interface. <strong>Create .env from example</strong> copies <code>.env.example</code>, <code>.env.sample</code> or <code>.env.template</code> without overwriting an existing <code>.env</code>; edit local values yourself.</p><p>4. Choose <strong>Start development</strong>. Failed tasks, occupied readiness ports and readiness timeouts stop the startup sequence. Managed processes started by a failed run are cancelled. <strong>Stop development</strong> cancels pending startup and managed processes for profiles in this workspace. Editor and terminal windows opened by a profile are independent windows.</p><p>5. Use <strong>Running applications</strong> for project filters, log text search, port/PID inspection, restart and stopping commands. Select a compiler/stack location or place the caret on its line, then use <strong>Open file from log</strong>. VS Code opens at the location when available; Notepad is the fallback.</p><p>The <strong>Where did I leave off?</strong> tab shows the selected project's handoff note, current branch and changed files. The last successfully started profile is saved with the workspace. <strong>Working repositories</strong> compares distinct Git repositories in the selected profile and can open all of its projects. Ahead/behind values refer to the last fetched upstream state; use Git → Fetch to contact remotes.</p><p>The built-in <strong>Docker Compose start</strong> profile command (<code>docker.exe compose up</code>) also tracks the containers already running before startup. Stopping the profile stops containers started by that command and preserves containers that were already running. Custom Docker commands retain their own lifecycle semantics; use the Compose tools for those services.</p><p>Workspace files and Git metadata are watched in the background, including while the hub is open. The main status bar shows the last successful scan time. Environment results show their own check time and age; run checks again after changing settings.</p><h2>Share a development setup</h2><p>In <strong>Team configuration</strong>, choose <strong>Preview from profiles</strong>. Review or edit the JSON and save it as <code>devworkspace.development.json</code> in the workspace root. Commit this file with the repository if you want to share it. On another machine, open the same workspace, choose <strong>Read repository file</strong>, review the commands and choose <strong>Import preview</strong>. Matching profile names are updated; other local profiles are retained. Import does not execute commands.</p><p>Example:</p><pre><code>{
+  &quot;schemaVersion&quot;: 1,
+  &quot;profiles&quot;: [
+    {
+      &quot;name&quot;: &quot;API and client&quot;,
+      &quot;steps&quot;: [
+        {
+          &quot;project&quot;: &quot;api&quot;,
+          &quot;command&quot;: {
+            &quot;name&quot;: &quot;API&quot;,
+            &quot;executable&quot;: &quot;dotnet.exe&quot;,
+            &quot;arguments&quot;: &quot;run --project \&quot;${workspace}\\api\\Api.csproj\&quot;&quot;
+          },
+          &quot;readyPort&quot;: 5100,
+          &quot;timeoutSeconds&quot;: 90
+        },
+        {
+          &quot;project&quot;: &quot;client&quot;,
+          &quot;command&quot;: {
+            &quot;name&quot;: &quot;Client&quot;,
+            &quot;executable&quot;: &quot;cmd.exe&quot;,
+            &quot;arguments&quot;: &quot;/d /c npm.cmd run dev&quot;
+          },
+          &quot;readyPort&quot;: 5173,
+          &quot;timeoutSeconds&quot;: 60
+        }
+      ]
+    }
+  ],
+  &quot;requiredTools&quot;: [&quot;dotnet.exe&quot;, &quot;node.exe&quot;]
+}
+</code></pre><p>Use the project paths shown in the profile editor; they must match projects discovered in the destination workspace. Shared project paths are relative. Executables use tool names; <code>${workspace}</code> in command arguments resolves to the destination root. <code>action</code> defaults to <code>default</code>, and <code>waitForExit</code> defaults to <code>false</code>. <code>terminal</code> steps cannot have commands or readiness rules. Tool requirements contain executable names and are checked on PATH or through known tool locations.</p><p>Keep credentials and machine-specific values in local environment files, outside this configuration. The editor supports custom commands, so inspect the exact JSON before sharing or importing it. The existing preset-only profile import/export remains available for sharing a single profile and now preserves readiness rules too.</p></main></body></html>

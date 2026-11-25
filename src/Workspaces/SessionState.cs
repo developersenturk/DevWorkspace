@@ -6,10 +6,13 @@ namespace DevWorkspace;
 internal sealed record WorkspaceSession(string? SelectedProject, string[] RecentProjects, string[]? ExpandedFolders = null,
     DateTime? LastUsedUtc = null, string? LastSolution = null, WorkspaceViewSession? View = null,
     WorkspaceActivity? Activity = null, LaunchProfile[]? Profiles = null, TrackedFinding[]? TrackedFindings = null,
-    Dictionary<string, ResumeNote>? ResumeNotes = null);
+    Dictionary<string, ResumeNote>? ResumeNotes = null, string? LastProfile = null, string[]? RequiredTools = null,
+    WorkSet[]? WorkSets = null, Guid? LastWorkSet = null);
 internal sealed record ResumeNote(string Context, string Next, DateTime UpdatedUtc);
-internal sealed record LaunchProfile(string Name, LaunchStep[] Steps);
-internal sealed record LaunchStep(string Project, ProjectCommand? Command, string Action = "default");
+internal sealed record LaunchProfile(string Name, LaunchStep[] Steps, string? EnvironmentName = null,
+    Dictionary<string, string>? EnvironmentFiles = null);
+internal sealed record LaunchStep(string Project, ProjectCommand? Command, string Action = "default",
+    int? ReadyPort = null, bool WaitForExit = false, int TimeoutSeconds = 60);
 internal sealed record TrackedFinding(string Id, string Project, string Title, string Detail, string Target, DateTimeOffset Due);
 internal sealed record WorkspaceActivity(Dictionary<string, string> Git, Dictionary<string, string[]> NuGet,
     Dictionary<string, string> FailedActions);

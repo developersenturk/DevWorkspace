@@ -1,0 +1,172 @@
+DevWorkspace — Genel kullanım kılavuzu
+Windows x64 · Türkçe
+
+01. Kurulum ve ilk hazırlık
+
+DevWorkspace, Windows x64 üzerinde çalışan bir masaüstü çalışma alanıdır. Projelerinizi yazdığınız IDE ve terminalle birlikte kullanılır; bu araçları değiştirmeniz gerekmez.
+
+1. Sitedeki İndir bölümünden Windows kurulum dosyasını seçin. Kurulum yapmak istemiyorsanız taşınabilir ZIP paketini indirip çıkarın.
+2. Uygulamayı açın. İlk açılış rehberini izleyin; rehbere daha sonra Yardım → İlk açılış rehberi üzerinden yeniden ulaşabilirsiniz.
+3. Yeni kurulumun İngilizce arayüzünü Türkçeye çevirmek için Ayarlar üzerinden dili değiştirin. Mevcut dil tercihiniz korunur.
+4. Yardım → Geliştirme araçları bölümünde kullanacağınız araçları kontrol edin. Git, GitHub CLI, SDK, Docker ve güvenlik tarayıcısı yalnızca ilgili işlevler için gereklidir.
+
+Bilmeniz gereken: Hazır paketler çalışma zamanını içerir. Kendi projelerinizi derleyip çalıştırmak için ilgili SDK ve paket yöneticileri ayrıca gerekir.
+
+
+02. İlk çalışma alanınızı açın
+
+Çalışma alanı, günlük projelerinizi bir arada inceleyeceğiniz geliştirme klasörüdür. Önce kök klasörü seçin; DevWorkspace desteklenen proje dosyalarını bu kapsamda keşfeder.
+
+1. Dosya → Çalışma alanı aç veya kur… komutunu ya da Ctrl+O kısayolunu kullanın. Geliştirme klasörünüzü seçin.
+2. Tarama tamamlandığında proje listesini ve Genel bakış bölümünü inceleyin. Proje türünü, klasörünü ve varsa Git durumunu birlikte değerlendirin.
+3. Farklı konumdaki bir çözüm veya klasör için Dosya menüsündeki bağlama araçlarını kullanın. Bağlı projeleri mevcut çalışma düzeninize dahil edin.
+4. Dosya değişiklikleri otomatik izlenir. Elle yeniden tarama için F5 kullanın; son başarılı tarama zamanını ve varsa eski veri uyarısını kontrol edin.
+
+Bilmeniz gereken: Proje keşfi kaynak kodunuzu yüklemez. Bir teknolojinin tanınması, o teknoloji için tüm derleme ve çalıştırma işlemlerinin hazır olduğu anlamına gelmez.
+
+
+03. Projeyi bulun ve çalışma düzeninizi kurun
+
+Büyük bir proje listesinde önce o gün çalışacağınız alanı daraltın. Favoriler, gruplar ve kayıtlı filtreler aynı seçimi her seferinde yeniden yapmanızı önler.
+
+1. Ctrl+F ile proje aramasına odaklanın. Bir projeyi seçip sağdaki bilgileri ve kullanılabilir işlemleri inceleyin.
+2. Sık kullandığınız projeyi sağ tık menüsünden favoriye ekleyin. Grup ve etiket alanlarıyla ilişkili projeleri düzenleyin; çoklu seçimle toplu gruplayabilirsiniz.
+3. Geçerli filtreyi Görünüm menüsünden kaydedin. Aktif olmayan projeleri arşive alın; gerektiğinde arşivden geri çıkarın.
+4. Projeyi sağ tık → Projeyi aç/Çözümü aç ile IDE’de açın. Aynı menüden klasöre, belgelere ve proje işlemlerine ulaşın; desteklenen çözümler için Visual Studio kurulumunu seçin.
+
+Bilmeniz gereken: Arşivleme kaynak dosyaları silmez. Alt bileşenleri ayrı satırlarda açıp gizlemek, liste ayrıntısını değiştirir.
+
+
+04. Git değişikliklerini inceleyin ve commit oluşturun
+
+Bir projede çalışmaya başlamadan önce dalı ve bekleyen değişiklikleri kontrol edin. Commit hazırlarken dosya farklarını incelemek, hangi değişikliği göndereceğinizi netleştirir.
+
+1. Projeyi seçip Git işlemlerini açın. Değişen dosyayı seçerek yan yana diff önizlemesini inceleyin.
+2. Commit’e dahil etmek istediğiniz dosyaları stage edin. Yanlışlıkla hazırlanan dosyayı unstage ile hazırlıktan çıkarın.
+3. Commit mesajını yazın ve Commit işlemini seçin. Uzak depoya da göndermek istiyorsanız uygun commit ve push veya ayrı push işlemini kullanın.
+4. Uzak bilgiyi yenilemek için fetch kullanın. Geçmiş, dallar/etiketler, uzak depolar, stash ve worktree araçlarını ilgili Git menülerinden açın.
+5. Birden çok depoyu değerlendirmek için Görünüm → Toplu Git özeti bölümünü açın. Çalışma alanındaki depolara toplu fetch için Git menüsündeki ayrı işlemi kullanın.
+
+Bilmeniz gereken: Özet ekranı otomatik fetch/pull/push yapmaz. Ahead/behind son alınan uzak duruma dayanır. Depo kurtarma aracı, uzak depoya gönderilmemiş yerel çalışmanın yedeği değildir.
+
+
+05. Geliştirme ortamını bir profille başlatın
+
+API, istemci ve servisler birlikte gerekiyorsa her birini ayrı ayrı hazırlamak yerine bir başlatma profili tanımlayın. Başlangıç sırası ve hazır olma kuralları bu düzenin parçasıdır.
+
+1. Bir çalışma alanı açıkken Dosya → Geliştirme merkezi veya Ctrl+Shift+D ile merkezi açın. Profilleri düzenle üzerinden yeni profil hazırlayın.
+2. Her adım için proje ve işlem seçin. IDE, terminal, hazır/özel komut veya uygun Compose başlangıcını ihtiyacınız olan sıraya yerleştirin.
+3. Uzun çalışan serviste Hazır olma portu belirleyin. Derleme veya hazırlık görevi için Görevin tamamlanmasını bekle seçin. Mevcut adımı düzenliyorsanız değişikliği seçili adıma uygulayın.
+4. Ortamı kontrol et ile gereksinimleri inceleyin. Eksik araçları hazırlayın; gerekiyorsa eksik .env dosyasını örnekten oluşturup yerel değerleri kendiniz düzenleyin.
+5. Geliştirmeyi başlat komutunu kullanın. Hata veya zaman aşımında sonucu inceleyin. Geliştirmeyi durdur ile bekleyen başlangıcı ve bu çalışma alanının yönetilen profil süreçlerini durdurun.
+
+Bilmeniz gereken: Port kuralı 127.0.0.1 üzerindeki TCP erişimini kontrol eder; uygulamanın tüm sağlık koşullarını sınamaz. Varsayılan zaman aşımı 60 saniyedir. Hazır olma kuralı olmayan adım sonraki adımı hemen başlatır.
+
+
+06. Çalışan uygulamaları ve günlükleri takip edin
+
+DevWorkspace üzerinden başlatılan yönetilen komutların durumunu tek merkezde görün. Proje, günlük ve port bilgilerini birlikte inceleyerek ilgili süreci bulun.
+
+1. Geliştirme merkezinden veya Görünüm → Çalışan uygulamalar bölümünden listeyi açın. İlgili projeye göre filtreleyin.
+2. PID, durum ve TCP dinleme adreslerini inceleyin. Günlük metni aramasıyla ilgili hata veya çıktıya ulaşın.
+3. Desteklenen dosya/satır konumunu seçip Logdan dosyayı aç işlemini kullanın. VS Code varsa ilgili konuma gidilir; yoksa Not Defteri kullanılır.
+4. Gerektiğinde komutu durdurun; durduktan sonra yeniden başlatın. Tüm işlemlerin genel durum ve çıktısı için İşlem Merkezi’ni de kullanın.
+
+Bilmeniz gereken: IDE ve bağımsız terminal pencereleri bu yönetilen listeye dahil değildir. DevWorkspace kapanınca yönetilen komutlar sonlandırılır; yalnızca araç penceresini kapatmak bunları durdurmaz.
+
+
+07. Paket güvenliğini kontrol edin
+
+Önce güncel bir tarama alın, ardından paket ve proje bağlamını inceleyin. Eski bir raporu ya da başarısız bir taramayı temiz sonuç olarak değerlendirmeyin.
+
+1. Genel bakıştaki paket güvenliği kontrollerini veya seçili projenin Proje işlemleri → NuGet güvenliği bölümünü kullanın. Desteklenen JavaScript/Dart kilit dosyaları için OSV-Scanner hazır olmalıdır.
+2. Taramayı başlatın. Sonuçların önem derecesini, etkilenen paketi, sürümü, projeyi ve hedefi inceleyin; gerekiyorsa açık kaydını açın.
+3. Desteklenen düzeltme veya sürüm inceleme akışını seçtiğinizde önerilen değişiklikleri okuyun. Doğrudan/dolaylı bağımlılık ve major sürüm değişikliklerini değerlendirerek ilerleyin.
+4. İşlem sonrasındaki yeniden tarama sonucunu inceleyin. Paket değişikliği yaptıysanız kendi projenizin derleme ve işlevsel testlerini de çalıştırın.
+
+Bilmeniz gereken: Tarama ve otomatik düzeltme kapsamı aynı değildir; her paket otomatik düzeltilemez. Bilinen açık taraması, uygulamanın tamamı için güvenlik garantisi vermez.
+
+
+08. Belgeleri, kaynakları ve bağımlılıkları inceleyin
+
+Bir projeye geri dönerken README, dönüş notu ve bağımlılık bağlamı başlangıç noktasıdır. Arama ve analiz araçlarıyla dosyadan ilgili projeye ilerleyin.
+
+1. Projenin sağ tık menüsünden README ve belgeler bölümünü açın. Projeye dönüş notunda nerede kaldığınızı ve sıradaki işi kaydedin.
+2. Ctrl+Shift+F ile içerik aramasını açın. Proje kapsamını ve harf duyarlılığını seçerek düz metin arayın; sonucu dosya/satır bağlamında inceleyin.
+3. Görünüm → Bağımlılık ve etki haritası üzerinden taramayı başlatın. Proje veya servis seçerek doğrudan/dolaylı gereksinimleri ve etkilenebilecek projeleri görün.
+4. Proje sağlığı ve ortam kontrollerini gerektiğinde yenileyin. Bulguların kaynak dosyasına, atlanan öğelere ve denetim zamanına dikkat edin.
+
+Bilmeniz gereken: İçerik araması üretilen klasörleri, yerel .env dosyasını, ikili dosyaları ve 2 MB üzerindeki dosyaları atlar. Bağımlılık haritası tüm çalışma zamanı API ilişkilerini otomatik çözümlemez.
+
+
+09. Karşılaştırma, taşıma planı ve şablonlar
+
+Klasör sürümlerini karşılaştırma, taşımadan önce etkiyi değerlendirme ve yeni proje oluşturma işlemleri farklı araçlardır. İhtiyacınıza uygun olanı seçin.
+
+1. İki proje sürümünü seçip sağ tık menüsündeki karşılaştırma işlemini açın. Değişen veya yalnızca bir tarafta bulunan dosyaları ve metin diff önizlemesini inceleyin.
+2. Bir projeyi yeniden konumlandırmayı düşünüyorsanız Taşıma planı bölümünde çalışma alanı içindeki hedefi seçin. Başvuru ve çakışma bulgularını okuyun.
+3. Görünüm → Yeni proje şablonları bölümünde hazır şablonu veya kaydettiğiniz klasör şablonunu seçin. Proje adı ve üst klasörü belirleyin.
+4. Önizle ile dosya listesini kontrol edin, sonra Oluştur kullanın. Yeni klasör tarama kapsamındaysa yeniden taramada listede görünür.
+
+Bilmeniz gereken: Karşılaştırma dosyaları birleştirmez. Taşıma planı yalnızca analizdir; dosya taşımaz. Şablon oluşturma mevcut hedefin üzerine yazmaz ve paket kurulumunu veya ilk commit’i otomatik yapmaz.
+
+
+10. Çalışma düzenini ekiple paylaşın
+
+Geliştirme yapılandırması ile durum raporu farklı ihtiyaçları karşılar. İlki çalışma düzenini taşır; ikincisi çalışma alanının son bilinen durumunu paylaşır.
+
+1. Geliştirme merkezi → Ekip yapılandırması bölümünde profillerden önizleme oluşturun. Proje yolları, komutlar, hazır olma kuralları ve gerekli araçları inceleyin.
+2. Paylaşacağınız yapılandırmayı çalışma alanı kökündeki devworkspace.development.json dosyasına kaydedin. İsterseniz bu dosyayı kaynak deponuza dahil edin.
+3. Diğer bilgisayarda aynı çalışma alanını açın; repository dosyasını okuyup önizlemeyi kontrol edin ve içe aktarın. İçe aktarma komutları çalıştırmaz.
+4. Yalnızca durum paylaşacaksanız Dosya menüsündeki HTML rapor dışa aktarımını kullanın. Proje isimlerini dahil etme tercihini kontrol ederek dosyayı paylaşmadan önce okuyun.
+
+Bilmeniz gereken: Gizli değerleri ortak yapılandırma yerine yerel .env dosyasında tutun. Anonim rapor yerel yol, branch, remote ve kaynak kod içermez; çalışma alanı ZIP aktarımının kapsamı farklıdır.
+
+
+11. Bir sürümü Yayın Merkezi ile hazırlayın
+
+Bu bölüm desteklenen .NET uygulamalarını Windows x64 için GitHub üzerinden dağıtan kullanıcılar içindir. Paket, kaynak commit ve uzak taslak birbirine bağlı olarak doğrulanır.
+
+1. İlgili proje satırına sağ tıklayıp Yayın Merkezi’ni açın. Çözümde birden fazla uygulama varsa doğru hedefi seçin; proje ve GitHub origin bilgisini kontrol edin.
+2. Ön kontrolü çalıştırın. Araçları, hesabı, kaynak durumunu ve doğrulama projelerini inceleyin. Kaynağın temiz commit olması ve GitHub’da bulunması için gerekli Git işlemlerini tamamlayın.
+3. Kararlı sürüm numarasını ve yayın notlarını hazırlayın; gerekirse commit’lerden düzenlenebilir not üretin. Paket hazırla ile izole kaynak kopyasındaki işlemleri takip edin.
+4. Taslağa yükle / devam et ile dosyaları gönderin. Dosya doğrulamalarını ve ilgili GitHub Actions sonuçlarını inceleyin; ardından yayın onayında depo, sürüm ve commit’i kontrol edin.
+5. Yayın sonrasında istatistikleri GitHub’dan yenileyin, gerekiyorsa CSV dışa aktarın. Güncelleme indirme denemesi kurulu uygulamadan ayrı bir test klasöründe yapılır.
+
+Bilmeniz gereken: Paketleme Debug yapılandırmasını kullanır. Hedef uygulamanın otomatik güncellenmesi için Velopack entegrasyonu gerekir. İndirme sayısı aktif veya tekil kullanıcı sayısı değildir.
+
+
+12. Görünümü düzenleyin ve güncel kalın
+
+Günlük kullanımda sık açtığınız panelleri ve kullandığınız dili kendi düzeninize göre ayarlayın. Yenilikler ve yardım araçları ihtiyaç duyduğunuzda elinizin altında kalsın.
+
+1. Ayarlar üzerinden dili, Görünüm menüsünden tema, yoğunluk ve kolon seçeneklerini ayarlayın.
+2. Pencereler menüsünden ihtiyaç duyduğunuz panelleri açın. Düzeni adlandırarak kaydedin; daha sonra kayıtlı düzene dönün veya varsayılan düzeni geri yükleyin.
+3. Yardım → Yenilikler bölümünden geçerli sürümün notlarını inceleyin. Kurulu kopyada hazır güncelleme sonraki açılışta veya Şimdi yeniden başlat ile uygulanır.
+4. Yardım → Hata bildir ile düzenlenebilir GitHub taslağı hazırlayın. Sorunu ve yeniden üretme adımlarını ekleyip göndermeden önce içeriği gözden geçirin.
+
+Bilmeniz gereken: Hata bildirimi otomatik issue göndermez veya log eklemez. İsteğe bağlı yerel kullanım sayaçları varsayılan kapalıdır ve otomatik gönderilmez.
+
+
+13. Sık karşılaşılan durumları çözün
+
+Bir işlem beklediğiniz gibi görünmüyorsa önce proje kapsamını, yüklü araçları ve son kontrol zamanını inceleyin.
+
+1. Proje bulunmuyor: doğru kök klasörü ve tarama dışlamalarını kontrol edin; dosya türünün desteklendiğini doğrulayıp F5 ile yenileyin.
+2. Komut kullanılamıyor: proje türünü ve mevcut betikleri kontrol edin. Geliştirme araçlarında gerekli SDK veya çalıştırılabilir dosyanın bulunduğunu doğrulayın.
+3. GitHub işlemi başarısız: GitHub CLI kurulumunu, oturumunu, depo erişimini ve origin adresini kontrol edin.
+4. Profil başlamıyor: ortam kontrolünü yenileyin; eksik .env anahtarlarını, port çakışmasını, başarısız görevi veya hazır olma zaman aşımını inceleyin.
+5. Eski sonuç görünüyor: son tarama/denetim zamanını okuyun. Ağ veya araç hatasını giderdikten sonra ilgili işlemi yeniden çalıştırın; eski raporu yeni sonuç saymayın.
+
+
+14. Klavye ile hızlı erişim
+
+Günlük kullanımda en sık ihtiyaç duyacağınız kısayollar aşağıdadır. Diğer kısayolları uygulamanın Yardım menüsünden inceleyebilirsiniz.
+
+1. Ctrl+O — Çalışma alanı aç veya kur.
+2. Ctrl+K — Komut paletini aç.
+3. Ctrl+F — Proje listesinde ara.
+4. Ctrl+Shift+F — Projeler arası içerik aramasını aç.
+5. Ctrl+Shift+D — Geliştirme merkezini aç.
+6. F5 — Çalışma alanını yeniden tara.
+

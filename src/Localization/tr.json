@@ -1,4 +1,5 @@
 {
+  "UncommittedChanges": "Commit edilmemiş değişiklikler (diff)…",
   "DashboardChecksTitle": "Çalışma alanı kontrolleri",
   "DashboardChecksHint": "Proje sağlığı, Git ve CI, JavaScript ve Flutter paket güvenliği",
   "DashboardSelectedProject": "Seçili proje",

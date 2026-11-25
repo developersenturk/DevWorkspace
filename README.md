@@ -43,6 +43,10 @@ A silent, 30-second screenshot tour captured in the real Windows application usi
 
 ## Your development folder, with context
 
+**[Development hub](docs/development-hub.md)** brings startup profiles, readiness checks, project handoff context, live logs and a portable team configuration into one daily workflow. Open it from **File → Development hub**.
+
+**[Work and maintenance](docs/work-and-maintenance.md)** adds resumable work sets, actionable error suggestions, dependency impact with related tests, environment variants and resource/cleanup previews.
+
 Which repository has uncommitted work? Where is that React client inside your .NET solution? Which package findings need attention before you pick up a project again?
 
 DevWorkspace brings that context into a searchable desktop workspace.

@@ -24,7 +24,7 @@ internal static class Program
             Loc.Initialize(startupLanguage);
             application.Resources.MergedDictionaries.Add(Loc.CreateResources());
             App.ApplyTheme(startupTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
-            var window = new StartupWindow();
+            var window = new StartupWindow(application.Resources);
             application.MainWindow = window; application.Run(window); return;
         }
         if (args is ["--grid-preview", var kind, var themeName])
@@ -62,6 +62,17 @@ internal static class Program
                 tools.Close();
                 var note = new ResumeNoteWindow("Example", new("Context", "Next", DateTime.UtcNow), _ => true); note.Show(); note.UpdateLayout(); Check(note.ActualWidth >= note.MinWidth, "Note layout"); note.Close();
                 var profiles = new LaunchProfilesWindow([project], [], _ => { }, workspace.Root); profiles.Show(); profiles.UpdateLayout(); Check(profiles.ActualWidth >= profiles.MinWidth, "Profile layout"); profiles.Close();
+                var hub = new DevelopmentHubWindow(workspace, () => [project], () => new(null, []), (_, _) => true,
+                    _ => Task.CompletedTask, () => { }, () => { }, _ => { }, _ => Task.CompletedTask, _ => { }, _ => { }, () => { });
+                hub.Show(); hub.UpdateLayout(); Check(hub.ActualWidth >= hub.MinWidth, "Development hub layout");
+                hub.Width = hub.MinWidth; hub.Height = hub.MinHeight; hub.UpdateLayout();
+                Check(hub.ActualWidth == hub.MinWidth, "Development hub minimum width"); hub.Close();
+                var productivity = new ProductivityWindow(workspace, () => [project], () => new(null, []), _ => true,
+                    (_, _, _) => Task.CompletedTask, _ => Task.CompletedTask, _ => { }, _ => { }, _ => { }, CancellationToken.None);
+                productivity.Show();
+                for (int tab = 0; tab < 5; tab++) { productivity.SelectTab(tab); productivity.UpdateLayout(); Check(productivity.ActualWidth >= productivity.MinWidth, $"Productivity tab {language}/{theme.Name}/{tab}"); }
+                productivity.Width = productivity.MinWidth; productivity.Height = productivity.MinHeight; productivity.UpdateLayout();
+                Check(productivity.ActualWidth == productivity.MinWidth, "Productivity minimum width"); productivity.Close();
             }
             application.Shutdown(); Console.WriteLine($"Workspace UI: {_checks} theme/language/layout checks passed."); return;
         }
@@ -78,6 +89,12 @@ internal static class Program
     }
     private static async Task RunAsync(string[] args)
     {
+        if (args is ["--echo-env", var variable]) { Console.WriteLine(Environment.GetEnvironmentVariable(variable)); return; }
+        if (args is ["--listener", var requestedPort])
+        {
+            var listener = new TcpListener(IPAddress.Loopback, int.Parse(requestedPort)); listener.Start();
+            Console.WriteLine(((IPEndPoint)listener.LocalEndpoint).Port); await Task.Delay(Timeout.Infinite); return;
+        }
         if (args is ["--listener"])
         {
             var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start(); Console.WriteLine(((IPEndPoint)listener.LocalEndpoint).Port);
@@ -87,6 +104,8 @@ internal static class Program
         string root = Path.Combine(Path.GetTempPath(), "DevWorkspace-features-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(root);
         try
         {
+            await DevelopmentWorkflowChecks.RunAsync(root, Check);
+            await ProductivityChecks.RunAsync(root, Check);
             string folder = Path.Combine(root, "search"); Directory.CreateDirectory(folder);
             File.WriteAllText(Path.Combine(folder, "source.cs"), "first\nNeedle here\nneedle again\n");
             Directory.CreateDirectory(Path.Combine(folder, "node_modules")); File.WriteAllText(Path.Combine(folder, "node_modules", "hidden.js"), "Needle");

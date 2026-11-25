@@ -110,7 +110,7 @@ internal static class ProjectTools
 
     private static string Quote(string path) => "\"" + path + "\"";
 
-    internal static ProcessStartInfo CreateCaptureInfo(string executable, string folder, IEnumerable<string> arguments)
+    internal static ProcessStartInfo CreateCaptureInfo(string executable, string folder, IEnumerable<string> arguments, IReadOnlyDictionary<string, string>? environment = null)
     {
         if (DevelopmentTools.ForCommand(executable) is { } tool)
             executable = DevelopmentTools.Require(tool);
@@ -123,6 +123,7 @@ internal static class ProjectTools
         foreach (string argument in arguments)
             info.ArgumentList.Add(argument);
         DevelopmentTools.ApplyPath(info, Path.GetDirectoryName(executable) ?? Environment.SystemDirectory);
+        if (environment is not null) foreach (var value in environment) info.Environment[value.Key] = value.Value;
         return info;
     }
 
@@ -184,7 +185,8 @@ internal static class ProjectTools
         return DevelopmentTools.ForCommand(command.Executable);
     }
 
-    public static async Task<int> RunAsync(ProjectCommand command, string folder, Action<string> output, CancellationToken token, Action<Process>? started = null)
+    public static async Task<int> RunAsync(ProjectCommand command, string folder, Action<string> output, CancellationToken token, Action<Process>? started = null,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
         token.ThrowIfCancellationRequested();
         string executable = command.Executable;
@@ -221,6 +223,7 @@ internal static class ProjectTools
         {
             DevelopmentTools.ApplyPath(info);
         }
+        if (environment is not null) foreach (var value in environment) info.Environment[value.Key] = value.Value;
         using var process = Process.Start(info) ?? throw new IOException(Loc.Text("LC288EBA686E0"));
         using var cancellation = KillOnCancellation(process, token);
         started?.Invoke(process);

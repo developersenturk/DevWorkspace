@@ -5,8 +5,10 @@ using System.Text.Json;
 
 namespace DevWorkspace;
 
-internal sealed record SharedLaunchStep(string Project, string? Preset, string Action = "default");
-internal sealed record SharedLaunchProfile(int SchemaVersion, string Name, SharedLaunchStep[] Steps);
+internal sealed record SharedLaunchStep(string Project, string? Preset, string Action = "default", int? ReadyPort = null,
+    bool WaitForExit = false, int TimeoutSeconds = 60);
+internal sealed record SharedLaunchProfile(int SchemaVersion, string Name, SharedLaunchStep[] Steps,
+    string? EnvironmentName = null, Dictionary<string, string>? EnvironmentFiles = null);
 
 internal static class WorkspaceSharing
 {
@@ -21,6 +23,7 @@ internal static class WorkspaceSharing
 
     internal static string ExportProfile(LaunchProfile profile, IReadOnlyList<ProjectEntry> projects, string root)
     {
+        DevelopmentWorkflow.Validate(profile);
         var steps = profile.Steps.Select(step =>
         {
             if (step.Action is not ("default" or "terminal") || (step.Action == "terminal" && step.Command is not null))
@@ -37,9 +40,10 @@ internal static class WorkspaceSharing
                 if (System.Text.RegularExpressions.Regex.IsMatch(preset, @"[A-Za-z]:[\\/]|\\\\"))
                     throw new InvalidDataException(Loc.Text("SharePortableOnly"));
             }
-            return new SharedLaunchStep(step.Project.Replace('\\', '/'), preset, step.Action);
+            return new SharedLaunchStep(step.Project.Replace('\\', '/'), preset, step.Action, step.ReadyPort, step.WaitForExit, step.TimeoutSeconds);
         }).ToArray();
-        return JsonSerializer.Serialize(new SharedLaunchProfile(1, profile.Name, steps), Json);
+        var files = profile.EnvironmentFiles?.ToDictionary(p => p.Key.Replace('\\', '/'), p => p.Value.Replace('\\', '/'), StringComparer.OrdinalIgnoreCase);
+        return JsonSerializer.Serialize(new SharedLaunchProfile(1, profile.Name, steps, profile.EnvironmentName, files), Json);
     }
 
     internal static LaunchProfile ImportProfile(string json, IReadOnlyList<ProjectEntry> projects, string root)
@@ -60,9 +64,12 @@ internal static class WorkspaceSharing
             var command = step.Preset is null ? null : ProjectTools.Presets(project)
                 .FirstOrDefault(p => Signature(p, root) == step.Preset)
                 ?? throw new InvalidDataException(Loc.Text("SharePresetOnly"));
-            return new LaunchStep(project.RelativePath, command, step.Action);
+            return new LaunchStep(project.RelativePath, command, step.Action, step.ReadyPort, step.WaitForExit, step.TimeoutSeconds);
         }).ToArray();
-        return new(shared.Name.Trim(), steps);
+        var profile = new LaunchProfile(shared.Name.Trim(), steps, shared.EnvironmentName,
+            shared.EnvironmentFiles?.ToDictionary(p => p.Key.Replace('/', Path.DirectorySeparatorChar), p => p.Value.Replace('/', Path.DirectorySeparatorChar), StringComparer.OrdinalIgnoreCase));
+        DevelopmentWorkflow.Validate(profile);
+        return profile;
     }
 
     internal static string Report(IReadOnlyList<ProjectEntry> projects, bool includeNames)

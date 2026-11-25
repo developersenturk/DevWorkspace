@@ -6,8 +6,17 @@ namespace DevWorkspace;
 
 internal static class EnvironmentChecks
 {
-    internal static async Task<InspectionRow[]> ReadAsync(ProjectEntry project, CancellationToken token)
+    internal static void CreateEnvTemplate(string folder)
     {
+        string source = new[] { ".env.example", ".env.sample", ".env.template" }.Select(n => Path.Combine(folder, n))
+            .FirstOrDefault(File.Exists) ?? throw new IOException(WorkbenchText.T("EnvTemplateMissing"));
+        // CreateNew ensures an existing local environment is never overwritten.
+        using var destination = new FileStream(Path.Combine(folder, ".env"), FileMode.CreateNew, FileAccess.Write);
+        using var input = File.OpenRead(source); input.CopyTo(destination);
+    }
+    internal static async Task<InspectionRow[]> ReadAsync(ProjectEntry project, CancellationToken token, string? environmentFile = null)
+    {
+        var environment = environmentFile is null ? null : LaunchEnvironment.Read(environmentFile);
         var rows = new List<InspectionRow>();
         string? nodeRequirement = null;
         foreach (string name in new[] { ".nvmrc", ".node-version" })
@@ -28,7 +37,7 @@ internal static class EnvironmentChecks
         {
             try
             {
-                var (code, output, error) = await ProjectTools.CaptureAsync(ProjectTools.CreateCaptureInfo("node.exe", project.Folder, ["--version"]), "Node.js", 10, token);
+                var (code, output, error) = await ProjectTools.CaptureAsync(ProjectTools.CreateCaptureInfo("node.exe", project.Folder, ["--version"], environment), "Node.js", 10, token);
                 bool? matches = code == 0 ? MatchesNode(output.Trim(), nodeRequirement) : false;
                 rows.Add(new(WorkbenchText.T(matches == true ? "Ready" : matches == false ? "Attention" : "ManualCheck"), "Node.js", $"{nodeRequirement} · {(code == 0 ? output.Trim() : error.Trim())}"));
             }
@@ -39,7 +48,7 @@ internal static class EnvironmentChecks
             string path = Path.Combine(project.Folder, example);
             if (!File.Exists(path)) continue;
             var required = EnvKeys(File.ReadAllLines(path));
-            string env = Path.Combine(project.Folder, ".env");
+            string env = environmentFile ?? Path.Combine(project.Folder, ".env");
             string[] actual = File.Exists(env) ? File.ReadAllLines(env) : [];
             var present = EnvKeys(actual);
             string[] missing = required.Except(present, StringComparer.Ordinal).ToArray();
@@ -50,7 +59,7 @@ internal static class EnvironmentChecks
         {
             try
             {
-                var (code, output, error) = await ProjectTools.CaptureAsync(ProjectTools.CreateCaptureInfo("docker.exe", project.Folder, ["compose", "ps", "--all", "--format", "json"]), "Docker Compose", 15, token);
+                var (code, output, error) = await ProjectTools.CaptureAsync(ProjectTools.CreateCaptureInfo("docker.exe", project.Folder, ["compose", "ps", "--all", "--format", "json"], environment), "Docker Compose", 15, token);
                 if (code != 0) rows.Add(new(WorkbenchText.T("Attention"), "Docker Compose", error.Trim()));
                 else
                 {

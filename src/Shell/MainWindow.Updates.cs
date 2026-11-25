@@ -190,11 +190,13 @@ public partial class MainWindow
         HideAppUpdateToast();
         if (_appUpdates is not null) _appUpdates.Changed -= AppUpdateChanged;
         if (!_restartForAppUpdate || Program.UpdateManager is not { } manager) return;
+        if (manager.UpdatePendingRestart is not { } pending ||
+            !VelopackUpdateFeed.IsNewer(pending.Version.ToString(), AppReleaseNotes.CurrentVersion)) return;
         try
         {
             // Only called AFTER the user-requested close and state save succeeded.
             // Never call this from the background checker: the SDK has a 60-second exit timeout.
-            manager.WaitExitThenApplyUpdates(manager.UpdatePendingRestart, silent: true, restart: true,
+            manager.WaitExitThenApplyUpdates(pending, silent: true, restart: true,
                 restartArgs: _workspace is { } workspace ? [workspace.Root] : []);
         }
         catch (Exception ex)

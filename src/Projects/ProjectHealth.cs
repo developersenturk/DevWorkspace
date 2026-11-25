@@ -12,7 +12,7 @@ internal static class ProjectHealth
 {
     private static readonly Regex Framework = new(@"^net(?<major>[5-9]|[1-9][0-9]+)\.[0-9]+", RegexOptions.IgnoreCase);
 
-    public static async Task<HealthResult> CheckAsync(Workspace workspace, ProjectEntry project, CancellationToken token)
+    public static async Task<HealthResult> CheckAsync(Workspace workspace, ProjectEntry project, CancellationToken token, IReadOnlyDictionary<string, string>? environment = null)
     {
         var findings = new List<HealthFinding>();
         if (project.Kind == Loc.Text("LBEAFC51072E1") || !Directory.Exists(project.Folder))
@@ -81,7 +81,7 @@ internal static class ProjectHealth
             try
             {
                 int code = await ProjectTools.RunAsync(new("SDK", "dotnet.exe", "--version"), project.Folder,
-                    message => { lock (output) if (output.Length < 3000) output.Append(message); }, timeout.Token);
+                    message => { lock (output) if (output.Length < 3000) output.Append(message); }, timeout.Token, environment: environment);
                 string selected = output.ToString().Trim();
                 if (code != 0)
                     findings.Add(new("SDK", Loc.Text("L2A32E0CF7DC2"), FindGlobalJson(project.Folder)));

@@ -1,4 +1,5 @@
 {
+  "UncommittedChanges": "Uncommitted changes (diff)…",
   "DashboardChecksTitle": "Workspace checks",
   "DashboardChecksHint": "Project health, Git and CI, JavaScript and Flutter package security",
   "DashboardSelectedProject": "Selected project",

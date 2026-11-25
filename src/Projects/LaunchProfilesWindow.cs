@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using System.Text.Json;
@@ -23,9 +23,13 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
     private readonly ListBox _steps = new() { DisplayMemberPath = "Label", Margin = new(0, 8, 0, 8) };
     private readonly TextBox _name = new() { MinWidth = 185 };
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly TextBox _port = new() { Width = 70 };
+    private readonly TextBox _timeout = new() { Width = 65, Text = "60" };
+    private readonly CheckBox _wait = new() { Content = WorkbenchText.T("WaitForExit"), VerticalAlignment = VerticalAlignment.Center };
     private LaunchProfile[] _saved;
     private readonly string _root;
     private readonly List<Step> _draft = [];
+    private LaunchProfile? _loadedProfile;
     internal LaunchProfile? SelectedProfile { get; private set; }
 
     internal LaunchProfilesWindow(IReadOnlyList<ProjectEntry> projects, LaunchProfile[] saved, Action<LaunchProfile[]> save, string root)
@@ -36,9 +40,9 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
         _save = save;
         Title = Loc.Text("LC12C038CF0C7");
         Width = 800;
-        Height = 470;
+        Height = 570;
         MinWidth = 620;
-        MinHeight = 360;
+        MinHeight = 490;
         ShowInTaskbar = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _profiles.ItemsSource = _saved;
@@ -61,6 +65,14 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
             Button(Loc.Text("LF698E9B40F9F"), Delete)), Dock.Top);
         AddDocked(body, Row(Label(Loc.Text("LD9A085BAB7E5")), _name), Dock.Top);
         AddDocked(body, Row(Label(Loc.Text("L7B321D627CB1")), _project, _command, Button(Loc.Text("L150474518D2F"), AddStep)), Dock.Top);
+        AddDocked(body, Row(Label(WorkbenchText.T("ReadyPort")), _port, _wait,
+            Label(WorkbenchText.T("TimeoutSeconds")), _timeout), Dock.Top);
+        AddDocked(body, new TextBlock { Text = WorkbenchText.T("ReadinessHint"), TextWrapping = TextWrapping.Wrap, Margin = new(0, 4, 0, 8) }, Dock.Top);
+        _steps.SelectionChanged += (_, _) => { if (_steps.SelectedItem is Step s) { _port.Text = s.Value.ReadyPort?.ToString() ?? ""; _wait.IsChecked = s.Value.WaitForExit; _timeout.Text = s.Value.TimeoutSeconds.ToString(); } };
+        AddDocked(body, Row(Button(WorkbenchText.T("MoveUp"), () => MoveStep(-1)), Button(WorkbenchText.T("MoveDown"), () => MoveStep(1)),
+            Button(WorkbenchText.T("ApplyReadiness"), ApplyReadiness)), Dock.Top);
+        System.Windows.Automation.AutomationProperties.SetName(_port, WorkbenchText.T("ReadyPort"));
+        System.Windows.Automation.AutomationProperties.SetName(_timeout, WorkbenchText.T("TimeoutSeconds"));
         AddDocked(body, _status, Dock.Bottom);
         AddDocked(body, Row(Button(Loc.Text("L8C9EFC5978DA"), RemoveStep), Button(Loc.Text("LC1FE2ECDFF02"), Save),
             Button(Loc.Text("ShareExport"), Export), Button(Loc.Text("ShareImport"), Import),
@@ -98,6 +110,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
 
     private void Load(LaunchProfile? profile)
     {
+        _loadedProfile = profile;
         _name.Text = profile?.Name ?? "";
         _draft.Clear();
         foreach (var step in profile?.Steps ?? [])
@@ -114,11 +127,40 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
     {
         if (_project.SelectedItem is ProjectEntry project && _command.SelectedItem is Option option)
         {
-            var step = new LaunchStep(project.RelativePath, option.Command, option.Action);
+            if (!TryReadReadiness(out int? port, out int timeout)) return;
+            var step = new LaunchStep(project.RelativePath, option.Command, option.Action, port, _wait.IsChecked == true, timeout);
+            try { DevelopmentWorkflow.Validate(new("draft", [step])); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException) { _status.Text = ex.Message; return; }
             if (_draft.All(row => row.Value != step))
                 _draft.Add(new(step, $"{project.Name} · {option.Label}"));
             RefreshSteps();
         }
+    }
+
+    private bool TryReadReadiness(out int? port, out int timeout)
+    {
+        port = null; timeout = 60;
+        if ((!string.IsNullOrWhiteSpace(_port.Text) && (!int.TryParse(_port.Text, out int parsed) || parsed is < 1 or > 65535)) ||
+            !int.TryParse(_timeout.Text, out timeout) || timeout is < 1 or > 3600 || (_wait.IsChecked == true && !string.IsNullOrWhiteSpace(_port.Text)))
+        { _status.Text = WorkbenchText.T("InvalidWorkflow"); return false; }
+        if (int.TryParse(_port.Text, out int value)) port = value;
+        return true;
+    }
+
+    private void ApplyReadiness()
+    {
+        if (_steps.SelectedItem is not Step selected || !TryReadReadiness(out int? port, out int timeout)) return;
+        var value = selected.Value with { ReadyPort = port, WaitForExit = _wait.IsChecked == true, TimeoutSeconds = timeout };
+        try { DevelopmentWorkflow.Validate(new("draft", [value])); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException) { _status.Text = ex.Message; return; }
+        int index = _draft.IndexOf(selected); _draft[index] = selected with { Value = value }; RefreshSteps(); _steps.SelectedIndex = index;
+    }
+
+    private void MoveStep(int offset)
+    {
+        int index = _steps.SelectedIndex, next = index + offset;
+        if (index < 0 || next < 0 || next >= _draft.Count) return;
+        (_draft[index], _draft[next]) = (_draft[next], _draft[index]); RefreshSteps(); _steps.SelectedIndex = next;
     }
 
     private void RemoveStep()
@@ -143,7 +185,12 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
             _status.Text = Loc.Text("L41A9143D6D12");
             return null;
         }
-        return new(name, _draft.Select(row => row.Value).ToArray());
+        var profile = new LaunchProfile(name, _draft.Select(row => row.Value).ToArray(), _loadedProfile?.EnvironmentName,
+            _loadedProfile?.EnvironmentFiles?.Where(p => _draft.Any(s => s.Value.Project.Equals(p.Key, StringComparison.OrdinalIgnoreCase)))
+                .ToDictionary(p => p.Key, p => p.Value, StringComparer.OrdinalIgnoreCase));
+        try { DevelopmentWorkflow.Validate(profile); }
+        catch (Exception ex) when (ex is IOException or InvalidDataException) { _status.Text = ex.Message; return null; }
+        return profile;
     }
 
     private void Save()
@@ -187,7 +234,7 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
             WorkspaceSharing.WriteAtomic(picker.FileName, WorkspaceSharing.ExportProfile(profile, _projects, _root));
             _status.Text = Loc.Text("GrowthSaved");
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _status.Text = ex.Message; }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException) { _status.Text = ex.Message; }
     }
 
     private void Import()
@@ -206,6 +253,6 @@ internal sealed class LaunchProfilesWindow : ThemedWindow
             Load(profile);
             _status.Text = Loc.Text("ShareImported");
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException) { _status.Text = ex.Message; }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException) { _status.Text = ex.Message; }
     }
 }

@@ -60,8 +60,9 @@ internal static class ProjectInspection
     private static bool IsProjectEntry(string path) =>
         ProjectTools.IsDotNetEntry(path) || Path.GetExtension(path).Equals(".vcxproj", StringComparison.OrdinalIgnoreCase);
 
-    internal static async Task<InspectionRow[]> EnvironmentAsync(Workspace workspace, ProjectEntry project, CancellationToken token)
+    internal static async Task<InspectionRow[]> EnvironmentAsync(Workspace workspace, ProjectEntry project, CancellationToken token, string? environmentFile = null)
     {
+        var environment = environmentFile is null ? null : LaunchEnvironment.Read(environmentFile);
         DevelopmentTools.RefreshPaths();
         var rows = new List<InspectionRow>();
         var tools = new List<(DevelopmentTool Tool, string? Requirement)>();
@@ -91,7 +92,7 @@ internal static class ProjectInspection
             {
                 try
                 {
-                    var info = ProjectTools.CreateCaptureInfo(executable, project.Folder, ["--version"]);
+                    var info = ProjectTools.CreateCaptureInfo(executable, project.Folder, ["--version"], environment);
                     var (code, output, error) = await ProjectTools.CaptureAsync(info, definition.Name, 10, token);
                     status = code == 0 ? Loc.Text("L5AF30E9219D3") : Loc.Text("L3B5AFEB0ED88");
                     detail = (code == 0 ? output : error + output).Trim();
@@ -106,11 +107,11 @@ internal static class ProjectInspection
         }
         if (tools.Any(tool => tool.Tool == DevelopmentTool.DotNet))
         {
-            var health = await ProjectHealth.CheckAsync(workspace, project, token);
+            var health = await ProjectHealth.CheckAsync(workspace, project, token, environment);
             rows.AddRange(health.Findings.Where(finding => finding.Severity == "SDK")
                 .Select(finding => new InspectionRow(Loc.Text("L3A1CCF19A70C"), ".NET SDK", finding.Description)));
         }
-        rows.AddRange(await EnvironmentChecks.ReadAsync(project, token));
+        rows.AddRange(await EnvironmentChecks.ReadAsync(project, token, environmentFile));
         return rows.ToArray();
     }
 

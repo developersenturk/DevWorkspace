@@ -5,7 +5,7 @@ using System.Xml;
 namespace DevWorkspace;
 
 internal sealed record DependencyEdge(string Source, string Target, string Kind);
-internal sealed record DependencyReport(DependencyEdge[] Edges, string[] Diagnostics)
+internal sealed record DependencyReport(DependencyEdge[] Edges, string[] Diagnostics, string[]? Manifests = null)
 {
     internal string[] Reachable(string start, bool reverse)
     {
@@ -42,7 +42,7 @@ internal static class WorkspaceDependencies
             catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception or JsonException or InvalidOperationException) { return new DependencyReport([], [project.Folder + ": " + ex.Message]); }
             finally { limit.Release(); }
         }));
-        return new(report.Edges.Concat(compose.SelectMany(r => r.Edges)).Distinct().ToArray(), report.Diagnostics.Concat(compose.SelectMany(r => r.Diagnostics)).ToArray());
+        return new(report.Edges.Concat(compose.SelectMany(r => r.Edges)).Distinct().ToArray(), report.Diagnostics.Concat(compose.SelectMany(r => r.Diagnostics)).ToArray(), report.Manifests);
     }
 
     internal static DependencyEdge[] ParseCompose(string file, string json)
@@ -124,6 +124,7 @@ internal static class WorkspaceDependencies
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or XmlException or JsonException or ArgumentException or InvalidOperationException) { diagnostics.Add(file + ": " + ex.Message); }
         }
-        return new(edges.OrderBy(e => e.Source).ThenBy(e => e.Target).ToArray(), diagnostics.Distinct().Take(200).ToArray());
+        return new(edges.OrderBy(e => e.Source).ThenBy(e => e.Target).ToArray(), diagnostics.Distinct().Take(200).ToArray(),
+            files.Where(f => Path.GetExtension(f).ToLowerInvariant() is ".csproj" or ".fsproj" or ".vbproj" or ".vcxproj" || Path.GetFileName(f) == "package.json").ToArray());
     }
 }

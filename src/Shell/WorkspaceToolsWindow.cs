@@ -24,15 +24,17 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
     private readonly CancellationToken _workbenchToken;
     private readonly Action<string> _created;
     private readonly Action<ProjectEntry> _openGit;
+    private readonly Action? _stopDevelopment;
     private readonly DispatcherTimer _runtimeTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     private CancellationTokenSource? _searching;
     private bool _portsBusy;
 
     internal WorkspaceToolsWindow(Workspace workspace, ProjectEntry[] projects, int tab, Func<ProjectTemplate[]> templates,
-        Func<ProjectTemplate[], bool> saveTemplates, CancellationToken workbenchToken, Action<string> created, Action<ProjectEntry> openGit)
+        Func<ProjectTemplate[], bool> saveTemplates, CancellationToken workbenchToken, Action<string> created, Action<ProjectEntry> openGit, Action? stopDevelopment = null)
     {
         _workspace = workspace; _projects = projects; _templates = templates; _saveTemplates = saveTemplates;
         _workbenchToken = workbenchToken; _created = created; _openGit = openGit;
+        _stopDevelopment = stopDevelopment;
         Title = WorkbenchText.T("Tools"); Width = 1120; Height = 740; MinWidth = 780; MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterOwner; ShowInTaskbar = false;
         _tabs.Margin = new(12);
@@ -159,23 +161,33 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
     private UIElement RuntimePanel()
     {
         var panel = Panel(); var status = Text("RuntimeHint");
+        var scope = ProjectPicker(true); var query = Input("LogFilter", 240);
+        bool InWorkspace(WorkspaceOperation operation) => operation.Folder is { } folder && _projects.Any(p => string.Equals(p.Folder, folder, StringComparison.OrdinalIgnoreCase));
+        bool InScope(WorkspaceOperation operation) => InWorkspace(operation) && (scope.SelectedIndex == 0 ||
+            scope.SelectedItem is ProjectEntry p && string.Equals(operation.Folder, p.Folder, StringComparison.OrdinalIgnoreCase));
         var grid = Table(("Project", "Target", 150), ("Command", "Name", 180), ("Pid", "ProcessId", 80), ("Ports", "Ports", 0), ("Status", "Status", 130));
         var output = new TextBox { IsReadOnly = true, FontFamily = new("Consolas"), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto };
         AutomationProperties.SetName(output, WorkbenchText.T("Logs"));
+        void ShowOutput()
+        {
+            string text = (grid.CurrentItem as WorkspaceOperation)?.ReadOutput() ?? "";
+            if (!string.IsNullOrWhiteSpace(query.Text)) text = string.Join(Environment.NewLine, text.Split('\n').Where(l => l.Contains(query.Text, StringComparison.OrdinalIgnoreCase)));
+            if (output.Text != text) output.Text = text;
+        }
         var stop = Button("Stop", () => (grid.CurrentItem as WorkspaceOperation)?.Cancel?.Invoke());
         var restart = Button("Restart", () =>
         {
             if (grid.CurrentItem is WorkspaceOperation { IsRunning: false, Command: { } command, Folder: { } folder } operation)
-                _ = OperationCenter.RunCommandAsync(command, operation.Target, folder, _workbenchToken);
+                _ = OperationCenter.RunCommandAsync(command, operation.Target, folder, _workbenchToken, operation.EnvironmentFile);
         });
         void Update()
         {
             var selected = grid.CurrentItem as WorkspaceOperation;
-            var rows = OperationCenter.Entries.Where(e => e.Command is not null).ToArray();
+            var rows = OperationCenter.Entries.Where(e => e.Command is not null && InScope(e)).ToArray();
             grid.ItemsSource = rows; if (selected is not null && rows.Contains(selected)) grid.CurrentItem = selected;
             else WorkbenchGrid.SelectFirst(grid);
             var current = grid.CurrentItem as WorkspaceOperation;
-            string text = current?.ReadOutput() ?? ""; if (output.Text != text) output.Text = text;
+            ShowOutput();
             stop.IsEnabled = current is { IsRunning: true, Cancel: not null };
             restart.IsEnabled = current is { IsRunning: false, Command: not null };
         }
@@ -185,7 +197,7 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
             _portsBusy = true;
             try
             {
-                var operations = OperationCenter.Entries.Where(e => e.Command is not null).ToArray();
+                var operations = OperationCenter.Entries.Where(e => e.Command is not null && InWorkspace(e)).ToArray();
                 await Task.Run(() => RuntimePorts.RefreshAsync(operations, _closing.Token), _closing.Token);
                 if (!_closing.IsCancellationRequested) { status.Text = WorkbenchText.T("RuntimeHint"); Update(); }
             }
@@ -197,11 +209,38 @@ internal sealed class WorkspaceToolsWindow : ThemedWindow
         grid.CurrentItemChanged += (_, _) =>
         {
             var current = grid.CurrentItem as WorkspaceOperation;
-            output.Text = current?.ReadOutput() ?? "";
+            ShowOutput();
             stop.IsEnabled = current is { IsRunning: true, Cancel: not null };
             restart.IsEnabled = current is { IsRunning: false, Command: not null };
         };
-        AddTop(panel, Row(stop, restart, Button("Refresh", Ports))); AddTop(panel, status);
+        void OpenLogFile()
+        {
+            try
+            {
+                if (grid.CurrentItem is not WorkspaceOperation { Folder: { } folder }) return;
+                string text = output.SelectedText;
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    int line = output.GetLineIndexFromCharacterIndex(output.CaretIndex);
+                    text = line >= 0 ? output.GetLineText(line) : "";
+                }
+                if (LogLocation.Parse(text, folder) is not { } location) { status.Text = WorkbenchText.T("NoLogLocation"); return; }
+                if (DevelopmentTools.Find(DevelopmentTool.Editor) is { } editor)
+                {
+                    var info = new ProcessStartInfo(editor) { UseShellExecute = true }; info.ArgumentList.Add("--goto");
+                    info.ArgumentList.Add($"{location.File}:{location.Line}:{location.Column}"); Process.Start(info);
+                }
+                else { var info = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "notepad.exe")); info.ArgumentList.Add(location.File); Process.Start(info); }
+            }
+            catch (Exception ex) when (ex is IOException or Win32Exception or ArgumentException or System.Text.RegularExpressions.RegexMatchTimeoutException) { status.Text = ex.Message; }
+        }
+        scope.SelectionChanged += (_, _) => Update(); query.TextChanged += (_, _) => ShowOutput();
+        AddTop(panel, Row(Text("Project"), scope, Text("LogFilter"), query));
+        AddTop(panel, Row(stop, restart, Button("StopAll", () =>
+        {
+            _stopDevelopment?.Invoke();
+            foreach (var operation in OperationCenter.Entries.Where(InWorkspace).Where(e => e.IsRunning).ToArray()) operation.Cancel?.Invoke();
+        }), Button("Refresh", Ports), Button("OpenLogLocation", OpenLogFile))); AddTop(panel, status);
         var split = new Grid(); split.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) }); split.RowDefinitions.Add(new() { Height = new(6) }); split.RowDefinitions.Add(new() { Height = new(1, GridUnitType.Star) });
         split.Children.Add(grid); Grid.SetRow(output, 2); split.Children.Add(output);
         var splitter = new GridSplitter { Height = 6, HorizontalAlignment = HorizontalAlignment.Stretch }; Grid.SetRow(splitter, 1); split.Children.Add(splitter);

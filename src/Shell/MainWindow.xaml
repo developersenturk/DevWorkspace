@@ -215,6 +215,8 @@
                     <MenuItem Icon="{local:MenuGlyph &#xE81C;}" x:Name="RecentWorkspacesMenu" Header="{DynamicResource L36D5DC620F15}"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE721;}" x:Name="QuickOpenMenu" Header="{DynamicResource L04FB6F21D6EE}" InputGestureText="Ctrl+K" Click="QuickOpenClick" IsEnabled="False"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE81C;}" Header="{DynamicResource LEFF4F43841EA}" Click="ResumeWorkspaceClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE768;}" Header="{DynamicResource WorkbenchDevelopmentHub}" InputGestureText="Ctrl+Shift+D" Click="DevelopmentHubClick"/>
+                    <MenuItem Icon="{local:MenuGlyph &#xE713;}" Header="{DynamicResource WorkbenchProductivity}" Click="ProductivityClick"/>
                     <MenuItem Icon="{local:MenuGlyph &#xE768;}" x:Name="LaunchProfilesMenu" Header="{DynamicResource LC12C038CF0C7}"
                               SubmenuOpened="LaunchProfilesMenuOpened">
                         <MenuItem Header="{DynamicResource L278308576E73}" Click="LaunchProfilesClick"/>
@@ -548,6 +550,8 @@
                               AutomationProperties.Name="{DynamicResource L699B4A551D76}" SizeChanged="DashboardSizeChanged">
                     <StackPanel Margin="24,20,24,24" MaxWidth="1170">
                         <DockPanel Margin="0,0,0,13">
+                            <dx:SimpleButton DockPanel.Dock="Right" Content="{DynamicResource WorkbenchDevelopmentHub}"
+                                             Click="DevelopmentHubClick" Style="{StaticResource DashboardAction}" VerticalAlignment="Center"/>
                             <Border DockPanel.Dock="Left" Width="38" Height="38" CornerRadius="9" Margin="0,0,10,0"
                                     Background="{DynamicResource BadgeAccentSurface}" VerticalAlignment="Center">
                                 <TextBlock Text="&#xE80A;" Style="{StaticResource Icon}" Foreground="{DynamicResource BadgeAccentText}"

@@ -14,10 +14,13 @@ internal sealed class WorkspaceOperation(string name, string target, Action? ret
 {
     private readonly StringBuilder _output = new();
     private string _status = Loc.Text("LAF7DA0BB4DFC");
+    private bool _running = true;
+    private bool _failed;
     internal Action? Retry { get; } = retry;
     internal Action? Cancel { get; set; }
     internal ProjectCommand? Command { get; set; }
     internal string? Folder { get; set; }
+    internal string? EnvironmentFile { get; set; }
     public int? ProcessId { get; internal set; }
     internal DateTime? ProcessStartedUtc { get; set; }
     public string Ports { get; internal set; } = "—";
@@ -25,8 +28,8 @@ internal sealed class WorkspaceOperation(string name, string target, Action? ret
     public string Target { get; } = target;
     public DateTime Started { get; } = DateTime.Now;
     public string Status => _status;
-    internal bool IsRunning => _status == Loc.Text("LAF7DA0BB4DFC");
-    internal bool IsFailed => _status == Loc.Text("LF0873175A881");
+    internal bool IsRunning => _running;
+    internal bool IsFailed => _failed;
     public event PropertyChangedEventHandler? PropertyChanged;
 
     internal string ReadOutput()
@@ -51,6 +54,8 @@ internal sealed class WorkspaceOperation(string name, string target, Action? ret
         if (detail is not null)
             Append(Environment.NewLine + detail);
         _status = status;
+        _running = false;
+        _failed = status == Loc.Text("LF0873175A881");
         PropertyChanged?.Invoke(this, new(nameof(Status)));
     }
 }
@@ -63,34 +68,49 @@ internal static class OperationCenter
     {
         var operation = new WorkspaceOperation(name, target, retry);
         Entries.Insert(0, operation);
-        if (Entries.Count > 150 && Entries.LastOrDefault(item => item.Status != Loc.Text("LAF7DA0BB4DFC")) is { } oldest)
+        if (Entries.Count > 150 && Entries.LastOrDefault(item => !item.IsRunning) is { } oldest)
             Entries.Remove(oldest);
         return operation;
     }
 
-    internal static async Task RunCommandAsync(ProjectCommand command, string target, string folder, CancellationToken token)
+    internal static async Task RunCommandAsync(ProjectCommand command, string target, string folder, CancellationToken token, string? environmentFile = null)
     {
         if (Entries.Any(e => e.IsRunning && e.Command == command && string.Equals(e.Folder, folder, StringComparison.OrdinalIgnoreCase))) return;
+        await StartCommand(command, target, folder, token, environmentFile).Completion;
+    }
+
+    internal static (WorkspaceOperation Operation, Task Completion) StartCommand(ProjectCommand command, string target, string folder, CancellationToken token, string? environmentFile = null,
+        IReadOnlyDictionary<string, string>? environment = null)
+    {
+        if (ArtifactCleanup.IsCleaning(folder)) throw new IOException(WorkbenchText.T("CleanupRunning"));
+        var operation = Start(command.Name, target, () => _ = RunCommandAsync(command, target, folder, token, environmentFile));
+        operation.EnvironmentFile = environmentFile;
+        return (operation, ExecuteAsync(operation, command, folder, token, environment));
+    }
+
+    private static async Task ExecuteAsync(WorkspaceOperation operation, ProjectCommand command, string folder, CancellationToken token,
+        IReadOnlyDictionary<string, string>? environment)
+    {
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(token);
-        var operation = Start(command.Name, target, () => _ = RunCommandAsync(command, target, folder, token));
         operation.Command = command;
         operation.Folder = folder;
         operation.Cancel = cancellation.Cancel;
         operation.Append("> " + command.Display + Environment.NewLine);
         try
         {
+            environment ??= operation.EnvironmentFile is { } file ? await Task.Run(() => LaunchEnvironment.Read(file), cancellation.Token) : null;
             int code = await ProjectTools.RunAsync(command, folder, operation.Append, cancellation.Token, process =>
             {
                 operation.ProcessId = process.Id;
                 operation.ProcessStartedUtc = process.StartTime.ToUniversalTime();
-            });
+            }, environment);
             operation.Finish(code == 0 ? Loc.Text("L7C6F3F5F37BC") : Loc.Text("LF0873175A881"), Loc.Format("L36D2AD5696B2", code));
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
             operation.Finish(Loc.Text("L7C925A8624F1"));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or ArgumentException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or Win32Exception or ArgumentException or InvalidOperationException)
         {
             operation.Finish(Loc.Text("LF0873175A881"), ex.Message);
         }

@@ -26,7 +26,7 @@ public partial class MainWindow
             // Creating a project does not silently alter the workspace's linked-project settings.
             StatusText.Text = WorkbenchText.T("Created") + " " + folder;
             if (_workspace?.Root == workspace.Root) ScheduleWorkspaceRefresh();
-        }, project => OpenGitWorkbench(project)) { Owner = this };
+        }, project => OpenGitWorkbench(project), StopDevelopment) { Owner = this };
         _workspaceTools = window; window.Closed += (_, _) => _workspaceTools = null; window.Show();
     }
 
