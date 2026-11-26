@@ -1,6 +1,6 @@
 namespace DevWorkspace;
 
-internal enum AppUpdatePhase { Idle, Checking, Downloading, Ready, Failed, Unavailable }
+internal enum AppUpdatePhase { Idle, Checking, Downloading, Ready, Failed, Unavailable, Available }
 internal sealed record AppUpdateStatus(AppUpdatePhase Phase, string? Version = null, int Progress = 0);
 internal sealed record AppUpdateRelease(string Version, object NativeUpdate);
 

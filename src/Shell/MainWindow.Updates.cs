@@ -13,12 +13,17 @@ public partial class MainWindow
     private INotification? _appUpdateNotification;
     private AppUpdateToastModel? _appUpdateToast;
     private AppUpdateStatus? _displayedAppUpdate;
+    private AppUpdateStatus? _bannerAppUpdate;
+    private string? _dismissedAppUpdateVersion;
+    private readonly SemaphoreSlim _standaloneUpdateCheck = new(1, 1);
 
     internal void StartUpdateChecks()
     {
-        if (Program.UpdateManager is not { } manager) return;
-        _appUpdates = new(new VelopackUpdateFeed(manager));
-        _appUpdates.Changed += AppUpdateChanged;
+        if (Program.UpdateManager is { } manager)
+        {
+            _appUpdates = new(new VelopackUpdateFeed(manager));
+            _appUpdates.Changed += AppUpdateChanged;
+        }
         _ = RunAppUpdateChecksAsync();
     }
 
@@ -30,7 +35,10 @@ public partial class MainWindow
             await Task.Delay(TimeSpan.FromSeconds(5), _closing.Token);
             do
             {
-                await _appUpdates!.CheckAndDownloadAsync(_closing.Token);
+                if (_appUpdates is not null)
+                    await _appUpdates.CheckAndDownloadAsync(_closing.Token);
+                else
+                    await CheckStandaloneUpdateAsync(manual: false);
                 await Task.Delay(TimeSpan.FromHours(6), _closing.Token);
             } while (!_closing.IsCancellationRequested);
         }
@@ -46,6 +54,8 @@ public partial class MainWindow
     private void ShowAppUpdateStatus(AppUpdateStatus status, bool manual)
     {
         if (_closing.IsCancellationRequested) return;
+        UpdateAppUpdateBanner(status, manual);
+        if (status.Phase == AppUpdatePhase.Available) { HideAppUpdateToast(); return; }
         bool visible = status.Phase is AppUpdatePhase.Downloading or AppUpdatePhase.Ready || manual;
         if (!manual && _dismissedAppUpdatePhase == status.Phase) visible = false;
         RestartAppUpdateMenu.Visibility = status.Phase == AppUpdatePhase.Ready ? Visibility.Visible : Visibility.Collapsed;
@@ -90,6 +100,79 @@ public partial class MainWindow
         _ = ObserveAppUpdateToastAsync(notification);
     }
 
+    internal void UpdateAppUpdateBanner(AppUpdateStatus status, bool manual = false)
+    {
+        if (status.Phase == AppUpdatePhase.Idle)
+        {
+            _bannerAppUpdate = null;
+            AppUpdateBanner.Visibility = Visibility.Collapsed;
+            return;
+        }
+        if (status.Phase is not (AppUpdatePhase.Available or AppUpdatePhase.Downloading or AppUpdatePhase.Ready))
+        {
+            // Keep a discovered update visible if a download fails or a retry starts.
+            if (_bannerAppUpdate is null || status.Phase != AppUpdatePhase.Failed) return;
+            status = status with { Version = _bannerAppUpdate.Version };
+        }
+        _bannerAppUpdate = status;
+        if (manual) _dismissedAppUpdateVersion = null;
+        AppUpdateBanner.Visibility = _dismissedAppUpdateVersion == status.Version ? Visibility.Collapsed : Visibility.Visible;
+        AppUpdateBannerTitle.Text = AppUpdateText.Format("UpdateAvailable", status.Version);
+        AppUpdateBannerMessage.Text = status.Phase switch
+        {
+            AppUpdatePhase.Downloading => AppUpdateText.Format("UpdateDownloading", status.Version, status.Progress),
+            AppUpdatePhase.Ready => AppUpdateText.Format("UpdateReady", status.Version),
+            AppUpdatePhase.Failed => AppUpdateText.Text("UpdateFailed"),
+            _ => AppUpdateText.Format("UpdateAvailableHint", AppReleaseNotes.CurrentVersion)
+        };
+        AppUpdateBannerAction.Content = AppUpdateText.Text(status.Phase switch
+        {
+            AppUpdatePhase.Ready => "UpdateRestart",
+            AppUpdatePhase.Downloading => "UpdateWhatsNew",
+            AppUpdatePhase.Failed => "UpdateRetry",
+            _ => "UpdateReleases"
+        });
+    }
+
+    private async Task CheckStandaloneUpdateAsync(bool manual)
+    {
+        if (!await _standaloneUpdateCheck.WaitAsync(0, _closing.Token)) return;
+        try
+        {
+            var releases = await _releaseNotes.RefreshAsync(_closing.Token);
+            ShowAppUpdateStatus(AppReleaseNotes.NewerRelease(releases) is { } newer
+                ? new(AppUpdatePhase.Available, newer.Version) : new(AppUpdatePhase.Idle), manual);
+        }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.Text.Json.JsonException or TaskCanceledException)
+        {
+            Trace.TraceWarning("Standalone update check failed: {0}", ex);
+            // A previously fetched stable release is still useful while offline.
+            if (AppReleaseNotes.NewerRelease(_releaseNotes.Local()) is { } cached)
+                ShowAppUpdateStatus(new(AppUpdatePhase.Available, cached.Version), manual);
+            else if (manual)
+                ShowAppUpdateStatus(new(AppUpdatePhase.Failed), manual: true);
+        }
+        finally { _standaloneUpdateCheck.Release(); }
+    }
+
+    private void AppUpdateBannerActionClick(object sender, RoutedEventArgs e)
+    {
+        switch (_bannerAppUpdate?.Phase)
+        {
+            case AppUpdatePhase.Ready: RestartForAppUpdateClick(sender, e); break;
+            case AppUpdatePhase.Downloading: WhatsNewClick(sender, e); break;
+            case AppUpdatePhase.Failed: CheckAppUpdatesClick(sender, e); break;
+            default: AppUpdateReleasesClick(sender, e); break;
+        }
+    }
+
+    private void DismissAppUpdateBannerClick(object sender, RoutedEventArgs e)
+    {
+        _dismissedAppUpdateVersion = _bannerAppUpdate?.Version;
+        AppUpdateBanner.Visibility = Visibility.Collapsed;
+    }
+
     private async Task ObserveAppUpdateToastAsync(INotification notification)
     {
         try { await notification.ShowAsync(); }
@@ -125,18 +208,18 @@ public partial class MainWindow
     private async void CheckAppUpdatesClick(object sender, RoutedEventArgs e)
     {
         _dismissedAppUpdatePhase = null;
-        if (_appUpdates is null)
-        {
-            ShowAppUpdateStatus(new(AppUpdatePhase.Unavailable), manual: true);
-            return;
-        }
         if (_appUpdateManualCheck) return;
         _appUpdateManualCheck = true;
         try
         {
             ShowAppUpdateStatus(new(AppUpdatePhase.Checking), manual: true);
-            await _appUpdates.CheckAndDownloadAsync(_closing.Token);
-            ShowAppUpdateStatus(_appUpdates.Status, manual: true);
+            if (_appUpdates is null)
+                await CheckStandaloneUpdateAsync(manual: true);
+            else
+            {
+                await _appUpdates.CheckAndDownloadAsync(_closing.Token);
+                ShowAppUpdateStatus(_appUpdates.Status, manual: true);
+            }
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
         finally { _appUpdateManualCheck = false; }

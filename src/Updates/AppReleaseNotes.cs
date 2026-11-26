@@ -14,6 +14,10 @@ internal sealed record AppReleaseNote(string Version, string Title, string Body,
 internal sealed class AppReleaseNotes(HttpClient client, string stateDirectory)
 {
     internal static string CurrentVersion => typeof(AppReleaseNotes).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+    internal static AppReleaseNote? NewerRelease(IEnumerable<AppReleaseNote> releases) => releases
+        .Where(release => System.Version.TryParse(release.Version, out _) &&
+            VelopackUpdateFeed.IsNewer(release.Version, CurrentVersion))
+        .OrderByDescending(release => System.Version.Parse(release.Version)).FirstOrDefault();
     private string CachePath => Path.Combine(stateDirectory, "release-notes.json");
     private string ReadPath => Path.Combine(stateDirectory, "release-notes-read.txt");
     internal bool HasUnread

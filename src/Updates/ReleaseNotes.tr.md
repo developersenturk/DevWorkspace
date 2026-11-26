@@ -1,4 +1,5 @@
-## Diff dosyaları arasında gezinme
+## Açılışta yeni sürüm bildirimi
 
-- Diff ekranındaki Önceki diff ve Sonraki diff düğmeleriyle değişen dosyalar arasında gezinin. Alt+Yukarı ve Alt+Aşağı kısayolları da aynı işlemi yapar.
-- Dosya sayacı incelemedeki konumunuzu gösterir. Çalışma klasöründeki ve stage edilmiş değişiklikler sırayla incelenir; ilk ve son dosyada gezinme sınırları korunur.
+- Yeni sürüm bulunduğunda ana pencerede siz kapatana kadar görünen bir güncelleme bandı gösterilir.
+- Kurulu uygulamada indirme durumu ve güncelleme hazır olduğunda Şimdi yeniden başlat düğmesi gösterilir. İndirme başarısız olursa aynı banttan yeniden deneyebilirsiniz.
+- Taşınabilir EXE de açılışta yeni sürümleri denetler; mevcut ve yeni sürümü gösterip kurulum paketine yönlendirir. Bağlantı yoksa önceden alınmış sürüm bilgisi kullanılabilir.

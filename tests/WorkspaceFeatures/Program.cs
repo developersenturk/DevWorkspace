@@ -18,6 +18,54 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args is ["--update-banner-preview", var phaseName, var bannerTheme, var bannerLanguage])
+        {
+            var application = new App();
+            Loc.Initialize(bannerLanguage);
+            application.Resources.MergedDictionaries.Add(Loc.CreateResources());
+            App.ApplyTheme(bannerTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
+            var window = new MainWindow { Width = 800, Height = 600, WindowState = System.Windows.WindowState.Normal };
+            window.UpdateAppUpdateBanner(new(Enum.Parse<AppUpdatePhase>(phaseName), "9.9.9", 42));
+            application.Run(window);
+            return;
+        }
+        if (args is ["--update-banner-checks"])
+        {
+            var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            foreach (var language in new[] { "tr", "en" })
+            {
+                Loc.Initialize(language);
+                application.Resources.MergedDictionaries.Add(Loc.CreateResources());
+                var window = new MainWindow();
+                var banner = (System.Windows.Controls.Border)window.FindName("AppUpdateBanner");
+                var title = (System.Windows.Controls.TextBlock)window.FindName("AppUpdateBannerTitle");
+                var message = (System.Windows.Controls.TextBlock)window.FindName("AppUpdateBannerMessage");
+                var action = (System.Windows.Controls.Button)window.FindName("AppUpdateBannerAction");
+                var dismiss = (System.Windows.Controls.Button)window.FindName("AppUpdateBannerDismiss");
+                Check(banner.Visibility == System.Windows.Visibility.Collapsed, "No announcement before a newer release is found");
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Available, "9.9.9"));
+                Check(banner.Visibility == System.Windows.Visibility.Visible && title.Text.Contains("9.9.9"), "New release is prominent");
+                Check(message.Text.Contains(AppReleaseNotes.CurrentVersion) && Equals(action.Content, AppUpdateText.Text("UpdateReleases")), "Standalone offers installer and running version");
+                dismiss.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Downloading, "9.9.9", 42));
+                Check(banner.Visibility == System.Windows.Visibility.Collapsed, "Dismissal survives progress updates");
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Downloading, "9.9.9", 42), manual: true);
+                Check(banner.Visibility == System.Windows.Visibility.Visible && message.Text.Contains("42"), "Manual check restores progress");
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Failed));
+                Check(title.Text.Contains("9.9.9") && Equals(action.Content, AppUpdateText.Text("UpdateRetry")), "Failed download keeps update visible with retry");
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Ready, "9.9.9", 100));
+                Check(Equals(action.Content, AppUpdateText.Text("UpdateRestart")), "Ready update offers restart");
+                dismiss.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Available, "9.9.10"));
+                Check(banner.Visibility == System.Windows.Visibility.Visible, "A different newer version is announced again");
+                window.UpdateAppUpdateBanner(new(AppUpdatePhase.Idle));
+                Check(banner.Visibility == System.Windows.Visibility.Collapsed, "An up-to-date check clears an obsolete announcement");
+                window.Close();
+            }
+            application.Shutdown();
+            Console.WriteLine($"Update banner: {_checks} checks passed.");
+            return;
+        }
         if (args is ["--diff-navigation"])
         {
             var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };

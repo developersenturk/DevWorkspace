@@ -44,6 +44,9 @@ try
     Require(!new AppReleaseNotes(notesClient, notesDirectory).HasUnread, "Read state must survive reopening");
     var recent = await notes.RefreshAsync(default);
     Require(recent.Count == 3 && recent[0].Version == "900.0.1", "Only stable valid releases should be returned, newest first");
+    Require(AppReleaseNotes.NewerRelease(recent)?.Version == "900.0.1", "Standalone startup must find the newest stable release");
+    Require(AppReleaseNotes.NewerRelease([AppReleaseNotes.Bundled(), new("0.0.1", "Older", "", null), new("broken", "Invalid", "", null)]) is null,
+        "Equal, older and invalid versions must not announce an update");
     Require(recent.Count(r => r.Version == AppReleaseNotes.CurrentVersion) == 1, "Current release must appear exactly once");
     Require(recent.Single(r => r.Version == "0.0.1").Body == "**Older** notes", "Markdown must survive retrieval");
     using var offlineClient = new HttpClient(new ReleaseNotesHandler { Offline = true });
@@ -51,6 +54,7 @@ try
     try { await offline.RefreshAsync(default); throw new Exception("Offline failure was not reported"); }
     catch (HttpRequestException) { }
     Require(offline.Local().Count == 3, "Cached notes must survive an offline refresh");
+    Require(AppReleaseNotes.NewerRelease(offline.Local())?.Version == "900.0.1", "Cached newer releases remain discoverable offline");
     File.WriteAllText(Path.Combine(notesDirectory, "release-notes.json"), "broken JSON");
     Require(offline.Local().Single().Version == AppReleaseNotes.CurrentVersion, "Corrupt cache must fall back to bundled notes");
     using var canceledNotes = new CancellationTokenSource(); canceledNotes.Cancel();
