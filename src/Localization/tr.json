@@ -1,4 +1,8 @@
 {
+  "PreviousDiff": "↑ Önceki diff",
+  "NextDiff": "Sonraki diff ↓",
+  "PreviousDiffHint": "Önceki dosyanın diff'i (Alt+Yukarı)",
+  "NextDiffHint": "Sonraki dosyanın diff'i (Alt+Aşağı)",
   "UncommittedChanges": "Commit edilmemiş değişiklikler (diff)…",
   "DashboardChecksTitle": "Çalışma alanı kontrolleri",
   "DashboardChecksHint": "Proje sağlığı, Git ve CI, JavaScript ve Flutter paket güvenliği",

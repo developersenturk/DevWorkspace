@@ -147,6 +147,15 @@ public partial class MainWindow : Window
 
     private async void WindowKeyDown(object sender, KeyEventArgs e)
     {
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (Keyboard.Modifiers == ModifierKeys.Alt && key is Key.Up or Key.Down &&
+            GitDiffPanel.Visibility == Visibility.Visible && !GitPane.IsClosed && !IsMainMenuOpen)
+        {
+            e.Handled = true;
+            _gitView?.NavigateDiff(key == Key.Up ? -1 : 1);
+            return;
+        }
+
         if (e.Key == Key.Escape && IsMainMenuOpen)
             return;
 

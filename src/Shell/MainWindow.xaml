@@ -758,6 +758,13 @@
                         <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                             <Button x:Name="CloseGitDiffButton" DockPanel.Dock="Right" Content="{DynamicResource LC79374CED180}"
                                     Click="CloseGitDiffClick" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <Button x:Name="PreviousGitDiffButton" Content="{DynamicResource PreviousDiff}" Click="PreviousGitDiffClick"
+                                        ToolTip="{DynamicResource PreviousDiffHint}" IsEnabled="False" Padding="8,5"/>
+                                <TextBlock x:Name="GitDiffPosition" Text="0 / 0" Foreground="{DynamicResource Muted}" Margin="8,0" VerticalAlignment="Center"/>
+                                <Button x:Name="NextGitDiffButton" Content="{DynamicResource NextDiff}" Click="NextGitDiffClick"
+                                        ToolTip="{DynamicResource NextDiffHint}" IsEnabled="False" Padding="8,5"/>
+                            </StackPanel>
                             <StackPanel>
                                 <TextBlock x:Name="GitDiffTitle" Text="{DynamicResource LC302D0999566}" FontSize="18" FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>

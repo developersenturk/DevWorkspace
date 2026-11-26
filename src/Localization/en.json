@@ -1,4 +1,8 @@
 {
+  "PreviousDiff": "↑ Previous diff",
+  "NextDiff": "Next diff ↓",
+  "PreviousDiffHint": "Previous file's diff (Alt+Up)",
+  "NextDiffHint": "Next file's diff (Alt+Down)",
   "UncommittedChanges": "Uncommitted changes (diff)…",
   "DashboardChecksTitle": "Workspace checks",
   "DashboardChecksHint": "Project health, Git and CI, JavaScript and Flutter package security",

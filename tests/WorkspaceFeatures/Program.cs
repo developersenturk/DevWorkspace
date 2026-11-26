@@ -18,6 +18,44 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args is ["--diff-navigation"])
+        {
+            var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            var owner = new MainWindow();
+            var project = Project("Diff test", Environment.CurrentDirectory, repository: Environment.CurrentDirectory);
+            var view = new GitWorkbenchView(owner, project);
+            typeof(MainWindow).GetField("_gitView", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(owner, view);
+            var working = (DevExpress.Xpf.Editors.ListBoxEdit)view.FindName("WorkingFiles");
+            var staged = (DevExpress.Xpf.Editors.ListBoxEdit)view.FindName("StagedFiles");
+            var previous = (System.Windows.Controls.Button)owner.FindName("PreviousGitDiffButton");
+            var next = (System.Windows.Controls.Button)owner.FindName("NextGitDiffButton");
+            owner.UpdateGitDiffNavigation();
+            Check(!previous.IsEnabled && !next.IsEnabled, "Empty list disables navigation");
+            GitFileChange shared = new("shared.txt", 'M', 'M');
+            working.ItemsSource = new GitFileChange[] { new("new.txt", '?', '?'), shared };
+            staged.ItemsSource = new GitFileChange[] { shared };
+            view.NavigateDiff(1);
+            Check(view.DiffPosition == (0, 3) && working.SelectedItem is GitFileChange { Path: "new.txt" }, "Starts at first working file");
+            Check(!previous.IsEnabled && next.IsEnabled, "First file boundary");
+            view.NavigateDiff(-1);
+            Check(view.DiffPosition.Index == 0, "Previous does not wrap");
+            view.NavigateDiff(1);
+            Check(view.DiffPosition.Index == 1 && ReferenceEquals(working.SelectedItem, shared), "Next working file");
+            view.NavigateDiff(1);
+            Check(view.DiffPosition.Index == 2 && ReferenceEquals(staged.SelectedItem, shared) && working.SelectedItems.Count == 0, "Same path has separate staged diff");
+            Check(previous.IsEnabled && !next.IsEnabled, "Last file boundary");
+            view.NavigateDiff(1);
+            Check(view.DiffPosition.Index == 2, "Next does not wrap");
+            view.NavigateDiff(-1);
+            Check(view.DiffPosition.Index == 1 && staged.SelectedItem is null, "Back across staged boundary");
+            working.UnSelectAll();
+            view.NavigateDiff(-1);
+            Check(view.DiffPosition.Index == 2, "Previous without selection starts at last diff");
+            owner.Close();
+            application.Shutdown();
+            Console.WriteLine($"Diff navigation: {_checks} checks passed.");
+            return;
+        }
         if (args is ["--startup-preview", var startupTheme, var startupLanguage])
         {
             var application = new App();

@@ -25,6 +25,44 @@ public partial class GitWorkbenchView : UserControl
 
     internal bool IsBusy => _busy;
 
+    private (GitFileChange File, bool Staged)[] DiffFiles =>
+        (WorkingFiles.ItemsSource as GitFileChange[] ?? []).Select(file => (file, false))
+        .Concat((StagedFiles.ItemsSource as GitFileChange[] ?? []).Select(file => (file, true))).ToArray();
+
+    internal (int Index, int Count) DiffPosition
+    {
+        get
+        {
+            var files = DiffFiles;
+            bool staged = StagedFiles.SelectedItem is not null;
+            return (Array.FindIndex(files, item => item.File.Path == SelectedFile?.Path && item.Staged == staged), files.Length);
+        }
+    }
+
+    internal void NavigateDiff(int direction)
+    {
+        if (_busy || _closing.IsCancellationRequested)
+            return;
+        var files = DiffFiles;
+        int current = DiffPosition.Index;
+        int next = current < 0 ? (direction > 0 ? 0 : files.Length - 1) : current + direction;
+        if (next < 0 || next >= files.Length)
+            return;
+        var target = files[next];
+        _updatingLists = true;
+        WorkingFiles.UnSelectAll();
+        StagedFiles.UnSelectAll();
+        var list = target.Staged ? StagedFiles : WorkingFiles;
+        (target.Staged ? StagedSection : WorkingSection).IsChecked = true;
+        list.SelectedItem = target.File;
+        _updatingLists = false;
+        UpdateFileListLayout((WorkingFiles.ItemsSource as GitFileChange[])?.Length ?? 0,
+            (StagedFiles.ItemsSource as GitFileChange[])?.Length ?? 0);
+        UpdateActions();
+        _owner.ShowGitDiff();
+        _ = LoadDiffAsync();
+    }
+
     internal GitWorkbenchView(MainWindow owner, ProjectEntry project)
     {
         _owner = owner;
@@ -302,6 +340,7 @@ public partial class GitWorkbenchView : UserControl
             : Loc.Text("LC30054C8BE8D");
         ApplyStashButton.IsEnabled = canUseStash && StashSection.IsChecked == true && StashList.SelectedItem is GitStash;
         DropStashButton.IsEnabled = !_busy && StashSection.IsChecked == true && StashList.SelectedItem is GitStash;
+        _owner.UpdateGitDiffNavigation();
     }
 
     private void DismissStatusClick(object sender, RoutedEventArgs e) => StatusMessage.Text = "";

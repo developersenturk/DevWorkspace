@@ -260,6 +260,20 @@ public partial class MainWindow
 
     private void CloseGitDiffClick(object sender, RoutedEventArgs e) => CloseGitDiff();
 
+    private void PreviousGitDiffClick(object sender, RoutedEventArgs e) => _gitView?.NavigateDiff(-1);
+    private void NextGitDiffClick(object sender, RoutedEventArgs e) => _gitView?.NavigateDiff(1);
+
+    internal void UpdateGitDiffNavigation()
+    {
+        if (PreviousGitDiffButton is null || NextGitDiffButton is null || GitDiffPosition is null)
+            return;
+        var (index, count) = _gitView?.DiffPosition ?? (-1, 0);
+        bool enabled = _gitView is { IsBusy: false };
+        PreviousGitDiffButton.IsEnabled = enabled && count > 0 && index != 0;
+        NextGitDiffButton.IsEnabled = enabled && count > 0 && index < count - 1;
+        GitDiffPosition.Text = $"{index + 1} / {count}";
+    }
+
     private void CloseGitDiff()
     {
         GitDiffPanel.Visibility = Visibility.Collapsed;
