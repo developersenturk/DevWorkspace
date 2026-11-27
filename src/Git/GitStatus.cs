@@ -39,6 +39,15 @@ internal sealed record GitStatus(
     public string Tracking => Ahead.HasValue ? $"↑ {Ahead}   ↓ {Behind}" : "—";
     public string RemoteNames => Remotes is { Count: > 0 } ? string.Join(", ", Remotes) : "—";
     public string RemoteSummary => Remotes is { Count: > 1 } ? RemoteNames : Upstream ?? RemoteNames;
+    public bool HasPendingPush => State is GitState.Clean or GitState.Changed && Upstream is not null && CommitId is not null && Ahead > 0;
+    public string PushLabel => State is not (GitState.Clean or GitState.Changed) ? "—" :
+        CommitId is null ? Loc.Text("GitNoCommits") :
+        HeadRef is null ? Loc.Text("GitPushDetached") :
+        Upstream is null || !Ahead.HasValue ? Loc.Text("GitPushNotConfigured") :
+        Ahead > 0 ? Loc.Format("GitPushPending", Ahead) :
+        Behind > 0 ? Loc.Format("GitPullPending", Behind) : Loc.Text("GitPushCurrent");
+    public string PushHint => Upstream is null || !Ahead.HasValue
+        ? Loc.Text("GitPushTrackingHint") : Loc.Format("GitPushTrackingCounts", Upstream, Ahead, Behind ?? 0);
 
     public bool HasSameSnapshot(GitStatus other) =>
         this with { Files = other.Files, Remotes = other.Remotes } == other &&

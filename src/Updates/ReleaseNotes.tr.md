@@ -1,5 +1,5 @@
-## Çift tıklama ve güncelleme bildirimi düzeltmeleri
+## Son commit'i düzenleme ve push durumu
 
-- Projeye çift tıklamada Git durumu yeniden okunur. Gerçekten değişiklik varsa diff açılır; temiz projeler ve Git deposu olmayan projeler normal şekilde açılır.
-- Açılışta güncelleme kontrolü bekletilmeden başlar. Kontrol sürerken üstte durum bandı görünür; yeni sürüm bulunduğunda indirme ve yeniden başlatma durumuna dönüşür.
-- Güncelleme kontrolü başarısız olursa bant yeniden deneme düğmesiyle görünür kalır. Açık uygulamada kontroller 15 dakikada bir, hata sonrası bir dakika içinde tekrarlanır.
+- Git ekranına Amend seçeneği eklendi. Son commit mesajı hazır gelir; mesajı düzenleyebilir ve stage edilmiş dosyaları aynı commit'e ekleyebilirsiniz. Hazırlanmamış dosyalar korunur.
+- Amend otomatik push yapmaz. İşlem sırasında son commit veya stage alanı değişmişse işlem durdurulur; ilk commit'ten önce, detached HEAD durumunda ve devam eden Git işlemlerinde Amend kullanılamaz.
+- Ana proje listesinde Push durumu sütunu, gönderilmeyi bekleyen commit sayısını gösterir. İzleme dalı olmayan projeler ayrıca belirtilir; bilgiler son bilinen uzak dal durumuna dayanır.

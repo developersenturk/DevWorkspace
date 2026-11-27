@@ -32,7 +32,9 @@ public partial class MainWindow
         if (layout.Columns is not { } widths)
             return;
         if (widths.Length == columns.Length - 1)
-            columns = columns.Where(column => !ReferenceEquals(column, RemoteColumn)).ToArray();
+            columns = columns.Where(column => !ReferenceEquals(column, PushStateColumn)).ToArray();
+        else if (widths.Length == columns.Length - 2)
+            columns = columns.Where(column => !ReferenceEquals(column, PushStateColumn) && !ReferenceEquals(column, RemoteColumn)).ToArray();
         if (widths.Length != columns.Length)
             return;
 

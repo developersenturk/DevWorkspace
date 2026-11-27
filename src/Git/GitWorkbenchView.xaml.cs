@@ -315,6 +315,8 @@ public partial class GitWorkbenchView : UserControl
         PushButton.IsEnabled = !_busy && _state?.Status.CommitId is not null && (multipleTargets || target is not null);
         CommitMenuButton.IsEnabled = !_busy && _state is not null;
         CommitMenuItem.IsEnabled = CommitButton.IsEnabled;
+        AmendButton.IsEnabled = AmendMenuItem.IsEnabled = !_busy && _state is { AmendBlockReason: null };
+        AmendButton.ToolTip = AmendMenuItem.ToolTip = _state?.AmendBlockReason ?? Loc.Text("AmendDescription");
         CommitPushMenuItem.IsEnabled = CommitButton.IsEnabled && (multipleTargets || target is not null);
         CommitPushMenuItem.Header = multipleTargets ? Loc.Text("L80ABB878D34D") : Loc.Text("L8418000C8F8E");
         CommitPushMenuItem.ToolTip = multipleTargets ? Loc.Text("L42B49AC0E97D")
@@ -496,6 +498,29 @@ public partial class GitWorkbenchView : UserControl
         : Task.CompletedTask;
 
     private async void CommitClick(object sender, RoutedEventArgs e) => await CommitAsync(null);
+
+    private async void AmendClick(object sender, RoutedEventArgs e)
+    {
+        if (_busy || _state is not { AmendBlockReason: null } state) return;
+        _busy = true;
+        UpdateActions();
+        try
+        {
+            string message = await _git.ReadLastCommitMessageAsync(state, _closing.Token);
+            if (_closing.IsCancellationRequested) return;
+            var dialog = new GitAmendWindow(Project.Name, state.Status.CommitId!, message,
+                state.Status.Files?.Count(file => file.IsStaged) ?? 0) { Owner = _owner };
+            if (dialog.ShowDialog() != true) return;
+            _busy = false;
+            await RunOperationAsync(Loc.Text("AmendProgress"), token => _git.AmendAsync(state, dialog.Message, token), Loc.Text("AmendSuccess"));
+        }
+        catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception)
+        {
+            StatusMessage.Text = ex.Message;
+        }
+        finally { _busy = false; UpdateActions(); }
+    }
 
     private async void CommitPushClick(object sender, RoutedEventArgs e)
     {

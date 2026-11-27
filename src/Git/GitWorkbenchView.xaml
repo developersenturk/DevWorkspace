@@ -158,12 +158,15 @@
                         <ContextMenu>
                             <MenuItem x:Name="CommitMenuItem" Header="{DynamicResource L45A779D7FD19}" Click="CommitClick"/>
                             <MenuItem x:Name="CommitPushMenuItem" Header="{DynamicResource L8418000C8F8E}" Click="CommitPushClick"/>
+                            <MenuItem x:Name="AmendMenuItem" Header="{DynamicResource AmendAction}" Click="AmendClick" IsEnabled="False"/>
                             <Separator/>
                             <MenuItem x:Name="SaveStashMenuItem" Header="{DynamicResource L54221F592243}" Click="SaveStashClick"
                                       IsEnabled="False" ToolTipService.ShowOnDisabled="True"/>
                         </ContextMenu>
                     </Button.ContextMenu>
                 </Button>
+                <Button x:Name="AmendButton" Content="{DynamicResource AmendAction}" Click="AmendClick" IsEnabled="False" Padding="8,3" Margin="0,0,5,0"
+                        ToolTipService.ShowOnDisabled="True"/>
                 <Button x:Name="PublishButton" Content="{DynamicResource L57F889172928}" Click="PublishClick" Padding="8,3"
                         IsEnabled="False" Visibility="Collapsed" ToolTipService.ShowOnDisabled="True"/>
             </WrapPanel>

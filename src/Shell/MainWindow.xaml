@@ -513,7 +513,29 @@
                                 </DataTemplate>
                             </dxg:GridColumn.CellTemplate>
                         </dxg:GridColumn>
-                        <dxg:GridColumn Header="{DynamicResource L2CDF1B022008}" FieldName="ChangedFiles" Width="60" MinWidth="42" VisibleIndex="5"/>
+                        <dxg:GridColumn x:Name="PushStateColumn" Header="{DynamicResource GitPushColumn}" FieldName="Git.PushLabel" Width="145" MinWidth="110" VisibleIndex="5">
+                            <dxg:GridColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Margin="3,0" Padding="5,2" CornerRadius="4" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                            ToolTip="{Binding RowData.Row.Git.PushHint}">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="{DynamicResource BadgeNeutralSurface}"/>
+                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeNeutralText}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RowData.Row.Git.HasPendingPush}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource BadgeWarningSurface}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource BadgeWarningText}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding RowData.Row.Git.PushLabel}" TextTrimming="CharacterEllipsis"/>
+                                    </Border>
+                                </DataTemplate>
+                            </dxg:GridColumn.CellTemplate>
+                        </dxg:GridColumn>
+                        <dxg:GridColumn Header="{DynamicResource L2CDF1B022008}" FieldName="ChangedFiles" Width="60" MinWidth="42" VisibleIndex="6"/>
                         <dxg:GridColumn x:Name="VersionColumn" Header="{DynamicResource L48BEF2532D3F}" FieldName="ProjectGroupKey"
                                         Visible="False" ShowInColumnChooser="False"/>
                     </dxg:GridControl.Columns>

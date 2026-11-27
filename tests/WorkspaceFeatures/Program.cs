@@ -18,6 +18,54 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args is ["--amend-ui-checks"])
+        {
+            var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            GitAmendUiChecks.Run(Check);
+            application.Shutdown();
+            Console.WriteLine($"Amend UI and push layout: {_checks} checks passed.");
+            return;
+        }
+        if (args is ["--push-list-preview", var pushTheme, var pushLanguage])
+        {
+            var application = new App();
+            Loc.Initialize(pushLanguage);
+            application.Resources.MergedDictionaries.Add(Loc.CreateResources());
+            App.ApplyTheme(pushTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
+            var window = new MainWindow { WindowState = System.Windows.WindowState.Normal, Width = 1380, Height = 700 };
+            var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly;
+            window.Loaded -= (System.Windows.RoutedEventHandler)typeof(MainWindow).GetMethod("OnLoaded", flags)!
+                .CreateDelegate(typeof(System.Windows.RoutedEventHandler), window);
+            typeof(MainWindow).GetMethod("StopWatchingProjectColumnWidths", flags)!.Invoke(window, null);
+            var grid = (DevExpress.Xpf.Grid.GridControl)window.FindName("ProjectGrid");
+            var samples = new[]
+            {
+                new GitStatus(GitState.Clean, "main", 0, 2, 0, HeadRef: "refs/heads/main", CommitId: "01234567", Upstream: "origin/main", Remotes: ["origin"]),
+                new GitStatus(GitState.Changed, "main", 3, 1, 0, HeadRef: "refs/heads/main", CommitId: "12345678", Upstream: "origin/main", Remotes: ["origin"]),
+                new GitStatus(GitState.Clean, "main", 0, 0, 0, HeadRef: "refs/heads/main", CommitId: "23456789", Upstream: "origin/main", Remotes: ["origin"]),
+                new GitStatus(GitState.Clean, "feature/local", 0, HeadRef: "refs/heads/feature/local", CommitId: "34567890", Remotes: ["origin"])
+            };
+            grid.ItemsSource = samples.Select((status, index) => Project("Project " + (index + 1), Environment.CurrentDirectory) with { Git = status }).ToArray();
+            ((System.Windows.FrameworkElement)window.FindName("EmptyPanel")).Visibility = System.Windows.Visibility.Collapsed;
+            application.Run(window);
+            return;
+        }
+        if (args is ["--git-amend"])
+        {
+            Loc.Initialize("en");
+            Task.Run(() => GitAmendChecks.RunAsync(Check)).GetAwaiter().GetResult();
+            Console.WriteLine($"Git amend and push status: {_checks} checks passed.");
+            return;
+        }
+        if (args is ["--amend-preview", var amendTheme, var amendLanguage])
+        {
+            var application = new App();
+            Loc.Initialize(amendLanguage);
+            application.Resources.MergedDictionaries.Add(Loc.CreateResources());
+            App.ApplyTheme(amendTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
+            application.Run(new GitAmendWindow("DevWorkspace", "0123456789abcdef", "Improve the Git workbench\n\nPreserve the existing commit author.", 2) { ShowInTaskbar = true });
+            return;
+        }
         if (args is ["--update-banner-flow"])
         {
             var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };

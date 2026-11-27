@@ -1,5 +1,5 @@
-## Double-click and update notification fixes
+## Amend the last commit and see push status
 
-- Double-click rechecks Git status. Changed projects open their diff; clean projects and projects without a Git repository open normally.
-- Update checks start immediately on launch. A visible banner shows the check in progress, then download and restart status when a newer version is found.
-- Failed checks keep a visible retry action. While the app stays open, checks repeat every 15 minutes, or after one minute following a failure.
+- Amend is now available in the Git view. Edit the prefilled last commit message and include staged file changes in the same commit. Unstaged changes are preserved.
+- Amend does not push automatically. It stops if HEAD or the staged changes have changed, and is unavailable before the first commit, on detached HEAD, or during ongoing Git operations.
+- A Push status column in the main project list shows the number of commits waiting to be pushed. Branches without upstream tracking are identified separately. Counts use the last known remote state.

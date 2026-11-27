@@ -12,6 +12,10 @@ internal sealed record GitDestination(string Remote, string Ref, bool SetUpstrea
 internal sealed record GitWorkbenchState(GitStatus Status, string IndexSnapshot, string? InProgress,
     GitDestination? Upstream, string[] Remotes)
 {
+    internal string? AmendBlockReason => Status.CommitId is null ? Loc.Text("AmendNoCommit") :
+        Status.HeadRef is null ? Loc.Text("L5A65C4666D81") :
+        InProgress ?? (Status.Files?.Any(file => file.IsConflict) == true ? Loc.Text("AmendConflict") : null);
+
     public GitDestination[] AllPushTargets => Status.HeadRef is string head
         ? Remotes.Select(remote => Upstream is { } upstream && upstream.Remote == remote
             ? upstream : new GitDestination(remote, head, false)).ToArray() : [];
@@ -237,6 +241,33 @@ internal sealed class GitWorkbench(string repository)
             throw new IOException(Loc.Text("L3066594ED50B"));
 
         await RunAsync(["commit", "-m", message], token, 120);
+    }
+
+    internal async Task<string> ReadLastCommitMessageAsync(GitWorkbenchState expected, CancellationToken token)
+    {
+        if (expected.AmendBlockReason is { } reason) throw new IOException(reason);
+        await VerifyHeadAsync(expected.Status, token);
+        return (await RunAsync(["show", "-s", "--format=%B", "--no-show-signature", expected.Status.CommitId!, "--"], token)).TrimEnd('\r', '\n');
+    }
+
+    internal async Task AmendAsync(GitWorkbenchState expected, string message, CancellationToken token)
+    {
+        if (expected.AmendBlockReason is { } reason) throw new IOException(reason);
+        if (string.IsNullOrWhiteSpace(message)) throw new IOException(Loc.Text("AmendMessageRequired"));
+        if (await ReadOperationAsync(token) is { } operation) throw new IOException(operation);
+        await VerifyHeadAsync(expected.Status, token);
+        if (!string.Equals(await ReadIndexAsync(token), expected.IndexSnapshot, StringComparison.Ordinal))
+            throw new IOException(Loc.Text("L3066594ED50B"));
+        if ((await RunAsync(["ls-files", "--unmerged", "-z"], token)).Length > 0)
+            throw new IOException(Loc.Text("AmendConflict"));
+
+        string messageFile = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(messageFile, message, token);
+            await RunAsync(["commit", "--amend", "--file", messageFile, "--cleanup=verbatim"], token, 120);
+        }
+        finally { File.Delete(messageFile); }
     }
 
     internal async Task VerifyNewPublishAsync(GitStatus expected, CancellationToken token)
