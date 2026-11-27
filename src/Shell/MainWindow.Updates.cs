@@ -31,15 +31,15 @@ public partial class MainWindow
     {
         try
         {
-            // Keep startup and workspace loading responsive.
-            await Task.Delay(TimeSpan.FromSeconds(5), _closing.Token);
             do
             {
+                ShowAppUpdateStatus(new(AppUpdatePhase.Checking), manual: false);
                 if (_appUpdates is not null)
                     await _appUpdates.CheckAndDownloadAsync(_closing.Token);
                 else
                     await CheckStandaloneUpdateAsync(manual: false);
-                await Task.Delay(TimeSpan.FromHours(6), _closing.Token);
+                var phase = _appUpdates?.Status.Phase ?? _bannerAppUpdate?.Phase;
+                await Task.Delay(phase == AppUpdatePhase.Failed ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(15), _closing.Token);
             } while (!_closing.IsCancellationRequested);
         }
         catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
@@ -110,19 +110,31 @@ public partial class MainWindow
         }
         if (status.Phase is not (AppUpdatePhase.Available or AppUpdatePhase.Downloading or AppUpdatePhase.Ready))
         {
+            if (status.Phase == AppUpdatePhase.Checking)
+            {
+                if (_bannerAppUpdate?.Version is not null) return;
+                _bannerAppUpdate = status;
+                AppUpdateBanner.Visibility = Visibility.Visible;
+                AppUpdateBannerTitle.Text = AppUpdateText.Text("UpdateChecking");
+                AppUpdateBannerMessage.Text = AppUpdateText.Format("UpdateNotesInstalled", AppReleaseNotes.CurrentVersion);
+                AppUpdateBannerAction.Visibility = Visibility.Collapsed;
+                return;
+            }
             // Keep a discovered update visible if a download fails or a retry starts.
             if (_bannerAppUpdate is null || status.Phase != AppUpdatePhase.Failed) return;
             status = status with { Version = _bannerAppUpdate.Version };
         }
         _bannerAppUpdate = status;
         if (manual) _dismissedAppUpdateVersion = null;
-        AppUpdateBanner.Visibility = _dismissedAppUpdateVersion == status.Version ? Visibility.Collapsed : Visibility.Visible;
-        AppUpdateBannerTitle.Text = AppUpdateText.Format("UpdateAvailable", status.Version);
+        AppUpdateBanner.Visibility = _dismissedAppUpdateVersion is not null && _dismissedAppUpdateVersion == status.Version
+            ? Visibility.Collapsed : Visibility.Visible;
+        AppUpdateBannerTitle.Text = status.Version is null ? AppUpdateText.Text("UpdateCheckFailed") : AppUpdateText.Format("UpdateAvailable", status.Version);
+        AppUpdateBannerAction.Visibility = Visibility.Visible;
         AppUpdateBannerMessage.Text = status.Phase switch
         {
             AppUpdatePhase.Downloading => AppUpdateText.Format("UpdateDownloading", status.Version, status.Progress),
             AppUpdatePhase.Ready => AppUpdateText.Format("UpdateReady", status.Version),
-            AppUpdatePhase.Failed => AppUpdateText.Text("UpdateFailed"),
+            AppUpdatePhase.Failed => AppUpdateText.Text(status.Version is null ? "UpdateCheckFailedHint" : "UpdateFailed"),
             _ => AppUpdateText.Format("UpdateAvailableHint", AppReleaseNotes.CurrentVersion)
         };
         AppUpdateBannerAction.Content = AppUpdateText.Text(status.Phase switch
@@ -150,8 +162,8 @@ public partial class MainWindow
             // A previously fetched stable release is still useful while offline.
             if (AppReleaseNotes.NewerRelease(_releaseNotes.Local()) is { } cached)
                 ShowAppUpdateStatus(new(AppUpdatePhase.Available, cached.Version), manual);
-            else if (manual)
-                ShowAppUpdateStatus(new(AppUpdatePhase.Failed), manual: true);
+            else
+                ShowAppUpdateStatus(new(AppUpdatePhase.Failed), manual);
         }
         finally { _standaloneUpdateCheck.Release(); }
     }

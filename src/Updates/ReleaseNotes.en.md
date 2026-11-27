@@ -1,5 +1,5 @@
-## Jump to changes within a file
+## Double-click and update notification fixes
 
-- The diff view now opens at the first change block. Previous change / Next change and Alt+Up / Alt+Down jump between changed line blocks within the same file.
-- Move between files separately with Previous file / Next file or Alt+Shift+Up / Alt+Shift+Down. File and change counters are separate.
-- Double-clicking a project opens its diff, with a clear message when there are no uncommitted changes. Turn this behavior off in Settings to open the project instead; this preference takes effect without restarting.
+- Double-click rechecks Git status. Changed projects open their diff; clean projects and projects without a Git repository open normally.
+- Update checks start immediately on launch. A visible banner shows the check in progress, then download and restart status when a newer version is found.
+- Failed checks keep a visible retry action. While the app stays open, checks repeat every 15 minutes, or after one minute following a failure.

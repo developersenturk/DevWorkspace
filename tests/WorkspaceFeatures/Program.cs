@@ -18,6 +18,14 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args is ["--update-banner-flow"])
+        {
+            var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            UpdateBannerFlowChecks.Run(Check);
+            application.Shutdown();
+            Console.WriteLine($"Update banner flow: {_checks} checks passed.");
+            return;
+        }
         if (args is ["--diff-project-preview", var repository])
         {
             var application = new App();

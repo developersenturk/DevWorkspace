@@ -57,6 +57,36 @@ internal static class GitDiffNavigationChecks
         view.ShowPreview(new([], Loc.Text("NoUncommittedChanges"))); Pump();
         check(view.ChangePosition == (-1, 0) && ((TextBlock)view.FindName("Notice")).Text == Loc.Text("NoUncommittedChanges"), "Clean repositories show a clear empty state");
         window.Close();
+        string repository = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "DevWorkspace-doubleclick-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(repository);
+        try
+        {
+            void Git(params string[] arguments)
+            {
+                var result = Task.Run(() => GitProjectOperations.RunAsync(repository, arguments, default)).GetAwaiter().GetResult();
+                check(result.Code == 0, "Git fixture command succeeds");
+            }
+            Git("init", "-q");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(repository, "file.txt"), "original\n");
+            Git("add", ".");
+            Git("-c", "user.name=Diff test", "-c", "user.email=diff-test@example.invalid", "commit", "-qm", "baseline");
+            var project = new ProjectEntry("Sample", "", "Sample", repository, null, "", repository, new(GitState.Changed));
+            check(!Task.Run(() => MainWindow.ShouldOpenDiffOnDoubleClickAsync(project, true, default)).GetAwaiter().GetResult(),
+                "Clean repository opens project even when the grid says changed");
+            System.IO.File.AppendAllText(System.IO.Path.Combine(repository, "file.txt"), "changed\n");
+            project = project with { Git = new(GitState.Clean) };
+            check(Task.Run(() => MainWindow.ShouldOpenDiffOnDoubleClickAsync(project, true, default)).GetAwaiter().GetResult(),
+                "Actual changes open diff even when the grid says clean");
+            check(!MainWindow.ShouldOpenDiffOnDoubleClickAsync(project, false, default).GetAwaiter().GetResult(), "Disabled preference opens project");
+            check(!MainWindow.ShouldOpenDiffOnDoubleClickAsync(project with { Repository = null }, true, default).GetAwaiter().GetResult(),
+                "Projects without Git open normally");
+        }
+        finally
+        {
+            foreach (var file in System.IO.Directory.EnumerateFiles(repository, "*", System.IO.SearchOption.AllDirectories))
+                System.IO.File.SetAttributes(file, System.IO.FileAttributes.Normal);
+            System.IO.Directory.Delete(repository, true);
+        }
         string sessionFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "DevWorkspace-diff-setting-" + Guid.NewGuid().ToString("N") + ".json");
         try
         {

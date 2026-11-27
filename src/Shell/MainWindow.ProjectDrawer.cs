@@ -15,7 +15,7 @@ public partial class MainWindow
     private ProjectEntry? _firstProjectClick;
     private readonly Dictionary<string, NuGetScanState> _nuGetStates = new(StringComparer.OrdinalIgnoreCase);
 
-    private void ProjectRowLeftClick(object sender, MouseButtonEventArgs e)
+    private async void ProjectRowLeftClick(object sender, MouseButtonEventArgs e)
     {
         if (_busy || (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) != 0 ||
             e.OriginalSource is not DependencyObject source)
@@ -33,15 +33,16 @@ public partial class MainWindow
             e.Handled = true;
             if (open && project is not null)
             {
-                if (_session.OpenDiffOnDoubleClick)
+                try
                 {
-                    if (project.Repository is not null)
+                    bool showDiff = await ShouldOpenDiffOnDoubleClickAsync(project, _session.OpenDiffOnDoubleClick, _closing.Token);
+                    if (_closing.IsCancellationRequested || !ReferenceEquals(ProjectGrid.SelectedItem, project)) return;
+                    if (showDiff)
                         OpenProjectDiff(project);
                     else
-                        StatusText.Text = Loc.Text("DiffNoRepository");
+                        OpenProject(project);
                 }
-                else
-                    OpenProject(project);
+                catch (OperationCanceledException) when (_closing.IsCancellationRequested) { }
             }
             return;
         }
@@ -49,6 +50,14 @@ public partial class MainWindow
         _firstProjectClick = e.ClickCount == 1 ? project : null;
         if (project is not null)
             ShowProjectDrawer(project);
+    }
+
+    internal static async Task<bool> ShouldOpenDiffOnDoubleClickAsync(ProjectEntry project, bool enabled, CancellationToken token)
+    {
+        if (!enabled || project.Repository is null) return false;
+        // The grid snapshot may be stale: decide before opening any Git pane.
+        var status = await GitStatus.ReadAsync(project.Repository, token);
+        return status.State == GitState.Changed && status.Files is { Count: > 0 };
     }
 
     private void ShowProjectDrawer(ProjectEntry project, bool activate = true)

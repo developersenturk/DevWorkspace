@@ -28,6 +28,8 @@ internal static class AppUpdateText
         ["UpdateDismiss"] = ("Güncelleme bildirimini gizle", "Dismiss update notification"),
         ["UpdateProgress"] = ("Uygulama güncellemesi indiriliyor", "Downloading application update"),
         ["UpdateChecking"] = ("Yeni sürüm denetleniyor…", "Checking for updates…"),
+        ["UpdateCheckFailed"] = ("Güncelleme kontrolü tamamlanamadı", "Could not check for updates"),
+        ["UpdateCheckFailedHint"] = ("Yeni sürüm bilgisine ulaşılamadı. Bağlantınızı kontrol edip yeniden deneyebilirsiniz.", "Could not retrieve release information. Check your connection and try again."),
         ["UpdateAvailable"] = ("Yeni sürüm var · DevWorkspace {0}", "New version available · DevWorkspace {0}"),
         ["UpdateAvailableHint"] = ("Kullandığınız sürüm: {0}. Yeni sürümü indirmek için kurulum paketini açın.", "Your version: {0}. Open installer downloads to get the new version."),
         ["UpdateDownloading"] = ("DevWorkspace {0} indiriliyor · %{1}. Çalışmaya devam edebilirsiniz.", "Downloading DevWorkspace {0} · {1}%. You can keep working."),
