@@ -1,5 +1,5 @@
-## Açılışta yeni sürüm bildirimi
+## Dosya içindeki değişikliklere atlama
 
-- Yeni sürüm bulunduğunda ana pencerede siz kapatana kadar görünen bir güncelleme bandı gösterilir.
-- Kurulu uygulamada indirme durumu ve güncelleme hazır olduğunda Şimdi yeniden başlat düğmesi gösterilir. İndirme başarısız olursa aynı banttan yeniden deneyebilirsiniz.
-- Taşınabilir EXE de açılışta yeni sürümleri denetler; mevcut ve yeni sürümü gösterip kurulum paketine yönlendirir. Bağlantı yoksa önceden alınmış sürüm bilgisi kullanılabilir.
+- Diff ekranı artık ilk değişiklik bloğuna kaydırılarak açılır. Önceki değişiklik / Sonraki değişiklik düğmeleri ve Alt+Yukarı / Alt+Aşağı aynı dosyadaki değişen satır bloklarına atlar; dosya değişmez.
+- Dosyalar arasında gezinme ayrı Önceki dosya / Sonraki dosya düğmeleriyle veya Alt+Shift+Yukarı / Alt+Shift+Aşağı ile yapılır. Dosya ve değişiklik sayaçları ayrıdır.
+- Projeye çift tıklayınca diff açılır. Değişiklik yoksa açıkça bildirilir. Ayarlardan bu davranış kapatılarak çift tıklamayla projeyi açma seçilebilir; bu tercih yeniden başlatma gerektirmez.

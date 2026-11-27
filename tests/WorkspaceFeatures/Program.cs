@@ -18,6 +18,38 @@ internal static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (args is ["--diff-project-preview", var repository])
+        {
+            var application = new App();
+            var window = new MainWindow { WindowState = System.Windows.WindowState.Normal, Width = 1240, Height = 760 };
+            window.Loaded -= (System.Windows.RoutedEventHandler)typeof(MainWindow).GetMethod("OnLoaded", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.DeclaredOnly)!
+                .CreateDelegate(typeof(System.Windows.RoutedEventHandler), window);
+            var grid = (DevExpress.Xpf.Grid.GridControl)window.FindName("ProjectGrid");
+            grid.ItemsSource = new[] { Project("Diff sample", repository, Path.Combine(repository, "Sample.csproj"), repository) };
+            ((System.Windows.FrameworkElement)window.FindName("EmptyPanel")).Visibility = System.Windows.Visibility.Collapsed;
+            application.Run(window);
+            return;
+        }
+        if (args is ["--diff-changes"])
+        {
+            var application = new App { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            GitDiffNavigationChecks.Run(Check);
+            application.Shutdown();
+            Console.WriteLine($"Diff change navigation: {_checks} checks passed.");
+            return;
+        }
+        if (args is ["--diff-changes-preview", var diffTheme, var diffLanguage])
+        {
+            var application = new App();
+            Loc.Initialize(diffLanguage);
+            application.Resources.MergedDictionaries.Add(Loc.CreateResources());
+            App.ApplyTheme(diffTheme == "light" ? DevExpress.Xpf.Core.LightweightTheme.Win11Light : DevExpress.Xpf.Core.LightweightTheme.Win11Dark);
+            var view = new GitDiffView();
+            var window = new System.Windows.Window { Content = view, Title = "Diff navigation preview", Width = 900, Height = 550 };
+            window.Loaded += (_, _) => view.ShowPreview(GitDiffNavigationChecks.Fixture());
+            application.Run(window);
+            return;
+        }
         if (args is ["--update-banner-preview", var phaseName, var bannerTheme, var bannerLanguage])
         {
             var application = new App();

@@ -1,5 +1,5 @@
-## New version notification on startup
+## Jump to changes within a file
 
-- A persistent banner in the main window announces newer versions until you dismiss it.
-- Installed copies show download status and a Restart now button when the update is ready. Failed downloads can be retried from the banner.
-- Standalone copies also check for newer releases on startup, showing the running and available versions with a link to installer downloads. Cached release information remains available offline.
+- The diff view now opens at the first change block. Previous change / Next change and Alt+Up / Alt+Down jump between changed line blocks within the same file.
+- Move between files separately with Previous file / Next file or Alt+Shift+Up / Alt+Shift+Down. File and change counters are separate.
+- Double-clicking a project opens its diff, with a clear message when there are no uncommitted changes. Turn this behavior off in Settings to open the project instead; this preference takes effect without restarting.

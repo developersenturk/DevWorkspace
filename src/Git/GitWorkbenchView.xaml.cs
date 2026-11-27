@@ -91,6 +91,11 @@ public partial class GitWorkbenchView : UserControl
             WorkingFiles.SelectedItem = changed;
         else if (StagedFiles.ItemsSource is IEnumerable<GitFileChange> staged && staged.FirstOrDefault() is { } prepared)
             StagedFiles.SelectedItem = prepared;
+        else
+        {
+            _owner.ShowGitDiff();
+            _ = LoadDiffAsync();
+        }
     }
 
     internal GitViewSession CaptureSession(bool diffOpen) => new(
@@ -423,7 +428,8 @@ public partial class GitWorkbenchView : UserControl
         if (SelectedFile is not GitFileChange file)
         {
             _owner.SetGitDiffHeader(Loc.Text("LC302D0999566"), "");
-            _owner.SetGitDiffPreview(new([], Loc.Text("LF9DB2AD7BFF8")));
+            _owner.SetGitDiffPreview(new([], Loc.Text(_state is not null && DiffFiles.Length == 0
+                ? "NoUncommittedChanges" : "LF9DB2AD7BFF8")));
             return;
         }
 

@@ -23,10 +23,13 @@ internal sealed record GitDiffRow(GitDiffLine? Before, GitDiffLine? After)
     public GitDiffLine AfterCell => After ?? Missing;
     public string BeforeText => BeforeCell.Text;
     public string AfterText => AfterCell.Text;
+    internal bool IsChange => Before?.Tone == GitDiffTone.Removed || After?.Tone == GitDiffTone.Added;
 }
 
 internal sealed record GitDiffPreview(IReadOnlyList<GitDiffRow> Rows, string Message)
 {
+    internal IReadOnlyList<int> ChangeStarts { get; } = Enumerable.Range(0, Rows.Count)
+        .Where(index => Rows[index].IsChange && (index == 0 || !Rows[index - 1].IsChange)).ToArray();
     private static readonly Regex Hunk = new(@"^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@",
         RegexOptions.CultureInvariant);
 

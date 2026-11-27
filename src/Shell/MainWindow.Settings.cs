@@ -15,17 +15,23 @@ public partial class MainWindow
             MessageBox.Show(this, Loc.Text("SettingsBusy"), Loc.Text("SettingsTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var dialog = new SettingsWindow(_session.Language) { Owner = this };
-        if (dialog.ShowDialog() != true || dialog.SelectedLanguage == _session.Language) return;
+        var dialog = new SettingsWindow(_session.Language, _session.OpenDiffOnDoubleClick) { Owner = this };
+        if (dialog.ShowDialog() != true || (dialog.SelectedLanguage == _session.Language &&
+            dialog.OpenDiffOnDoubleClick == _session.OpenDiffOnDoubleClick)) return;
         string previous = _session.Language;
+        bool previousDoubleClick = _session.OpenDiffOnDoubleClick;
         _session.Language = dialog.SelectedLanguage;
+        _session.OpenDiffOnDoubleClick = dialog.OpenDiffOnDoubleClick;
         _session.Save();
-        if (SessionState.Load().Language != dialog.SelectedLanguage)
+        var saved = SessionState.Load();
+        if (saved.Language != dialog.SelectedLanguage || saved.OpenDiffOnDoubleClick != dialog.OpenDiffOnDoubleClick)
         {
             _session.Language = previous;
+            _session.OpenDiffOnDoubleClick = previousDoubleClick;
             MessageBox.Show(this, Loc.Text("SettingsSaveFailed"), Loc.Text("SettingsTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
+        if (dialog.SelectedLanguage == previous) return;
         try
         {
             var restart = new ProcessStartInfo(Environment.ProcessPath ?? throw new IOException(Loc.Text("RestartFailed"))) { UseShellExecute = true };

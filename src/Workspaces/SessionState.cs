@@ -28,6 +28,7 @@ internal sealed record WorkbenchLayout(
 internal sealed class SessionState
 {
     public string Language { get; set; } = "en";
+    public bool OpenDiffOnDoubleClick { get; set; } = true;
     public bool WelcomeCompleted { get; set; }
     public bool UsageMetricsEnabled { get; set; }
     public Dictionary<string, long> UsageCounters { get; set; } = new();

@@ -159,6 +159,7 @@ public partial class MainWindow
         MessageBox.Show(this,
             Loc.Text("LF78AEB3FA049") +
             Loc.Text("L2F260A895F20") +
+            Loc.Text("DiffKeyboardShortcuts") +
             Loc.Text("L6427622828EF"),
             Loc.Text("LDAE232AB03CD"), MessageBoxButton.OK, MessageBoxImage.Information);
 

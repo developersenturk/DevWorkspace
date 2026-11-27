@@ -148,11 +148,14 @@ public partial class MainWindow : Window
     private async void WindowKeyDown(object sender, KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (Keyboard.Modifiers == ModifierKeys.Alt && key is Key.Up or Key.Down &&
+        if ((Keyboard.Modifiers == ModifierKeys.Alt || Keyboard.Modifiers == (ModifierKeys.Alt | ModifierKeys.Shift)) && key is Key.Up or Key.Down &&
             GitDiffPanel.Visibility == Visibility.Visible && !GitPane.IsClosed && !IsMainMenuOpen)
         {
             e.Handled = true;
-            _gitView?.NavigateDiff(key == Key.Up ? -1 : 1);
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                _gitView?.NavigateDiff(key == Key.Up ? -1 : 1);
+            else
+                GetGitDiff().NavigateChange(key == Key.Up ? -1 : 1);
             return;
         }
 

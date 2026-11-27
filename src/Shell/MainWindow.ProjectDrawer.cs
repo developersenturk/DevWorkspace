@@ -33,8 +33,13 @@ public partial class MainWindow
             e.Handled = true;
             if (open && project is not null)
             {
-                if (SelectedNavigationKey == GitRepositoriesKey && project.Repository is not null)
-                    OpenGitWorkbench(project);
+                if (_session.OpenDiffOnDoubleClick)
+                {
+                    if (project.Repository is not null)
+                        OpenProjectDiff(project);
+                    else
+                        StatusText.Text = Loc.Text("DiffNoRepository");
+                }
                 else
                     OpenProject(project);
             }

@@ -271,7 +271,7 @@ public partial class MainWindow
         bool enabled = _gitView is { IsBusy: false };
         PreviousGitDiffButton.IsEnabled = enabled && count > 0 && index != 0;
         NextGitDiffButton.IsEnabled = enabled && count > 0 && index < count - 1;
-        GitDiffPosition.Text = $"{index + 1} / {count}";
+        GitDiffPosition.Text = Loc.Format("DiffFilePosition", index + 1, count);
     }
 
     private void CloseGitDiff()
