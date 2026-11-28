@@ -37,6 +37,24 @@ try
         <Project><Target Name="BuildClient"><Exec Command="pnpm install" WorkingDirectory="$(MSBuildProjectDirectory)/Deep/Client/" /></Target></Project>
         """);
     Write("Projects/Exec/Deep/Client/package.json", """{"scripts":{"build":"vite build"}}""");
+    Write("Projects/ModelAmiral/ModelAmiral.slnx", """
+        <Solution><Project Path="Center/Center.csproj" /><Project Path="LicenseService/LicenseService.csproj" /></Solution>
+        """);
+    foreach (string host in new[] { "Center", "LicenseService" })
+    {
+        Write($"Projects/ModelAmiral/{host}/{host}.csproj", """
+            <Project Sdk="Microsoft.NET.Sdk.Web"><Target Name="BuildClient" BeforeTargets="PrepareForBuild">
+              <Exec WorkingDirectory="ClientApp" Command="node &quot;$(MSBuildProjectDirectory)/../Build/Run-ClientBuild.mjs&quot; build" />
+            </Target></Project>
+            """);
+        Write($"Projects/ModelAmiral/{host}/ClientApp/package.json", """{"private":true,"scripts":{"build":"vite build --outDir ../wwwroot"},"dependencies":{"react":"19.2.0"}}""");
+        Write($"Projects/ModelAmiral/{host}/ClientApp/src/index.js", "");
+    }
+    Write("Projects/NodeExe/NodeExe.csproj", """
+        <Project><Target Name="BuildClient"><Exec Command="node.exe build.js" WorkingDirectory="ClientApp" /></Target></Project>
+        """);
+    Write("Projects/NodeExe/ClientApp/package.json", """{"scripts":{"build":"vite build"}}""");
+    Write("Projects/NodeExe/Independent/package.json", """{"scripts":{"build":"vite build"}}""");
     Write("Projects/NoOwner/Assets/package.json", """{"private":true,"dependencies":{"jquery":"3.7.1"}}""");
     Write("Projects/Controls/Preferred/package.json", """{"private":true,"dependencies":{"jquery":"3.7.1"}}""");
     Write("Projects/Product/Production.csproj", "<Project />");
@@ -81,6 +99,11 @@ try
     Expect("Projects/Controls/Other/Assets", true, "Projects/Controls");
     Expect("Projects/Explicit/Deep/Client", true, "Projects/Explicit");
     Expect("Projects/Exec/Deep/Client", true, "Projects/Exec");
+    Expect("Projects/ModelAmiral", false);
+    Expect("Projects/ModelAmiral/Center/ClientApp", true, "Projects/ModelAmiral");
+    Expect("Projects/ModelAmiral/LicenseService/ClientApp", true, "Projects/ModelAmiral");
+    Expect("Projects/NodeExe/ClientApp", true, "Projects/NodeExe");
+    Expect("Projects/NodeExe/Independent", false);
     foreach (string path in new[] { "Apps/Standalone", "Apps/Source", "Public", "Workspace", "Broken", "IndependentRepo", "Preferred" })
         Expect("Projects/Controls/" + path, false);
     Expect("Projects/NoOwner/Assets", false);

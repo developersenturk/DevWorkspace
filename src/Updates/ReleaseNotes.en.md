@@ -1,5 +1,4 @@
-## Amend the last commit and see push status
+## Embedded web interfaces grouped under their project
 
-- Amend is now available in the Git view. Edit the prefilled last commit message and include staged file changes in the same commit. Unstaged changes are preserved.
-- Amend does not push automatically. It stops if HEAD or the staged changes have changed, and is unavailable before the first commit, on detached HEAD, or during ongoing Git operations.
-- A Push status column in the main project list shows the number of commits waiting to be pushed. Branches without upstream tracking are identified separately. Counts use the last known remote state.
+- ClientApp interfaces built by .NET projects through Node.js scripts now appear in the parent project's Components section instead of being listed as standalone applications.
+- Fixed separate ClientApp rows for the Center and LicenseService interfaces within ModelAmiral.

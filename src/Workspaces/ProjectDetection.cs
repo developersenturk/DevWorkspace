@@ -254,7 +254,7 @@ internal static class ProjectDetection
                                 return true;
                             if (element.Name.LocalName == "Exec" &&
                                 Regex.IsMatch((string?)element.Attribute("Command") ?? "",
-                                    @"^\s*(?:npm|npx|pnpm|yarn|bun)(?:\.cmd)?\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
+                                    @"^\s*(?:(?:npm|npx|pnpm|yarn|bun)(?:\.cmd)?|node(?:\.exe)?|nodejs)\s", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant) &&
                                 MatchesFolder((string?)element.Attribute("WorkingDirectory")))
                                 return true;
                         }
